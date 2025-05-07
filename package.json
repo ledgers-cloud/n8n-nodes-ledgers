@@ -1,6 +1,6 @@
 {
   "name": "@ledgers/n8n-nodes-ledgers",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "n8n node for interacting with LEDGERS.cloud API",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

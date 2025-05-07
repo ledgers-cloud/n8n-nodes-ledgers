@@ -30,6 +30,7 @@ export class LEDGERSApi implements ICredentialType {
 			},
 			default: '',
 			required: true,
+			description: 'Contact LEDGERS support to get your x-api-key',
 		},
 		{
 			displayName: 'Email',
