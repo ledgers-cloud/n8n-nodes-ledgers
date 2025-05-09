@@ -6,15 +6,46 @@ export async function execute(this: IExecuteFunctions) {
 	const returnData = [];
 
 	const credentials = await this.getCredentials('ledgersApi');
-	if (!credentials || !credentials.apiToken || !credentials.xApiKey) {
-		throw new ApplicationError('Missing required credentials: apiToken or xApiKey', {
+	if (!credentials || !credentials.xApiKey || !credentials.email || !credentials.password) {
+		throw new ApplicationError('Missing required credentials: xApiKey, email, or password', {
 			level: 'warning',
 		});
 	}
 
-	const apiToken = credentials.apiToken;
 	const xApiKey = credentials.xApiKey;
+	const email = credentials.email;
+	const password = credentials.password;
 	const baseUrl = 'https://in-api-dev.ledgers.cloud/v3';
+
+	// 1. Login to get api_token
+	const loginOptions: IRequestOptions = {
+		method: 'POST',
+		url: `https://in-api-dev.ledgers.cloud/login`,
+		body: {
+			email,
+			password,
+		},
+		headers: {
+			'Content-Type': 'application/json',
+			'x-api-key': xApiKey,
+		},
+		json: true,
+	};
+
+	let apiToken: string;
+	try {
+		const loginResponse = await this.helpers.request(loginOptions);
+		if (loginResponse.status !== 'success' || !loginResponse.api_token) {
+			throw new ApplicationError('Authentication failed. Check your credentials.', {
+				level: 'warning',
+			});
+		}
+		apiToken = loginResponse.api_token;
+	} catch (error) {
+		throw new ApplicationError('Failed to login and retrieve api_token. ' + (error as Error).message, {
+			level: 'warning',
+		});
+	}
 
 	for (let i = 0; i < items.length; i++) {
 		const operation = this.getNodeParameter('operation', i);
@@ -22,9 +53,9 @@ export async function execute(this: IExecuteFunctions) {
 			method: 'GET',
 			url: '',
 			headers: {
-				'api-token': apiToken,
-				'x-api-key': xApiKey,
 				'Content-Type': 'application/json',
+				'x-api-key': xApiKey,
+				'api-token': apiToken,
 			},
 			json: true,
 		};
