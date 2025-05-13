@@ -7,7 +7,7 @@ import type {
 import { ApplicationError } from 'n8n-workflow';
 
 interface LoginResponse {
-	status: string;
+	status: number;
 	api_token?: string;
 }
 
@@ -61,17 +61,21 @@ export class LEDGERSApi implements ICredentialType {
 
 		const loginRequest: IHttpRequestOptions = {
 			method: 'POST',
-			url: 'https://in-api-dev.ledgers.cloud/v3/login',
+			url: 'https://in-api-dev.ledgers.cloud/login',
 			body: {
 				email: credentials.email,
 				password: credentials.password,
+			},
+			headers: {
+				'Content-Type': 'application/json',
+				'x-api-key': credentials.xApiKey as string,
 			},
 			json: true,
 		};
 
 		const response = (await this.httpRequest(loginRequest)) as LoginResponse;
 
-		if (response.status !== 'success' || !response.api_token) {
+		if (response.status !== 200 || !response.api_token) {
 			throw new ApplicationError('Authentication failed. Check your credentials.', {
 				level: 'warning',
 			});

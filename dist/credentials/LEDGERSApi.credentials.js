@@ -44,7 +44,7 @@ class LEDGERSApi {
         }
         const loginRequest = {
             method: 'POST',
-            url: 'https://in-api-dev.ledgers.cloud/v3/login',
+            url: 'https://in-api.ledgers.cloud/login',
             body: {
                 email: credentials.email,
                 password: credentials.password,
@@ -52,7 +52,7 @@ class LEDGERSApi {
             json: true,
         };
         const response = (await this.httpRequest(loginRequest));
-        if (response.status !== 'success' || !response.api_token) {
+        if (response.status !== 200 || !response.api_token) {
             throw new n8n_workflow_1.ApplicationError('Authentication failed. Check your credentials.', {
                 level: 'warning',
             });
