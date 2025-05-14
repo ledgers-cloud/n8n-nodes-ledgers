@@ -61,7 +61,7 @@ export class LEDGERSApi implements ICredentialType {
 
 		const loginRequest: IHttpRequestOptions = {
 			method: 'POST',
-			url: 'https://in-api-dev.ledgers.cloud/login',
+			url: 'https://in-api.ledgers.cloud/login',
 			body: {
 				email: credentials.email,
 				password: credentials.password,

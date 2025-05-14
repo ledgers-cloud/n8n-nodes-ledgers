@@ -15,12 +15,12 @@ export async function execute(this: IExecuteFunctions) {
 	const xApiKey = credentials.xApiKey;
 	const email = credentials.email;
 	const password = credentials.password;
-	const baseUrl = 'https://in-api-dev.ledgers.cloud/v3';
+	const baseUrl = 'https://in-api.ledgers.cloud/v3';
 
 	// 1. Login to get api_token
 	const loginOptions: IRequestOptions = {
 		method: 'POST',
-		url: `https://in-api-dev.ledgers.cloud/login`,
+		url: `https://in-api.ledgers.cloud/login`,
 		body: {
 			email,
 			password,

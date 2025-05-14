@@ -1,6 +1,6 @@
 {
   "name": "@ledgers/n8n-nodes-ledgers",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "n8n node for interacting with LEDGERS.cloud API",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -23,6 +23,10 @@
     "ledgers.cloud",
     "n8n-community-node-package"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ledgers-cloud/n8n-nodes-ledgers.git"
+  },
   "author": "LEDGERS",
   "license": "MIT",
   "devDependencies": {

@@ -49,6 +49,10 @@ class LEDGERSApi {
                 email: credentials.email,
                 password: credentials.password,
             },
+            headers: {
+                'Content-Type': 'application/json',
+                'x-api-key': credentials.xApiKey,
+            },
             json: true,
         };
         const response = (await this.httpRequest(loginRequest));
