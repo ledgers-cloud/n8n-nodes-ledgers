@@ -1,36 +1,24 @@
-import type {
+import {
 	ICredentialType,
-	ICredentialDataDecryptedObject,
-	IHttpRequestOptions,
 	INodeProperties,
+	IAuthenticateGeneric,
+	ICredentialTestRequest,
+	Icon
 } from 'n8n-workflow';
-import { ApplicationError } from 'n8n-workflow';
-
-interface LoginResponse {
-	status: number;
-	api_token?: string;
-}
 
 export class LEDGERSApi implements ICredentialType {
 	name = 'ledgersApi';
-
 	displayName = 'LEDGERS API';
-
-	documentationUrl = '';
-
-	httpRequest!: (options: IHttpRequestOptions) => Promise<any>;
+	documentationUrl = ''; // You can add your docs URL here
+	icon: Icon = 'file:LEDGERS.svg';
 
 	properties: INodeProperties[] = [
 		{
 			displayName: 'X-API-Key',
 			name: 'xApiKey',
 			type: 'string',
-			typeOptions: {
-				password: true,
-			},
 			default: '',
 			required: true,
-			description: 'Contact LEDGERS support to get your x-api-key',
 		},
 		{
 			displayName: 'Email',
@@ -51,43 +39,43 @@ export class LEDGERSApi implements ICredentialType {
 		},
 	];
 
-	async authenticate(
-		credentials: ICredentialDataDecryptedObject,
-		requestOptions: IHttpRequestOptions,
-	): Promise<IHttpRequestOptions> {
-		if (!this.httpRequest) {
-			throw new ApplicationError('HTTP request helper not available', { level: 'warning' });
-		}
+	// This block will test the credentials when clicking "Test Credentials"
+	authenticate = {
+		type: 'generic',
+		properties: {
+			request: {
+				method: 'POST',
+				url: 'https://in-api.ledgers.cloud/login',
+				headers: {
+					'Content-Type': 'application/json',
+					'x-api-key': '={{$credentials.xApiKey}}',
+				},
+				body: {
+					email: '={{$credentials.email}}',
+					password: '={{$credentials.password}}',
+				},
+				json: true,
+			},
+			response: {
+				property: 'api_token',
+			},
+		},
+	} as IAuthenticateGeneric;
 
-		const loginRequest: IHttpRequestOptions = {
+	// Optional but recommended: custom connection test logic
+	test: ICredentialTestRequest = {
+		request: {
 			method: 'POST',
 			url: 'https://in-api.ledgers.cloud/login',
-			body: {
-				email: credentials.email,
-				password: credentials.password,
-			},
 			headers: {
 				'Content-Type': 'application/json',
-				'x-api-key': credentials.xApiKey as string,
+				'x-api-key': '={{$credentials.xApiKey}}',
+			},
+			body: {
+				email: '={{$credentials.email}}',
+				password: '={{$credentials.password}}',
 			},
 			json: true,
-		};
-
-		const response = (await this.httpRequest(loginRequest)) as LoginResponse;
-
-		if (response.status !== 200 || !response.api_token) {
-			throw new ApplicationError('Authentication failed. Check your credentials.', {
-				level: 'warning',
-			});
-		}
-
-		requestOptions.headers = {
-			...requestOptions.headers,
-			'Content-Type': 'application/json',
-			'x-api-key': credentials.xApiKey as string,
-			'api-token': response.api_token,
-		};
-
-		return requestOptions;
-	}
+		},
+	};
 }

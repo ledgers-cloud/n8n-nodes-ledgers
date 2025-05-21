@@ -1,23 +1,19 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.LEDGERSApi = void 0;
-const n8n_workflow_1 = require("n8n-workflow");
 class LEDGERSApi {
     constructor() {
         this.name = 'ledgersApi';
         this.displayName = 'LEDGERS API';
-        this.documentationUrl = '';
+        this.documentationUrl = ''; // You can add your docs URL here
+        this.icon = 'file:LEDGERS.svg';
         this.properties = [
             {
                 displayName: 'X-API-Key',
                 name: 'xApiKey',
                 type: 'string',
-                typeOptions: {
-                    password: true,
-                },
                 default: '',
                 required: true,
-                description: 'Contact LEDGERS support to get your x-api-key',
             },
             {
                 displayName: 'Email',
@@ -37,37 +33,44 @@ class LEDGERSApi {
                 required: true,
             },
         ];
-    }
-    async authenticate(credentials, requestOptions) {
-        if (!this.httpRequest) {
-            throw new n8n_workflow_1.ApplicationError('HTTP request helper not available', { level: 'warning' });
-        }
-        const loginRequest = {
-            method: 'POST',
-            url: 'https://in-api.ledgers.cloud/login',
-            body: {
-                email: credentials.email,
-                password: credentials.password,
+        // This block will test the credentials when clicking "Test Credentials"
+        this.authenticate = {
+            type: 'generic',
+            properties: {
+                request: {
+                    method: 'POST',
+                    url: 'https://in-api.ledgers.cloud/login',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-api-key': '={{$credentials.xApiKey}}',
+                    },
+                    body: {
+                        email: '={{$credentials.email}}',
+                        password: '={{$credentials.password}}',
+                    },
+                    json: true,
+                },
+                response: {
+                    property: 'api_token',
+                },
             },
-            headers: {
-                'Content-Type': 'application/json',
-                'x-api-key': credentials.xApiKey,
+        };
+        // Optional but recommended: custom connection test logic
+        this.test = {
+            request: {
+                method: 'POST',
+                url: 'https://in-api.ledgers.cloud/login',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-api-key': '={{$credentials.xApiKey}}',
+                },
+                body: {
+                    email: '={{$credentials.email}}',
+                    password: '={{$credentials.password}}',
+                },
+                json: true,
             },
-            json: true,
         };
-        const response = (await this.httpRequest(loginRequest));
-        if (response.status !== 200 || !response.api_token) {
-            throw new n8n_workflow_1.ApplicationError('Authentication failed. Check your credentials.', {
-                level: 'warning',
-            });
-        }
-        requestOptions.headers = {
-            ...requestOptions.headers,
-            'Content-Type': 'application/json',
-            'x-api-key': credentials.xApiKey,
-            'api-token': response.api_token,
-        };
-        return requestOptions;
     }
 }
 exports.LEDGERSApi = LEDGERSApi;

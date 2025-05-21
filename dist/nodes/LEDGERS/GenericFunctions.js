@@ -11,39 +11,39 @@ async function execute() {
             level: 'warning',
         });
     }
-    const xApiKey = credentials.xApiKey;
-    const email = credentials.email;
-    const password = credentials.password;
+    const { xApiKey, email, password } = credentials;
     const baseUrl = 'https://in-api.ledgers.cloud/v3';
-    // 1. Login to get api_token
-    const loginOptions = {
-        method: 'POST',
-        url: `https://in-api.ledgers.cloud/login`,
-        body: {
-            email,
-            password,
-        },
-        headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': xApiKey,
-        },
-        json: true,
-    };
+    // Step 1: Authenticate and get api_token
     let apiToken;
     try {
+        const loginOptions = {
+            method: 'POST',
+            url: 'https://in-api.ledgers.cloud/login',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-api-key': xApiKey,
+            },
+            body: {
+                email,
+                password,
+            },
+            json: true,
+        };
         const loginResponse = await this.helpers.request(loginOptions);
-        if (loginResponse.status !== 'success' || !loginResponse.api_token) {
-            throw new n8n_workflow_1.ApplicationError('Authentication failed. Check your credentials.', {
+        if (loginResponse.status !== 200 || !loginResponse.api_token) {
+            const errorMsg = loginResponse.errorMessage || 'Authentication failed. Check your credentials.';
+            throw new n8n_workflow_1.ApplicationError(`Failed to login. ${errorMsg}`, {
                 level: 'warning',
             });
         }
         apiToken = loginResponse.api_token;
     }
     catch (error) {
-        throw new n8n_workflow_1.ApplicationError('Failed to login and retrieve api_token. ' + error.message, {
+        throw new n8n_workflow_1.ApplicationError(`Login request failed: ${error.message}`, {
             level: 'warning',
         });
     }
+    // Step 2: Proceed with operation
     for (let i = 0; i < items.length; i++) {
         const operation = this.getNodeParameter('operation', i);
         const options = {

@@ -12,41 +12,43 @@ export async function execute(this: IExecuteFunctions) {
 		});
 	}
 
-	const xApiKey = credentials.xApiKey;
-	const email = credentials.email;
-	const password = credentials.password;
+	const { xApiKey, email, password } = credentials;
 	const baseUrl = 'https://in-api.ledgers.cloud/v3';
 
-	// 1. Login to get api_token
-	const loginOptions: IRequestOptions = {
-		method: 'POST',
-		url: `https://in-api.ledgers.cloud/login`,
-		body: {
-			email,
-			password,
-		},
-		headers: {
-			'Content-Type': 'application/json',
-			'x-api-key': xApiKey,
-		},
-		json: true,
-	};
-
+	// Step 1: Authenticate and get api_token
 	let apiToken: string;
 	try {
+		const loginOptions: IRequestOptions = {
+			method: 'POST',
+			url: 'https://in-api.ledgers.cloud/login',
+			headers: {
+				'Content-Type': 'application/json',
+				'x-api-key': xApiKey,
+			},
+			body: {
+				email,
+				password,
+			},
+			json: true,
+		};
+
 		const loginResponse = await this.helpers.request(loginOptions);
-		if (loginResponse.status !== 'success' || !loginResponse.api_token) {
-			throw new ApplicationError('Authentication failed. Check your credentials.', {
+
+		if (loginResponse.status !== 200 || !loginResponse.api_token) {
+			const errorMsg = loginResponse.errorMessage || 'Authentication failed. Check your credentials.';
+			throw new ApplicationError(`Failed to login. ${errorMsg}`, {
 				level: 'warning',
 			});
 		}
+
 		apiToken = loginResponse.api_token;
 	} catch (error) {
-		throw new ApplicationError('Failed to login and retrieve api_token. ' + (error as Error).message, {
+		throw new ApplicationError(`Login request failed: ${(error as Error).message}`, {
 			level: 'warning',
 		});
 	}
 
+	// Step 2: Proceed with operation
 	for (let i = 0; i < items.length; i++) {
 		const operation = this.getNodeParameter('operation', i);
 		const options: IRequestOptions = {
@@ -85,7 +87,6 @@ export async function execute(this: IExecuteFunctions) {
 			returnData.push({ json: response });
 		} catch (error) {
 			returnData.push({ json: { error: (error as Error).message } });
-
 		}
 	}
 
