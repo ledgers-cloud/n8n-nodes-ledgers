@@ -5,7 +5,7 @@ class LEDGERSApi {
     constructor() {
         this.name = 'ledgersApi';
         this.displayName = 'LEDGERS API';
-        this.documentationUrl = ''; // You can add your docs URL here
+        this.documentationUrl = '';
         this.icon = 'file:LEDGERS.svg';
         this.properties = [
             {
@@ -33,7 +33,6 @@ class LEDGERSApi {
                 required: true,
             },
         ];
-        // This block will test the credentials when clicking "Test Credentials"
         this.authenticate = {
             type: 'generic',
             properties: {
@@ -55,7 +54,6 @@ class LEDGERSApi {
                 },
             },
         };
-        // Optional but recommended: custom connection test logic
         this.test = {
             request: {
                 method: 'POST',
@@ -74,3 +72,4 @@ class LEDGERSApi {
     }
 }
 exports.LEDGERSApi = LEDGERSApi;
+//# sourceMappingURL=LEDGERSApi.credentials.js.map
