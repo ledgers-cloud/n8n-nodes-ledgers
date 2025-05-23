@@ -1,26 +1,15 @@
 import {
-<<<<<<< HEAD
 	IAuthenticateGeneric,
 	ICredentialTestRequest,
 	ICredentialType,
 	INodeProperties,
-=======
-	ICredentialType,
-	INodeProperties,
-	IAuthenticateGeneric,
-	ICredentialTestRequest,
->>>>>>> 35655d62d59b0715ac5900b675ada9877a5e1d95
 	Icon
 } from 'n8n-workflow';
 
 export class LEDGERSApi implements ICredentialType {
 	name = 'ledgersApi';
 	displayName = 'LEDGERS API';
-<<<<<<< HEAD
 	documentationUrl = ''; // Optional
-=======
-	documentationUrl = ''; // You can add your docs URL here
->>>>>>> 35655d62d59b0715ac5900b675ada9877a5e1d95
 	icon: Icon = 'file:LEDGERS.svg';
 
 	properties: INodeProperties[] = [
@@ -50,10 +39,6 @@ export class LEDGERSApi implements ICredentialType {
 		},
 	];
 
-<<<<<<< HEAD
-=======
-	// This block will test the credentials when clicking "Test Credentials"
->>>>>>> 35655d62d59b0715ac5900b675ada9877a5e1d95
 	authenticate = {
 		type: 'generic',
 		properties: {
@@ -76,11 +61,6 @@ export class LEDGERSApi implements ICredentialType {
 		},
 	} as IAuthenticateGeneric;
 
-<<<<<<< HEAD
-
-=======
-	// Optional but recommended: custom connection test logic
->>>>>>> 35655d62d59b0715ac5900b675ada9877a5e1d95
 	test: ICredentialTestRequest = {
 		request: {
 			method: 'POST',
@@ -96,8 +76,4 @@ export class LEDGERSApi implements ICredentialType {
 			json: true,
 		},
 	};
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> 35655d62d59b0715ac5900b675ada9877a5e1d95
