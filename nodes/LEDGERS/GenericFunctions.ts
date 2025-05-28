@@ -59,59 +59,63 @@ export async function execute(this: IExecuteFunctions) {
 
 	// Step 2: Proceed with operation
 	for (let i = 0; i < items.length; i++) {
-		const operation = this.getNodeParameter('operation', i);
-		const options: IRequestOptions = {
-			method: 'GET',
-			url: '',
-			headers: {
-				'Content-Type': 'application/json',
-				'x-api-key': xApiKey,
-				'api-token': apiToken,
-			},
-			json: true,
-		};
+		const continueOnFail = this.continueOnFail?.();
+		try{
+			const operation = this.getNodeParameter('operation', i);
+			const options: IRequestOptions = {
+				method: 'GET',
+				url: '',
+				headers: {
+					'Content-Type': 'application/json',
+					'x-api-key': xApiKey,
+					'api-token': apiToken,
+				},
+				json: true,
+			};
 
-		if (operation === 'createContact') {
-			const contactName = this.getNodeParameter('contactName', i);
-			const additionalFields = this.getNodeParameter('additionalFields', i) as Record<string, string>;
-			const mobileRaw = additionalFields.mobile;
-			const selectedDialCode = additionalFields.mobile_country_code || '+91';
-			const isoCode = dialCodeToCountryCode[selectedDialCode] || 'in';
+			if (operation === 'createContact') {
+				const contactName = this.getNodeParameter('contactName', i);
+				const additionalFields = this.getNodeParameter('additionalFields', i) as Record<string, string>;
+				const mobileRaw = additionalFields.mobile;
+				const selectedDialCode = additionalFields.mobile_country_code || '+91';
+				const isoCode = dialCodeToCountryCode[selectedDialCode] || 'in';
 
-			if (mobileRaw) {
-				additionalFields.mobile = `${mobileRaw}|${isoCode}`;
+				if (mobileRaw) {
+					additionalFields.mobile = `${mobileRaw}|${isoCode}`;
+				}
+				additionalFields.mobile_country_code = selectedDialCode;
+				options.method = 'POST';
+				options.url = `${baseUrl}/contact`;
+				options.body = { contact_name: contactName, ...additionalFields };
+			} else if (operation === 'updateContact') {
+				const contactId = this.getNodeParameter('contactId', i);
+				const updateFields = this.getNodeParameter('additionalFields', i) as Record<string, string>;
+				const mobileRaw = updateFields.mobile;
+				const selectedDialCode = updateFields.mobile_country_code || '+91';
+				const isoCode = dialCodeToCountryCode[selectedDialCode] || 'in';
+
+				if (mobileRaw) {
+					updateFields.mobile = `${mobileRaw}|${isoCode}`;
+				}
+				updateFields.mobile_country_code = selectedDialCode;
+				options.method = 'PUT';
+				options.url = `${baseUrl}/contact`;
+				options.body = { contact_id: contactId, ...updateFields };
+			} else if (operation === 'getContact') {
+				const contactId = this.getNodeParameter('contactId', i);
+				options.url = `${baseUrl}/contact/${contactId}`;
+			} else if (operation === 'getAllContacts') {
+				const perPage = this.getNodeParameter('perPage', i);
+				options.url = `${baseUrl}/contact?perpage=${perPage}`;
 			}
-			additionalFields.mobile_country_code = selectedDialCode;
-			options.method = 'POST';
-			options.url = `${baseUrl}/contact`;
-			options.body = { contact_name: contactName, ...additionalFields };
-		} else if (operation === 'updateContact') {
-			const contactId = this.getNodeParameter('contactId', i);
-			const updateFields = this.getNodeParameter('additionalFields', i) as Record<string, string>;
-			const mobileRaw = updateFields.mobile;
-			const selectedDialCode = updateFields.mobile_country_code || '+91';
-			const isoCode = dialCodeToCountryCode[selectedDialCode] || 'in';
-
-			if (mobileRaw) {
-				updateFields.mobile = `${mobileRaw}|${isoCode}`;
-			}
-			updateFields.mobile_country_code = selectedDialCode;
-			options.method = 'PUT';
-			options.url = `${baseUrl}/contact`;
-			options.body = { contact_id: contactId, ...updateFields };
-		} else if (operation === 'getContact') {
-			const contactId = this.getNodeParameter('contactId', i);
-			options.url = `${baseUrl}/contact/${contactId}`;
-		} else if (operation === 'getAllContacts') {
-			const perPage = this.getNodeParameter('perPage', i);
-			options.url = `${baseUrl}/contact?perpage=${perPage}`;
-		}
-
-		try {
-			const response = await this.helpers.request(options);
-			returnData.push({ json: response });
+			const result = await this.helpers.request(options);
+			returnData.push({ json: result });
 		} catch (error) {
-			returnData.push({ json: { error: (error as Error).message } });
+			if (continueOnFail) {
+				returnData.push({ json: { error: (error as Error).message } });
+				continue;
+			}
+			throw error;
 		}
 	}
 

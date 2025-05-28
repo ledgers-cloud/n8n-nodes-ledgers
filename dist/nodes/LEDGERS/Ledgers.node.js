@@ -47,9 +47,10 @@ class Ledgers {
             defaults: {
                 name: 'LEDGERS',
             },
-            inputs: ['main'],
-            outputs: ['main'],
+            inputs: ["main"],
+            outputs: ["main"],
             icon: 'file:ledgers.svg',
+            usableAsTool: true,
             credentials: [
                 {
                     name: 'ledgersApi',
