@@ -1,15 +1,15 @@
-import {
-	IAuthenticateGeneric,
-	ICredentialTestRequest,
+import type {
 	ICredentialType,
 	INodeProperties,
-	Icon
+	ICredentialTestRequest,
+	IAuthenticateGeneric,
+	Icon,
 } from 'n8n-workflow';
 
 export class LEDGERSApi implements ICredentialType {
 	name = 'ledgersApi';
 	displayName = 'LEDGERS API';
-	documentationUrl = ''; // Optional
+	documentationUrl = 'https://github.com/ledgers-cloud/n8n-nodes-ledgers/master/README.md';
 	icon: Icon = 'file:LEDGERS.svg';
 
 	properties: INodeProperties[] = [
@@ -17,6 +17,7 @@ export class LEDGERSApi implements ICredentialType {
 			displayName: 'X-API-Key',
 			name: 'xApiKey',
 			type: 'string',
+			typeOptions: { password: true },
 			default: '',
 			required: true,
 		},
@@ -31,35 +32,25 @@ export class LEDGERSApi implements ICredentialType {
 			displayName: 'Password',
 			name: 'password',
 			type: 'string',
-			typeOptions: {
-				password: true,
-			},
+			typeOptions: { password: true },
 			default: '',
 			required: true,
 		},
 	];
 
-	authenticate = {
+	authenticate: IAuthenticateGeneric = {
 		type: 'generic',
 		properties: {
-			request: {
-				method: 'POST',
-				url: 'https://in-api.ledgers.cloud/login',
-				headers: {
-					'Content-Type': 'application/json',
-					'x-api-key': '={{$credentials.xApiKey}}',
-				},
-				body: {
-					email: '={{$credentials.email}}',
-					password: '={{$credentials.password}}',
-				},
-				json: true,
+			headers: {
+				'Content-Type': 'application/json',
+				'x-api-key': '={{$credentials.xApiKey}}',
 			},
-			response: {
-				property: 'api_token',
+			auth: {
+				username: '={{$credentials.email}}',
+				password: '={{$credentials.password}}',
 			},
 		},
-	} as IAuthenticateGeneric;
+	};
 
 	test: ICredentialTestRequest = {
 		request: {

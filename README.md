@@ -35,7 +35,7 @@ More modules (like Invoices, Payments, etc.) will be added in future releases.
 
 To authenticate with the LEDGERS API, you must provide the following:
 
-* **X-API-Key** – Your API key (get it from your LEDGERS dashboard)
+* **X-API-Key** – Your API key [get from LEDGERS](https://ledgers.cloud/c/developers)
 * **Email** – Your registered email address
 * **Password** – Your LEDGERS login password
 
@@ -77,7 +77,7 @@ Example: You can create a new contact by selecting the `Create Contact` operatio
 
 | Version | Description                                                      |
 | ------- | ---------------------------------------------------------------- |
-| 2.1.0   | Initial release with Contact support and login-based credentials |
+| 2.1.1   | Updated Version with the changes mentioned by N8N Team           |
 
 ---
 

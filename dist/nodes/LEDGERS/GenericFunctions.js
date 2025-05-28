@@ -2,6 +2,13 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.execute = execute;
 const n8n_workflow_1 = require("n8n-workflow");
+const dialCodeToCountryCode = {
+    '+91': 'in',
+    '+1': 'us',
+    '+44': 'gb',
+    '+65': 'sg',
+    '+971': 'ae',
+};
 async function execute() {
     const items = this.getInputData();
     const returnData = [];
@@ -13,7 +20,6 @@ async function execute() {
     }
     const { xApiKey, email, password } = credentials;
     const baseUrl = 'https://in-api.ledgers.cloud/v3';
-    // Step 1: Authenticate and get api_token
     let apiToken;
     try {
         const loginOptions = {
@@ -43,7 +49,6 @@ async function execute() {
             level: 'warning',
         });
     }
-    // Step 2: Proceed with operation
     for (let i = 0; i < items.length; i++) {
         const operation = this.getNodeParameter('operation', i);
         const options = {
@@ -59,6 +64,13 @@ async function execute() {
         if (operation === 'createContact') {
             const contactName = this.getNodeParameter('contactName', i);
             const additionalFields = this.getNodeParameter('additionalFields', i);
+            const mobileRaw = additionalFields.mobile;
+            const selectedDialCode = additionalFields.mobile_country_code || '+91';
+            const isoCode = dialCodeToCountryCode[selectedDialCode] || 'in';
+            if (mobileRaw) {
+                additionalFields.mobile = `${mobileRaw}|${isoCode}`;
+            }
+            additionalFields.mobile_country_code = selectedDialCode;
             options.method = 'POST';
             options.url = `${baseUrl}/contact`;
             options.body = { contact_name: contactName, ...additionalFields };
@@ -66,6 +78,13 @@ async function execute() {
         else if (operation === 'updateContact') {
             const contactId = this.getNodeParameter('contactId', i);
             const updateFields = this.getNodeParameter('additionalFields', i);
+            const mobileRaw = updateFields.mobile;
+            const selectedDialCode = updateFields.mobile_country_code || '+91';
+            const isoCode = dialCodeToCountryCode[selectedDialCode] || 'in';
+            if (mobileRaw) {
+                updateFields.mobile = `${mobileRaw}|${isoCode}`;
+            }
+            updateFields.mobile_country_code = selectedDialCode;
             options.method = 'PUT';
             options.url = `${baseUrl}/contact`;
             options.body = { contact_id: contactId, ...updateFields };
@@ -88,3 +107,4 @@ async function execute() {
     }
     return [returnData];
 }
+//# sourceMappingURL=GenericFunctions.js.map

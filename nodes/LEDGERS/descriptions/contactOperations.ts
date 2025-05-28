@@ -51,6 +51,20 @@ export const contactOperations: INodeProperties[] = [
 		},
 		options: [
 			{ displayName: 'Email', name: 'email', type: 'string', default: '', placeholder: '' },
+			{
+				displayName: 'Mobile Country Code',
+				name: 'mobile_country_code',
+				type: 'options',
+				options: [
+					{ name: '🇮🇳 India (+91)', value: '+91' },
+					{ name: '🇺🇸 USA (+1)', value: '+1' },
+					{ name: '🇬🇧 UK (+44)', value: '+44' },
+					{ name: '🇸🇬 Singapore (+65)', value: '+65' },
+					{ name: '🇦🇪 UAE (+971)', value: '+971' },
+				],
+				default: '+91',
+				description: 'Select the country code for the mobile number',
+			},
 			{ displayName: 'Mobile', name: 'mobile', type: 'string', default: '', placeholder: '' },
 			{ displayName: 'GSTIN', name: 'gstin', type: 'string', default: '', placeholder: '' },
 			{

@@ -1,6 +1,15 @@
 import type { IExecuteFunctions, IRequestOptions } from 'n8n-workflow';
 import { ApplicationError } from 'n8n-workflow';
 
+// 🔹 Map Dial Codes to ISO Country Codes
+const dialCodeToCountryCode: Record<string, string> = {
+	'+91': 'in',
+	'+1': 'us',
+	'+44': 'gb',
+	'+65': 'sg',
+	'+971': 'ae',
+};
+
 export async function execute(this: IExecuteFunctions) {
 	const items = this.getInputData();
 	const returnData = [];
@@ -64,13 +73,29 @@ export async function execute(this: IExecuteFunctions) {
 
 		if (operation === 'createContact') {
 			const contactName = this.getNodeParameter('contactName', i);
-			const additionalFields = this.getNodeParameter('additionalFields', i);
+			const additionalFields = this.getNodeParameter('additionalFields', i) as Record<string, string>;
+			const mobileRaw = additionalFields.mobile;
+			const selectedDialCode = additionalFields.mobile_country_code || '+91';
+			const isoCode = dialCodeToCountryCode[selectedDialCode] || 'in';
+
+			if (mobileRaw) {
+				additionalFields.mobile = `${mobileRaw}|${isoCode}`;
+			}
+			additionalFields.mobile_country_code = selectedDialCode;
 			options.method = 'POST';
 			options.url = `${baseUrl}/contact`;
 			options.body = { contact_name: contactName, ...additionalFields };
 		} else if (operation === 'updateContact') {
 			const contactId = this.getNodeParameter('contactId', i);
-			const updateFields = this.getNodeParameter('additionalFields', i);
+			const updateFields = this.getNodeParameter('additionalFields', i) as Record<string, string>;
+			const mobileRaw = updateFields.mobile;
+			const selectedDialCode = updateFields.mobile_country_code || '+91';
+			const isoCode = dialCodeToCountryCode[selectedDialCode] || 'in';
+
+			if (mobileRaw) {
+				updateFields.mobile = `${mobileRaw}|${isoCode}`;
+			}
+			updateFields.mobile_country_code = selectedDialCode;
 			options.method = 'PUT';
 			options.url = `${baseUrl}/contact`;
 			options.body = { contact_id: contactId, ...updateFields };

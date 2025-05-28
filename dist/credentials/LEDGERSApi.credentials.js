@@ -5,13 +5,14 @@ class LEDGERSApi {
     constructor() {
         this.name = 'ledgersApi';
         this.displayName = 'LEDGERS API';
-        this.documentationUrl = '';
+        this.documentationUrl = 'https://github.com/ledgers-cloud/n8n-nodes-ledgers/blob/master/README.md';
         this.icon = 'file:LEDGERS.svg';
         this.properties = [
             {
                 displayName: 'X-API-Key',
                 name: 'xApiKey',
                 type: 'string',
+                typeOptions: { password: true },
                 default: '',
                 required: true,
             },
@@ -26,9 +27,7 @@ class LEDGERSApi {
                 displayName: 'Password',
                 name: 'password',
                 type: 'string',
-                typeOptions: {
-                    password: true,
-                },
+                typeOptions: { password: true },
                 default: '',
                 required: true,
             },
@@ -36,21 +35,13 @@ class LEDGERSApi {
         this.authenticate = {
             type: 'generic',
             properties: {
-                request: {
-                    method: 'POST',
-                    url: 'https://in-api.ledgers.cloud/login',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'x-api-key': '={{$credentials.xApiKey}}',
-                    },
-                    body: {
-                        email: '={{$credentials.email}}',
-                        password: '={{$credentials.password}}',
-                    },
-                    json: true,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-api-key': '={{$credentials.xApiKey}}',
                 },
-                response: {
-                    property: 'api_token',
+                auth: {
+                    username: '={{$credentials.email}}',
+                    password: '={{$credentials.password}}',
                 },
             },
         };
