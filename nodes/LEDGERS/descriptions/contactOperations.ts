@@ -49,12 +49,14 @@ export const contactOperations: INodeProperties[] = [
 				operation: ['createContact', 'updateContact'],
 			},
 		},
+		// eslint-disable-next-line n8n-nodes-base/node-param-collection-type-unsorted-items
 		options: [
 			{ displayName: 'Email', name: 'email', type: 'string', default: '', placeholder: '' },
 			{
 				displayName: 'Mobile Country Code',
 				name: 'mobile_country_code',
 				type: 'options',
+				// eslint-disable-next-line n8n-nodes-base/node-param-options-type-unsorted-items
 				options: [
 					{ name: '🇮🇳 India (+91)', value: '+91' },
 					{ name: '🇺🇸 USA (+1)', value: '+1' },

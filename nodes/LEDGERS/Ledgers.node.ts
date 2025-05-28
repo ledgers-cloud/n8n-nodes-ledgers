@@ -1,4 +1,4 @@
-import type {
+import {
 	INodeType,
 	INodeTypeDescription,
 	IExecuteFunctions,
@@ -19,9 +19,10 @@ export class Ledgers implements INodeType {
 		defaults: {
 			name: 'LEDGERS',
 		},
-		inputs: ['main'] as NodeConnectionType[],
-		outputs: ['main'] as NodeConnectionType[],
+		inputs: [NodeConnectionType.Main],
+		outputs: [NodeConnectionType.Main],
 		icon: 'file:ledgers.svg',
+		usableAsTool: true,
 		credentials: [
 			{
 				name: 'ledgersApi',
