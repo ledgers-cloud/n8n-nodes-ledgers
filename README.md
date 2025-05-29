@@ -1,6 +1,6 @@
 # n8n-nodes-ledgers
 
-This is an n8n community node for integrating with [LEDGERS](https://www.ledgers.cloud) – a comprehensive business platform offering features like accounting, invoicing, contacts, and catalogs.
+This is an n8n community node for integrating with [LEDGERS](https://ledgers.cloud/) – a comprehensive business platform offering features like accounting, invoicing, contacts, and catalogs.
 
 Use this node to automate LEDGERS workflows directly from within [n8n](https://n8n.io), the fair-code licensed workflow automation platform.
 
@@ -79,7 +79,7 @@ You can enable this in the node's settings under the **"Continue On Fail"** opti
 ## 📚 Resources
 
 * [n8n Community Node Docs](https://docs.n8n.io/integrations/community-nodes/)
-* [LEDGERS Website](https://www.ledgers.cloud)
+* [LEDGERS Website](https://ledgers.cloud/)
 
 ---
 
@@ -89,7 +89,8 @@ You can enable this in the node's settings under the **"Continue On Fail"** opti
 | ------- | ------------------------------------------------------------------ |
 | 0.0.1   | Stable Release of LEDGERS Custom Node under N8N                    |
 | 0.0.2   | Documentation URL Updated Version                                  |
+| 0.0.3   | LEDGERS URL Updated Version                                        |
 
 ---
 
-Maintained by the [LEDGERS.cloud](https://www.ledgers.cloud) team.
+Maintained by the [LEDGERS.cloud](https://ledgers.cloud/) team.
