@@ -1,6 +1,6 @@
 {
     "name": "@ledgers/n8n-nodes-ledgers",
-    "version": "0.0.3",
+    "version": "0.0.4",
     "description": "n8n node for interacting with LEDGERS.cloud API",
     "keywords": [
         "n8n",
@@ -20,7 +20,7 @@
     },
     "repository": {
         "type": "git",
-        "url": "https://github.com/ledgers-cloud/n8n-nodes-ledgers.git"
+        "url": "git+https://github.com/ledgers-cloud/n8n-nodes-ledgers.git"
     },
     "engines": {
         "node": ">=20.15"

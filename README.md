@@ -87,9 +87,7 @@ You can enable this in the node's settings under the **"Continue On Fail"** opti
 
 | Version | Changes                                                            |
 | ------- | ------------------------------------------------------------------ |
-| 0.0.1   | Stable Release of LEDGERS Custom Node under N8N                    |
-| 0.0.2   | Documentation URL Updated Version                                  |
-| 0.0.3   | LEDGERS URL Updated Version                                        |
+| 0.0.4   | Stable Release of LEDGERS Custom Node under N8N                    |
 
 ---
 
