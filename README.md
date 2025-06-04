@@ -1,4 +1,4 @@
-# n8n-nodes-ledgers
+# n8n-nodes-ledgers-cloud
 
 This is an n8n community node for integrating with [LEDGERS](https://ledgers.cloud/) – a comprehensive business platform offering features like accounting, invoicing, contacts, and catalogs.
 
@@ -11,7 +11,7 @@ Use this node to automate LEDGERS workflows directly from within [n8n](https://n
 To install this community node, follow the instructions in the [n8n community node installation guide](https://docs.n8n.io/integrations/community-nodes/installation/).
 
 ```bash
-npm install @ledgers/n8n-nodes-ledgers
+npm install @ledgers/n8n-nodes-ledgers-cloud
 ````
 
 After installing, restart n8n and the node will be available in the editor.
@@ -87,7 +87,7 @@ You can enable this in the node's settings under the **"Continue On Fail"** opti
 
 | Version | Changes                                                            |
 | ------- | ------------------------------------------------------------------ |
-| 0.0.4   | Stable Release of LEDGERS Custom Node under N8N                    |
+| 0.0.1   | Stable Release of LEDGERS Custom Node under N8N                    |
 
 ---
 
