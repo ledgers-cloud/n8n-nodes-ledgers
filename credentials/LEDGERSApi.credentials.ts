@@ -10,7 +10,7 @@ export class LEDGERSApi implements ICredentialType {
 	name = 'ledgersApi';
 	displayName = 'LEDGERS API';
 	documentationUrl = 'https://github.com/ledgers-cloud/n8n-nodes-ledgers/blob/master/README.md';
-	icon: Icon = 'file:LEDGERS.svg';
+	icon: Icon = 'file:ledgers.svg';
 
 	properties: INodeProperties[] = [
 		{

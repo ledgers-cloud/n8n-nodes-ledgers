@@ -6,7 +6,7 @@ class LEDGERSApi {
         this.name = 'ledgersApi';
         this.displayName = 'LEDGERS API';
         this.documentationUrl = 'https://github.com/ledgers-cloud/n8n-nodes-ledgers/blob/master/README.md';
-        this.icon = 'file:LEDGERS.svg';
+        this.icon = 'file:ledgers.svg';
         this.properties = [
             {
                 displayName: 'X-API-Key',
