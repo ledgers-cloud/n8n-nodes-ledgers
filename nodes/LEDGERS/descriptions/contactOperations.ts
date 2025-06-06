@@ -7,12 +7,15 @@ export const contactOperations: INodeProperties[] = [
 		name: 'operation',
 		type: 'options',
 		options: [
-			{ name: 'Create Contact', value: 'createContact' },
-			{ name: 'Update Contact', value: 'updateContact' },
-			{ name: 'Get Contact', value: 'getContact' },
-			{ name: 'Get All Contacts', value: 'getAllContacts' },
+			{ name: 'Create Contact', value: 'createContact', action: 'Create a contact' },
+			{ name: 'Update Contact', value: 'updateContact', action: 'Update a contact' },
+			{ name: 'Get Contact', value: 'getContact', action: 'Get a contact' },
+			{ name: 'Get All Contacts', value: 'getAllContacts', action: 'Get all contacts' },
 		],
 		default: 'createContact',
+		displayOptions: {
+			show: { resource: ['contact'] },
+		},
 		description: 'Choose the operation',
 	},
 

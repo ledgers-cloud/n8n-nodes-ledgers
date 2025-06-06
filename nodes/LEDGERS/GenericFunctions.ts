@@ -108,6 +108,77 @@ export async function execute(this: IExecuteFunctions) {
 				const perPage = this.getNodeParameter('perPage', i);
 				options.url = `${baseUrl}/contact?perpage=${perPage}`;
 			}
+			else if (operation === 'createCatalog') {
+				const catalogName = this.getNodeParameter('catalogName', i);
+				const price = this.getNodeParameter('price', i);
+				const catalogType = this.getNodeParameter('catalog_type', i);
+				const itemType = this.getNodeParameter('item_type', i);
+				const additionalFields = this.getNodeParameter('additionalFields', i) as Record<string, string>;
+				const gst_type = additionalFields.gst_type ?? 'inclusive of gst';
+				const gst_rate = additionalFields.gst_rate ?? '5%';
+				const non_taxable = additionalFields.non_taxable ?? '';
+				// 🔎 Validate price
+				if (price === undefined || price === null || price === '' || price === 0 || price === '0') {
+					throw new ApplicationError('Price must be a number greater than zero.');
+				}
+				// Prepare variants array
+				const variants = [{
+					variant_name:catalogName,
+					price,
+					gst_type,
+					non_taxable,
+					currency: 'INR',
+				}];
+				// Remove hsn_sac_mode and hsn_sac_manual if present
+				// delete additionalFields.hsn_sac_mode;
+				// delete additionalFields.hsn_sac_manual;
+				// // HSN/SAC Handling
+				// const hsnMode = this.getNodeParameter('hsn_sac_mode', i) as string;
+				// let hsnValue = '';
+
+				// if (hsnMode === 'manualEntry') {
+				// 	hsnValue = this.getNodeParameter('hsn_sac_manual', i) as string;
+				// } else {
+				// 	hsnValue = hsnMode;
+				// }
+
+				// // Add to additionalFields if it's set
+				// if (hsnValue) {
+				// 	additionalFields.hsn_sac = hsnValue;
+				// }
+				options.method = 'POST';
+				options.url = `${baseUrl}/catalog`;
+				options.body = { item_name: catalogName, catalog_type: catalogType, gst_rate: gst_rate, item_type: itemType, variants: variants, ...additionalFields };
+			} else if (operation === 'updateCatalog') {
+				const catalogId = this.getNodeParameter('catalogId', i);
+				const updateFields = this.getNodeParameter('additionalFields', i) as Record<string, string>;
+				// Remove hsn_sac_mode and hsn_sac_manual if present
+				// delete updateFields.hsn_sac_mode;
+				// delete updateFields.hsn_sac_manual;
+				// // HSN/SAC Handling
+				// const hsnMode = this.getNodeParameter('hsn_sac_mode', i) as string;
+				// let hsnValue = '';
+
+				// if (hsnMode === 'manualEntry') {
+				// 	hsnValue = this.getNodeParameter('hsn_sac_manual', i) as string;
+				// } else {
+				// 	hsnValue = hsnMode;
+				// }
+
+				// // Add to additionalFields if it's set
+				// if (hsnValue) {
+				// 	updateFields.hsn_sac = hsnValue;
+				// }
+				options.method = 'PUT';
+				options.url = `${baseUrl}/catalog/${catalogId}`;
+				options.body = { catalog_id: catalogId, ...updateFields };
+			} else if (operation === 'getCatalog') {
+				const catalogId = this.getNodeParameter('catalogId', i);
+				options.url = `${baseUrl}/catalog/${catalogId}`;
+			} else if (operation === 'getAllCatalogs') {
+				const perPage = this.getNodeParameter('perPage', i);
+				options.url = `${baseUrl}/catalog?perpage=${perPage}`;
+			}
 			const result = await this.helpers.request(options);
 			returnData.push({ json: result });
 		} catch (error) {
