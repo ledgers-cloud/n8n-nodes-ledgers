@@ -87,9 +87,10 @@ export async function execute(this: IExecuteFunctions) {
 				options.method = 'POST';
 				options.url = `${baseUrl}/contact`;
 				options.body = { contact_name: contactName, ...additionalFields };
-			} else if (operation === 'updateContact') {
+			}
+			else if (operation === 'updateContact') {
 				const contactId = this.getNodeParameter('contactId', i);
-				const updateFields = this.getNodeParameter('additionalFields', i) as Record<string, string>;
+				const updateFields = this.getNodeParameter('contactAdditionalFields', i) as Record<string, string>;
 				const mobileRaw = updateFields.mobile;
 				const selectedDialCode = updateFields.mobile_country_code || '+91';
 				const isoCode = dialCodeToCountryCode[selectedDialCode] || 'in';
@@ -101,83 +102,215 @@ export async function execute(this: IExecuteFunctions) {
 				options.method = 'PUT';
 				options.url = `${baseUrl}/contact`;
 				options.body = { contact_id: contactId, ...updateFields };
-			} else if (operation === 'getContact') {
+			}
+			else if (operation === 'getContact') {
 				const contactId = this.getNodeParameter('contactId', i);
 				options.url = `${baseUrl}/contact/${contactId}`;
-			} else if (operation === 'getAllContacts') {
-				const perPage = this.getNodeParameter('perPage', i);
-				options.url = `${baseUrl}/contact?perpage=${perPage}`;
+			}
+			else if (operation === 'getAllContacts') {
+				const perPageRaw = this.getNodeParameter('perPage', i);
+				const perPage = typeof perPageRaw === 'object' ? '' : String(perPageRaw);
+				const searchType = String(this.getNodeParameter('searchType', i));
+				let search_term = '';
+				if (searchType === 'name') {
+					const searchTermRaw = this.getNodeParameter('searchTerm', i) ?? '';
+					search_term = typeof searchTermRaw === 'object' ? '' : String(searchTermRaw);
+				}
+				options.url = `${baseUrl}/contact?perpage=${perPage}&search_term=${search_term}`;
 			}
 			else if (operation === 'createCatalog') {
 				const catalogName = this.getNodeParameter('catalogName', i);
 				const price = this.getNodeParameter('price', i);
 				const catalogType = this.getNodeParameter('catalog_type', i);
 				const itemType = this.getNodeParameter('item_type', i);
-				const additionalFields = this.getNodeParameter('additionalFields', i) as Record<string, string>;
+				const additionalFields = this.getNodeParameter('additionalFields', i) as Record<string, any>;
 				const gst_type = additionalFields.gst_type ?? 'inclusive of gst';
 				const gst_rate = additionalFields.gst_rate ?? '5%';
-				const non_taxable = additionalFields.non_taxable ?? '';
+				const non_taxable = additionalFields.non_taxable != 0 ? additionalFields.non_taxable : '';
+				const sku = additionalFields.sku ?? '';
+				const unit = additionalFields.unit ?? 'UNT-UNITS';
+				const description = additionalFields.description ?? '';
 				// 🔎 Validate price
 				if (price === undefined || price === null || price === '' || price === 0 || price === '0') {
 					throw new ApplicationError('Price must be a number greater than zero.');
 				}
+				// Handle cess_type and cess_value
+				let cess_type_api, cess_api;
+				if (additionalFields.cess_type && additionalFields.cess_value !== undefined) {
+					if (additionalFields.cess_type === 'flat') {
+						cess_type_api = 'flat_value';
+						cess_api = additionalFields.cess_value;
+					} else if (additionalFields.cess_type === 'percentage') {
+						cess_type_api = 'percentage';
+						cess_api = additionalFields.cess_value;
+					}
+					// Remove from additionalFields to avoid duplication
+					delete additionalFields.cess_type;
+					delete additionalFields.cess_value;
+				}
 				// Prepare variants array
 				const variants = [{
-					variant_name:catalogName,
+					variant_name: catalogName,
 					price,
 					gst_type,
 					non_taxable,
 					currency: 'INR',
+					sku_id: sku,
+					variant_description: description,
 				}];
-				// Remove hsn_sac_mode and hsn_sac_manual if present
-				// delete additionalFields.hsn_sac_mode;
-				// delete additionalFields.hsn_sac_manual;
-				// // HSN/SAC Handling
-				// const hsnMode = this.getNodeParameter('hsn_sac_mode', i) as string;
-				// let hsnValue = '';
-
-				// if (hsnMode === 'manualEntry') {
-				// 	hsnValue = this.getNodeParameter('hsn_sac_manual', i) as string;
-				// } else {
-				// 	hsnValue = hsnMode;
-				// }
-
-				// // Add to additionalFields if it's set
-				// if (hsnValue) {
-				// 	additionalFields.hsn_sac = hsnValue;
-				// }
 				options.method = 'POST';
 				options.url = `${baseUrl}/catalog`;
-				options.body = { item_name: catalogName, catalog_type: catalogType, gst_rate: gst_rate, item_type: itemType, variants: variants, ...additionalFields };
-			} else if (operation === 'updateCatalog') {
+				options.body = {
+					item_name: catalogName,
+					catalog_type: catalogType,
+					gst_rate: gst_rate,
+					item_type: itemType,
+					units: unit,
+					description: description,
+					variants: variants,
+					...(cess_type_api && cess_api !== undefined ? { cess_type: cess_type_api, cess: cess_api } : {}),
+				};
+				console.log(options.body);
+			}
+			else if (operation === 'catalogUpdateFields') {
 				const catalogId = this.getNodeParameter('catalogId', i);
-				const updateFields = this.getNodeParameter('additionalFields', i) as Record<string, string>;
-				// Remove hsn_sac_mode and hsn_sac_manual if present
-				// delete updateFields.hsn_sac_mode;
-				// delete updateFields.hsn_sac_manual;
-				// // HSN/SAC Handling
-				// const hsnMode = this.getNodeParameter('hsn_sac_mode', i) as string;
-				// let hsnValue = '';
+				const updateFields = this.getNodeParameter('additionalFields', i) as Record<string, any>;
 
-				// if (hsnMode === 'manualEntry') {
-				// 	hsnValue = this.getNodeParameter('hsn_sac_manual', i) as string;
-				// } else {
-				// 	hsnValue = hsnMode;
-				// }
+				// Always include catalog_id
+				const body: Record<string, any> = { catalog_id: catalogId };
 
-				// // Add to additionalFields if it's set
-				// if (hsnValue) {
-				// 	updateFields.hsn_sac = hsnValue;
-				// }
+				// Handle cess_type and cess_value
+				let cess_type_api, cess_api;
+				if (updateFields.cess_type && updateFields.cess_value !== undefined) {
+					if (updateFields.cess_type === 'flat') {
+						cess_type_api = 'flat_value';
+						cess_api = updateFields.cess_value;
+					} else if (updateFields.cess_type === 'percentage') {
+						cess_type_api = 'percentage';
+						cess_api = updateFields.cess_value;
+					}
+					delete updateFields.cess_type;
+					delete updateFields.cess_value;
+				}
+
+				// Add only provided fields to the body
+				for (const [key, value] of Object.entries(updateFields)) {
+					if (value !== undefined && value !== null && value !== '') {
+						// Map unit to units, hsn_sac to hsn_sac, etc., if needed
+						if (key === 'unit') {
+							body.units = value;
+						} else if (key === 'hsn_sac') {
+							body.hsn_sac = value;
+						} else {
+							body[key] = value;
+						}
+					}
+				}
+
+				if (cess_type_api && cess_api !== undefined) {
+					body.cess_type = cess_type_api;
+					body.cess = cess_api;
+				}
+
 				options.method = 'PUT';
-				options.url = `${baseUrl}/catalog/${catalogId}`;
-				options.body = { catalog_id: catalogId, ...updateFields };
-			} else if (operation === 'getCatalog') {
+				options.url = `${baseUrl}/catalog`;
+				options.body = body;
+				console.log(options.body);
+				console.log(options.url);
+			}
+			else if (operation === 'updateVariant'){
 				const catalogId = this.getNodeParameter('catalogId', i);
+				const variantId = this.getNodeParameter('variantId', i);
+				const updateFields = this.getNodeParameter('catalogUpdateVariantFields', i) as Record<string, any>;
+
+				// Create a variant object with only the updated fields
+				const variantUpdate: Record<string, any> = {
+					variant_id: variantId,
+				};
+
+				// Only include fields that are provided
+				if (updateFields.variant_name !== undefined) variantUpdate.variant_name = updateFields.variant_name;
+				if (updateFields.variant_price !== undefined) variantUpdate.price = updateFields.variant_price;
+				if (updateFields.variant_gst_type !== undefined) variantUpdate.gst_type = updateFields.variant_gst_type;
+				if (updateFields.variant_non_taxable !== undefined) variantUpdate.non_taxable = updateFields.variant_non_taxable;
+				if (updateFields.variant_sku !== undefined) variantUpdate.sku_id = updateFields.variant_sku;
+				if (updateFields.variant_description !== undefined) variantUpdate.variant_description = updateFields.variant_description;
+				if (updateFields.status !== undefined) variantUpdate.status = updateFields.status;
+
+				options.method = 'PUT';
+				options.url = `${baseUrl}/catalog`;
+				options.body = {
+					catalog_id: catalogId,
+					variants: [variantUpdate],
+				};
+				console.log(options.body);
+			}
+			else if (operation === 'getCatalog') {
+				const catalogId = this.getNodeParameter('catalogId', i);
+				console.log(catalogId);
+				options.method = 'GET';
 				options.url = `${baseUrl}/catalog/${catalogId}`;
-			} else if (operation === 'getAllCatalogs') {
-				const perPage = this.getNodeParameter('perPage', i);
-				options.url = `${baseUrl}/catalog?perpage=${perPage}`;
+			}
+			else if (operation === 'getAllCatalogs') {
+				const perPageRaw = this.getNodeParameter('perPage', i);
+				const perPage = typeof perPageRaw === 'object' ? '' : String(perPageRaw);
+				const searchType = String(this.getNodeParameter('searchType', i));
+				let search_term = '';
+				if (searchType === 'search_term') {
+					const searchTermRaw = this.getNodeParameter('searchTerm', i) ?? '';
+					search_term = typeof searchTermRaw === 'object' ? '' : String(searchTermRaw);
+				}
+				options.method = 'GET';
+				options.url = `${baseUrl}/catalog?perpage=${perPage}&search_term=${search_term}`;
+			}
+			else if (operation === 'addVariant') {
+				const catalogId = this.getNodeParameter('catalogId', i);
+				const variant_name = this.getNodeParameter('variant_name', i);
+				const variant_price = this.getNodeParameter('variant_price', i);
+				const additionalFields = this.getNodeParameter('variantAdditionalFields', i) as Record<string, any>;
+				// 1. Fetch catalog details to get current variants
+				const getOptions: IRequestOptions = {
+					method: 'GET',
+					url: `${baseUrl}/catalog/${catalogId}`,
+					headers: {
+						'Content-Type': 'application/json',
+						'x-api-key': xApiKey,
+						'api-token': apiToken,
+					},
+					json: true,
+				};
+				const catalogResponse = await this.helpers.request(getOptions);
+				const variants = (catalogResponse.data && catalogResponse.data[0] && Array.isArray(catalogResponse.data[0].product_variants)) ? catalogResponse.data[0].product_variants : [];
+
+				// 2. Find max id
+				let maxId = 0;
+				for (const v of variants) {
+					const idNum = Number(v.id);
+					if (!isNaN(idNum) && idNum > maxId) maxId = idNum;
+				}
+				const newId = String(maxId + 1);
+
+				// 3. Build new variant
+				const newVariant: Record<string, any> = {
+					variant_id: newId,
+					variant_name: variant_name,
+					price: variant_price,
+					gst_type: additionalFields.variant_gst_type ?? 'inclusive of gst',
+					non_taxable: additionalFields.variant_non_taxable != 0 ? additionalFields.variant_non_taxable : '',
+					sku_id: additionalFields.variant_sku ?? '',
+					variant_description: additionalFields.variant_description ?? '',
+					currency: 'INR',
+				};
+
+
+				// 5. Update catalog with new variants array
+				options.method = 'PUT';
+				options.url = `${baseUrl}/catalog`;
+				options.body = {
+					catalog_id: catalogId,
+					variants: [newVariant],
+				};
+				console.log(options.body);
 			}
 			const result = await this.helpers.request(options);
 			returnData.push({ json: result });

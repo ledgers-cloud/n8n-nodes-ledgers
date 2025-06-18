@@ -150,7 +150,70 @@ export class Ledgers implements INodeType {
 					}
 					throw error;
 				}
-			}
+			},
+			async getCatalogVariants(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+				const continueOnFail = this.getNode().continueOnFail;
+				try {
+					const credentials = await this.getCredentials('ledgersApi');
+					const { xApiKey, email, password } = credentials;
+
+					// Authenticate to get api_token
+					const loginOptions: IRequestOptions = {
+						method: 'POST',
+						url: 'https://in-api.ledgers.cloud/login',
+						headers: {
+							'Content-Type': 'application/json',
+							'x-api-key': xApiKey,
+						},
+						body: { email, password },
+						json: true,
+					};
+
+					const loginResponse = await this.helpers.request(loginOptions);
+
+					if (loginResponse.status !== 200 || !loginResponse.api_token) {
+						throw new ApplicationError('Authentication failed. Check your credentials.', {
+							level: 'warning',
+						});
+					}
+
+					const apiToken = loginResponse.api_token;
+					const catalogId = this.getNodeParameter('catalogId', undefined, { extractValue: false }) as string;
+					console.log(apiToken, 'API response:', catalogId);
+					if (!catalogId) {
+						return [];
+					}
+
+					const options: IRequestOptions = {
+						method: 'GET',
+						url: `https://in-api.ledgers.cloud/v3/catalog/${catalogId}`,
+						headers: {
+							'Content-Type': 'application/json',
+							'x-api-key': xApiKey,
+							'api-token': apiToken,
+						},
+						json: true,
+					};
+
+					const response = await this.helpers.request(options);
+					console.log('Catalog API response:', response);
+
+					// The API response structure is: { status: 'success', data: [ { ... , product_variants: [...] } ] }
+					if (!response.data || !Array.isArray(response.data) || !response.data[0].product_variants || !Array.isArray(response.data[0].product_variants)) {
+						return [];
+					}
+
+					return response.data[0].product_variants.map((variant: any) => ({
+						name: variant.name,
+						value: variant.id,
+					}));
+				} catch (error) {
+					if (continueOnFail) {
+						return [];
+					}
+					throw error;
+				}
+			},
 		},
 	};
 

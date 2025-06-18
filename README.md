@@ -20,14 +20,53 @@ After installing, restart n8n and the node will be available in the editor.
 
 ## 📌 Supported Operations
 
-This node currently supports the following operations on **Contacts**:
+This node currently supports the following operations:
 
-* ✅ Create Contact
-* ✅ Update Contact
-* ✅ Get Contact by ID
-* ✅ Get All Contacts
+### **Contacts**
 
-More modules (like Invoices, Payments, etc.) will be added in future releases.
+* **Create Contact**: Add a new contact with details such as name, email, mobile, GSTIN, business name, and address.
+* **Update Contact**: Update an existing contact's details by Contact ID. You can update fields like email, mobile, GSTIN, business name, address, and status.
+* **Get Contact by ID**: Retrieve a single contact's details using their Contact ID.
+* **Get All Contacts**: Fetch a list of all contacts. Supports advanced search:
+  * **Search by Name**: Find contacts by partial or full name match.
+  * **Limit Results**: Control the number of contacts returned per page.
+
+### **Catalogs**
+
+* **Create Catalog**: Add a new catalog item (product or service) with details like name, price, type (sales/purchase), item type (goods/services), GST, units, SKU, and more.
+* **Get All Catalogs**: Retrieve a list of all catalog items. Supports:
+  * **Search by Name**: Find catalog items by name.
+  * **Limit Results**: Control the number of catalog items returned per page.
+* **Get Catalog by ID**: Fetch details of a specific catalog item using its Catalog ID.
+* **Update Catalog**: Update details of an existing catalog item, such as GST rate, units, description, status, and more.
+* **Add Variant (Existing Catalog)**: Add a new variant to an existing catalog item.
+* **Update Variant (Existing Catalog)**: Update details of a specific variant within a catalog item.
+
+---
+
+## 🗂️ Operation Details
+
+### Contacts
+
+- **Create Contact**: Requires a contact name. You can optionally provide email, mobile (with country code), GSTIN, business name, billing address, city, state, and country.
+- **Update Contact**: Requires the Contact ID. You can update any of the fields available during creation, plus status (active/inactive).
+- **Get Contact by ID**: Requires the Contact ID. Returns all details for the specified contact.
+- **Get All Contacts**: You can search by name (partial match) or limit the number of results per page. Useful for filtering large contact lists.
+
+### Catalogs
+
+- **Create Catalog**: Requires catalog name, price, catalog type (sales/purchase), and item type (goods/services). Additional fields include GST type, GST rate, units, SKU, description, status, HSN/SAC code, and cess details.
+- **Get All Catalogs**: Search by catalog name or limit the number of results per page. Useful for quickly finding catalog items.
+- **Get Catalog by ID**: Requires the Catalog ID. Returns all details for the specified catalog item.
+- **Update Catalog**: Requires the Catalog ID. You can update GST rate, units, description, status, and other catalog fields.
+- **Add Variant (Existing Catalog)**: Add a new variant to an existing catalog item. Requires Catalog ID, variant name, price, and optional fields like GST type, SKU, and description.
+- **Update Variant (Existing Catalog)**: Update details of a specific variant within a catalog item. Requires Catalog ID and Variant ID.
+
+---
+
+## 🚧 Roadmap
+
+We plan to add support for **Sales Invoices** and **Purchase Invoices** modules in future releases. Stay tuned for more features!
 
 ---
 
@@ -89,6 +128,7 @@ You can enable this in the node's settings under the **"Continue On Fail"** opti
 | ------- | ------------------------------------------------------------------ |
 | 0.0.1   | Stable Release of LEDGERS Custom Node under N8N                    |
 | 0.0.2   | Logo Rename for Linux OS                                           |
+| 0.0.3   | Catalog Operations Release                                         |
 
 ---
 
