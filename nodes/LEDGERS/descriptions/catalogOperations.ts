@@ -252,11 +252,15 @@ export const catalogOperations: INodeProperties[] = [
 				placeholder: 'Enter HSN/SAC Code',
 			},
 			{
-				displayName: 'SKU ID',
-				name: 'sku',
-				type: 'string',
+				displayName: 'Expense Name or ID',
+				name: 'coa_account',
+				type: 'options',
+				typeOptions: {
+					loadOptionsMethod: 'getCoaAccounts',
+				},
 				default: '',
-				placeholder: 'Enter SKU ID',
+				placeholder: 'Select Expense Type',
+				description: 'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
 			},
 			{
 				displayName: 'Cess Type',
@@ -403,10 +407,10 @@ export const catalogOperations: INodeProperties[] = [
 				name: 'status',
 				type: 'options',
 				options: [
-					{ name: 'Active', value: 'active' },
-					{ name: 'Inactive', value: 'inactive' },
+					{ name: 'Active', value: '1' },
+					{ name: 'Inactive', value: '0' },
 				],
-				default: 'active',
+				default: '1',
 			},
 			{
 				displayName: 'HSN/SAC Code',
@@ -414,6 +418,17 @@ export const catalogOperations: INodeProperties[] = [
 				type: 'string',
 				default: '',
 				placeholder: 'Enter HSN/SAC Code',
+			},
+			{
+				displayName: 'Expense Name or ID',
+				name: 'coa_account',
+				type: 'options',
+				typeOptions: {
+					loadOptionsMethod: 'getCoaAccounts',
+				},
+				default: '',
+				placeholder: 'Select Expense Type',
+				description: 'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
 			},
 			{
 				displayName: 'Cess Type',
@@ -523,10 +538,10 @@ export const catalogOperations: INodeProperties[] = [
 				name: 'variant_status',
 				type: 'options',
 				options: [
-					{ name: 'Active', value: 'active' },
-					{ name: 'Inactive', value: 'inactive' },
+					{ name: 'Active', value: '1' },
+					{ name: 'Inactive', value: '0' },
 				],
-				default: 'active',
+				default: '1',
 			},
 			{
 				displayName: 'Variant Description',

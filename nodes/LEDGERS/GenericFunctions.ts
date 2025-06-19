@@ -91,17 +91,102 @@ export async function execute(this: IExecuteFunctions) {
 			else if (operation === 'updateContact') {
 				const contactId = this.getNodeParameter('contactId', i);
 				const updateFields = this.getNodeParameter('contactAdditionalFields', i) as Record<string, string>;
-				const mobileRaw = updateFields.mobile;
-				const selectedDialCode = updateFields.mobile_country_code || '+91';
-				const isoCode = dialCodeToCountryCode[selectedDialCode] || 'in';
 
-				if (mobileRaw) {
-					updateFields.mobile = `${mobileRaw}|${isoCode}`;
+				// Initialize body with contact_id
+				const body: Record<string, any> = { contact_id: contactId };
+
+				// Only add fields that have values
+				for (const [key, value] of Object.entries(updateFields)) {
+					if (value !== undefined && value !== null && value !== '') {
+						if (key === 'mobile') {
+							const selectedDialCode = updateFields.mobile_country_code || '+91';
+							const isoCode = dialCodeToCountryCode[selectedDialCode] || 'in';
+							body[key] = `${value}|${isoCode}`;
+							body.mobile_country_code = selectedDialCode;
+						} else if(key == 'billing_address1' || key == 'billing_address2' || key == 'city' || key == 'state' || key == 'country' || key == 'pincode') {
+							body.billing_address = [{
+								billing_address1: updateFields.billing_address1 ?? '',
+								billing_address2: updateFields.billing_address2 ?? '',
+								city: updateFields.city ?? '',
+								state: updateFields.state ?? '',
+								country: updateFields.country ?? '',
+								pincode: updateFields.pincode ?? '',
+							}];
+						} else {
+							body[key] = value;
+						}
+					}
 				}
-				updateFields.mobile_country_code = selectedDialCode;
+
 				options.method = 'PUT';
 				options.url = `${baseUrl}/contact`;
-				options.body = { contact_id: contactId, ...updateFields };
+				options.body = body;
+				console.log(options.body);
+			}
+			else if (operation === 'addAddress') {
+				const contactId = this.getNodeParameter('contactId', i);
+				const addressType = this.getNodeParameter('addressType', i) as string;
+				const addressFields = this.getNodeParameter('addressFields', i) as Record<string, string>;
+
+				// Initialize body with contact_id
+				const body: Record<string, any> = { contact_id: contactId };
+
+				// Create address object
+				const addressObject = {
+					billing_address1: addressFields.address1 || '',
+					billing_address2: addressFields.address2 || '',
+					location: addressFields.location || '',
+					state: addressFields.state || '',
+					country: addressFields.country || '',
+					pincode: addressFields.pincode || '',
+				};
+
+				// Add address based on type
+				if (addressType === 'billing') {
+					body.billing_address = [addressObject];
+				} else if (addressType === 'shipping') {
+					body.shipping_address = [addressObject];
+				} else if (addressType === 'both') {
+					body.billing_address = [addressObject];
+					body.shipping_address = [addressObject];
+				}
+
+				options.method = 'PUT';
+				options.url = `${baseUrl}/contact`;
+				options.body = body;
+				console.log(options.body);
+			}
+			else if (operation === 'updateAddress') {
+				const contactId = this.getNodeParameter('contactId', i);
+				const addressType = this.getNodeParameter('addressType', i) as string;
+				const addressFields = this.getNodeParameter('addressFields', i) as Record<string, string>;
+
+				// Initialize body with contact_id
+				const body: Record<string, any> = { contact_id: contactId };
+
+				// Create address object with only provided fields
+				const addressObject: Record<string, any> = {};
+				if (addressFields.address1 !== undefined && addressFields.address1 !== '') addressObject.address1 = addressFields.address1;
+				if (addressFields.address2 !== undefined && addressFields.address2 !== '') addressObject.address2 = addressFields.address2;
+				if (addressFields.city !== undefined && addressFields.city !== '') addressObject.city = addressFields.city;
+				if (addressFields.state !== undefined && addressFields.state !== '') addressObject.state = addressFields.state;
+				if (addressFields.country !== undefined && addressFields.country !== '') addressObject.country = addressFields.country;
+				if (addressFields.pincode !== undefined && addressFields.pincode !== '') addressObject.pincode = addressFields.pincode;
+
+				// Add address based on type
+				if (addressType === 'billing') {
+					body.billing_address = [addressObject];
+				} else if (addressType === 'shipping') {
+					body.shipping_address = [addressObject];
+				} else if (addressType === 'both') {
+					body.billing_address = [addressObject];
+					body.shipping_address = [addressObject];
+				}
+
+				options.method = 'PUT';
+				options.url = `${baseUrl}/contact`;
+				options.body = body;
+				console.log(options.body);
 			}
 			else if (operation === 'getContact') {
 				const contactId = this.getNodeParameter('contactId', i);
@@ -168,17 +253,24 @@ export async function execute(this: IExecuteFunctions) {
 					units: unit,
 					description: description,
 					variants: variants,
+					...(additionalFields.coa_account ? (() => {
+						let expense_id = '', expense_type = '';
+						try {
+							const parsed = JSON.parse(additionalFields.coa_account);
+							expense_id = parsed.id;
+							expense_type = parsed.name;
+						} catch {}
+						return { expense_id, expense_type };
+					})() : {}),
 					...(cess_type_api && cess_api !== undefined ? { cess_type: cess_type_api, cess: cess_api } : {}),
 				};
 				console.log(options.body);
 			}
-			else if (operation === 'catalogUpdateFields') {
+			else if (operation === 'updateCatalog') {
 				const catalogId = this.getNodeParameter('catalogId', i);
-				const updateFields = this.getNodeParameter('additionalFields', i) as Record<string, any>;
-
+				const updateFields = this.getNodeParameter('catalogUpdateFields', i) as Record<string, any>;
 				// Always include catalog_id
 				const body: Record<string, any> = { catalog_id: catalogId };
-
 				// Handle cess_type and cess_value
 				let cess_type_api, cess_api;
 				if (updateFields.cess_type && updateFields.cess_value !== undefined) {
@@ -196,27 +288,33 @@ export async function execute(this: IExecuteFunctions) {
 				// Add only provided fields to the body
 				for (const [key, value] of Object.entries(updateFields)) {
 					if (value !== undefined && value !== null && value !== '') {
-						// Map unit to units, hsn_sac to hsn_sac, etc., if needed
 						if (key === 'unit') {
 							body.units = value;
 						} else if (key === 'hsn_sac') {
 							body.hsn_sac = value;
+						} else if (key === 'coa_account') {
+							let expense_id = '', expense_type = '';
+							try {
+								const parsed = JSON.parse(value);
+								expense_id = parsed.id;
+								expense_type = parsed.name;
+							} catch {}
+							body.expense_id = expense_id;
+							body.expense_type = expense_type;
+						} else if (key === 'status') {
+							body.status = value;
 						} else {
 							body[key] = value;
 						}
 					}
 				}
-
 				if (cess_type_api && cess_api !== undefined) {
 					body.cess_type = cess_type_api;
 					body.cess = cess_api;
 				}
-
 				options.method = 'PUT';
 				options.url = `${baseUrl}/catalog`;
 				options.body = body;
-				console.log(options.body);
-				console.log(options.url);
 			}
 			else if (operation === 'updateVariant'){
 				const catalogId = this.getNodeParameter('catalogId', i);
@@ -235,7 +333,7 @@ export async function execute(this: IExecuteFunctions) {
 				if (updateFields.variant_non_taxable !== undefined) variantUpdate.non_taxable = updateFields.variant_non_taxable;
 				if (updateFields.variant_sku !== undefined) variantUpdate.sku_id = updateFields.variant_sku;
 				if (updateFields.variant_description !== undefined) variantUpdate.variant_description = updateFields.variant_description;
-				if (updateFields.status !== undefined) variantUpdate.status = updateFields.status;
+				if (updateFields.variant_status !== undefined) variantUpdate.status = updateFields.variant_status;
 
 				options.method = 'PUT';
 				options.url = `${baseUrl}/catalog`;

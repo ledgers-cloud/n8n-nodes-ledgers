@@ -214,6 +214,70 @@ export class Ledgers implements INodeType {
 					throw error;
 				}
 			},
+			async getCoaAccounts(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+				const continueOnFail = this.getNode().continueOnFail;
+				try {
+					const credentials = await this.getCredentials('ledgersApi');
+					const { xApiKey, email, password } = credentials;
+
+					// Authenticate to get api_token
+					const loginOptions: IRequestOptions = {
+						method: 'POST',
+						url: 'https://in-api.ledgers.cloud/login',
+						headers: {
+							'Content-Type': 'application/json',
+							'x-api-key': xApiKey,
+						},
+						body: { email, password },
+						json: true,
+					};
+
+					const loginResponse = await this.helpers.request(loginOptions);
+
+					if (loginResponse.status !== 200 || !loginResponse.api_token) {
+						throw new ApplicationError('Authentication failed. Check your credentials.', {
+							level: 'warning',
+						});
+					}
+
+					const apiToken = loginResponse.api_token;
+
+					const options: IRequestOptions = {
+						method: 'GET',
+						url: 'https://in-api.ledgers.cloud/v3/coa',
+						headers: {
+							'Content-Type': 'application/json',
+							'x-api-key': xApiKey,
+							'api-token': apiToken,
+						},
+						json: true,
+					};
+
+					const response = await this.helpers.request(options);
+
+					if (!response.data || !Array.isArray(response.data)) {
+						return [];
+					}
+
+					const returnData = [];
+					for (const item of response.data) {
+						if (item && item.id !== undefined && item.type && item.category) {
+							const category = String(item.category).toUpperCase();
+							const type = String(item.type).toUpperCase();
+							returnData.push({
+								name: `${category} — ${type}`,
+								value: JSON.stringify({ id: String(item.id), name: `${type}` })
+							});
+						}
+					}
+					return returnData;
+				} catch (error) {
+					if (continueOnFail) {
+						return [];
+					}
+					throw error;
+				}
+			},
 		},
 	};
 
