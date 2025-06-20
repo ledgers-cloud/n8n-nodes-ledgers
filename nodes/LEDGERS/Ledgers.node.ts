@@ -278,6 +278,70 @@ export class Ledgers implements INodeType {
 					throw error;
 				}
 			},
+			async getAddressOptions(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+				console.log('getAddressOptions');
+				const continueOnFail = this.getNode().continueOnFail;
+				try {
+					const contactId = this.getNodeParameter('contactId', undefined, { extractValue: false }) as string;
+					console.log(contactId, 'contactId');
+					if (!contactId) {
+						return []; // No contact ID, so no addresses to show
+					}
+
+					const credentials = await this.getCredentials('ledgersApi');
+					const { xApiKey, email, password } = credentials;
+
+					const loginOptions: IRequestOptions = {
+						method: 'POST',
+						url: 'https://in-api.ledgers.cloud/login',
+						headers: { 'Content-Type': 'application/json', 'x-api-key': xApiKey },
+						body: { email, password },
+						json: true,
+					};
+
+					const loginResponse = await this.helpers.request(loginOptions);
+					if (loginResponse.status !== 200 || !loginResponse.api_token) {
+						throw new ApplicationError('Authentication failed. Check your credentials.', { level: 'warning' });
+					}
+					const apiToken = loginResponse.api_token;
+
+					const getContactOptions: IRequestOptions = {
+						method: 'GET',
+						url: `https://in-api.ledgers.cloud/v3/contact/${contactId}`,
+						headers: { 'Content-Type': 'application/json', 'x-api-key': xApiKey, 'api-token': apiToken },
+						json: true,
+					};
+
+					const contactData = await this.helpers.request(getContactOptions);
+					console.log(contactData);
+					if (!contactData.data) {
+						console.log('Contact not found or has no data');
+						return []; // Contact not found or has no data
+					}
+
+					const addressType = this.getNodeParameter('addressType', 'billing') as string;
+					const addressKey = addressType === 'billing' ? 'billing_address' : 'shipping_address';
+					const addresses = contactData.data[addressKey];
+
+					if (!addresses || !Array.isArray(addresses)) {
+						console.log('No addresses of the selected type');
+						return []; // No addresses of the selected type
+					}
+
+					return addresses.map((addr: any, index: number) => {
+						const displayName = addr.country || addr.state || addr.location || addr.address1 || addr.address2 || 'No address details';
+						return {
+							name: `Address ${index + 1}: ${displayName}`,
+							value: index, // Use index as the value
+						};
+					});
+				} catch (error) {
+					if (continueOnFail) {
+						return [];
+					}
+					throw error;
+				}
+			},
 		},
 	};
 

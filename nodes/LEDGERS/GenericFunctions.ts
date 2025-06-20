@@ -1,4 +1,4 @@
-import type { IExecuteFunctions, IRequestOptions } from 'n8n-workflow';
+import type { IExecuteFunctions, IRequestOptions, IDataObject, INodeExecutionData } from 'n8n-workflow';
 import { ApplicationError } from 'n8n-workflow';
 
 // 🔹 Map Dial Codes to ISO Country Codes
@@ -12,7 +12,7 @@ const dialCodeToCountryCode: Record<string, string> = {
 
 export async function execute(this: IExecuteFunctions) {
 	const items = this.getInputData();
-	const returnData = [];
+	const returnData: INodeExecutionData[] = [];
 
 	const credentials = await this.getCredentials('ledgersApi');
 	if (!credentials || !credentials.xApiKey || !credentials.email || !credentials.password) {
@@ -24,7 +24,7 @@ export async function execute(this: IExecuteFunctions) {
 	const { xApiKey, email, password } = credentials;
 	const baseUrl = 'https://in-api.ledgers.cloud/v3';
 
-	// Step 1: Authenticate and get api_token
+	// Step 1: Authenticate and get api_token once for all items
 	let apiToken: string;
 	try {
 		const loginOptions: IRequestOptions = {
@@ -57,13 +57,13 @@ export async function execute(this: IExecuteFunctions) {
 		});
 	}
 
-	// Step 2: Proceed with operation
+	// Step 2: Proceed with operations for each item
 	for (let i = 0; i < items.length; i++) {
 		const continueOnFail = this.continueOnFail?.();
-		try{
+		try {
 			const operation = this.getNodeParameter('operation', i);
 			const options: IRequestOptions = {
-				method: 'GET',
+				method: 'GET', // Default method
 				url: '',
 				headers: {
 					'Content-Type': 'application/json',
@@ -71,6 +71,8 @@ export async function execute(this: IExecuteFunctions) {
 					'api-token': apiToken,
 				},
 				json: true,
+				body: {}, // Default empty body
+				qs: {}, // Default empty query string
 			};
 
 			if (operation === 'createContact') {
@@ -87,15 +89,15 @@ export async function execute(this: IExecuteFunctions) {
 				options.method = 'POST';
 				options.url = `${baseUrl}/contact`;
 				options.body = { contact_name: contactName, ...additionalFields };
-			}
-			else if (operation === 'updateContact') {
+			} else if (operation === 'updateContact') {
 				const contactId = this.getNodeParameter('contactId', i);
-				const updateFields = this.getNodeParameter('contactAdditionalFields', i) as Record<string, string>;
+				const updateFields = this.getNodeParameter('contactAdditionalFields', i) as Record<
+					string,
+					string
+				>;
 
-				// Initialize body with contact_id
 				const body: Record<string, any> = { contact_id: contactId };
 
-				// Only add fields that have values
 				for (const [key, value] of Object.entries(updateFields)) {
 					if (value !== undefined && value !== null && value !== '') {
 						if (key === 'mobile') {
@@ -103,15 +105,6 @@ export async function execute(this: IExecuteFunctions) {
 							const isoCode = dialCodeToCountryCode[selectedDialCode] || 'in';
 							body[key] = `${value}|${isoCode}`;
 							body.mobile_country_code = selectedDialCode;
-						} else if(key == 'billing_address1' || key == 'billing_address2' || key == 'city' || key == 'state' || key == 'country' || key == 'pincode') {
-							body.billing_address = [{
-								billing_address1: updateFields.billing_address1 ?? '',
-								billing_address2: updateFields.billing_address2 ?? '',
-								city: updateFields.city ?? '',
-								state: updateFields.state ?? '',
-								country: updateFields.country ?? '',
-								pincode: updateFields.pincode ?? '',
-							}];
 						} else {
 							body[key] = value;
 						}
@@ -121,78 +114,154 @@ export async function execute(this: IExecuteFunctions) {
 				options.method = 'PUT';
 				options.url = `${baseUrl}/contact`;
 				options.body = body;
-				console.log(options.body);
-			}
-			else if (operation === 'addAddress') {
-				const contactId = this.getNodeParameter('contactId', i);
-				const addressType = this.getNodeParameter('addressType', i) as string;
-				const addressFields = this.getNodeParameter('addressFields', i) as Record<string, string>;
+			} else if (operation === 'addAddress') {
+				const contactId = this.getNodeParameter('contactId', i) as string;
+				const addressFields = this.getNodeParameter('addressFields', i) as IDataObject;
+				const addressType = this.getNodeParameter('addressType', i, 'billing') as string;
 
-				// Initialize body with contact_id
-				const body: Record<string, any> = { contact_id: contactId };
+				const getContactOptions: IRequestOptions = {
+					method: 'GET',
+					url: `https://in-api.ledgers.cloud/v3/contact/${contactId}`,
+					headers: options.headers,
+					json: true,
+				};
+				const contactResponse = await this.helpers.request(getContactOptions);
+				if (!contactResponse.data) {
+					throw new ApplicationError(`Contact with ID ${contactId} not found.`, { itemIndex: i });
+				}
+				const contactData = contactResponse.data;
 
-				// Create address object
-				const addressObject = {
-					billing_address1: addressFields.address1 || '',
-					billing_address2: addressFields.address2 || '',
-					location: addressFields.location || '',
-					state: addressFields.state || '',
-					country: addressFields.country || '',
-					pincode: addressFields.pincode || '',
+				const body: IDataObject = {};
+				if (addressType === 'billing' || addressType === 'both') {
+					let newAddressObject: IDataObject = {
+						billing_address1: addressFields.address1 ?? '',
+						billing_address2: addressFields.address2 ?? '',
+						location: addressFields.location ?? '',
+						state: addressFields.state ?? '',
+						country: addressFields.country ?? '',
+						pincode: addressFields.pincode ?? '',
+						email: addressFields.email ?? '',
+						gstin: addressFields.gstin ?? '',
+						mobile: addressFields.mobile ?? '',
+					};
+					const existingBilling = contactData.billing_address || [];
+					body.billing_address = [...existingBilling, newAddressObject];
+				}
+				if (addressType === 'shipping' || addressType === 'both') {
+					let newAddressObject: IDataObject = {
+						shipping_address1: addressFields.address1 ?? '',
+						shipping_address2: addressFields.address2 ?? '',
+						location: addressFields.location ?? '',
+						state: addressFields.state ?? '',
+						country: addressFields.country ?? '',
+						pincode: addressFields.pincode ?? '',
+						email: addressFields.email ?? '',
+						gstin: addressFields.gstin ?? '',
+						mobile: addressFields.mobile ?? '',
+					};
+					const existingShipping = contactData.shipping_address || [];
+					body.shipping_address = [...existingShipping, newAddressObject];
+				}
+
+				body.contact_id = contactId;
+
+				options.method = 'PUT';
+				options.url = `${baseUrl}/contact`;
+				options.body = body;
+			} else if (operation === 'updateAddress') {
+				const contactId = this.getNodeParameter('contactId', i) as string;
+				const addressType = this.getNodeParameter('addressType', i, 'billing') as string;
+				const addressSelector = this.getNodeParameter('addressSelector', i, 0) as number;
+
+				const getContactOptions: IRequestOptions = {
+					method: 'GET',
+					url: `${baseUrl}/contact/${contactId}`,
+					headers: options.headers,
+					json: true,
+				};
+				const contactResponse = await this.helpers.request(getContactOptions);
+
+				if (!contactResponse.data) {
+					throw new ApplicationError(`Contact with ID ${contactId} not found.`, { itemIndex: i });
+				}
+				const contactData = contactResponse.data;
+				const addressKey = addressType === 'billing' ? 'billing_address' : 'shipping_address';
+				const addresses = contactData[addressKey] as any[];
+
+				if (!addresses || addressSelector >= addresses.length) {
+					throw new ApplicationError(
+						`Invalid address index: ${addressSelector}. Contact only has ${
+							addresses?.length ?? 0
+						} ${addressType} addresses.`,
+						{ itemIndex: i },
+					);
+				}
+
+				const selectedAddress = addresses[addressSelector];
+				const addressToUpdateId = selectedAddress.id;
+
+				// Get the new values from user input (only the fields they actually provided)
+				const address1 = this.getNodeParameter('address1', i) ?? '';
+				const address2 = this.getNodeParameter('address2', i) ?? '';
+				const city = this.getNodeParameter('city', i) ?? '';
+				const state = this.getNodeParameter('state', i) ?? '';
+				const country = this.getNodeParameter('country', i) ?? '';
+				const pincode = this.getNodeParameter('pincode', i) ?? '';
+				const email = this.getNodeParameter('email', i) ?? '';
+				const gstin = this.getNodeParameter('gstin', i) ?? '';
+				const mobile = this.getNodeParameter('mobile', i) ?? '';
+
+				// Start with the existing address data and only update fields that were provided
+				const updatedAddress: IDataObject = {
+					...selectedAddress, // Keep all existing data
+					id: addressToUpdateId,
 				};
 
-				// Add address based on type
-				if (addressType === 'billing') {
-					body.billing_address = [addressObject];
-				} else if (addressType === 'shipping') {
-					body.shipping_address = [addressObject];
-				} else if (addressType === 'both') {
-					body.billing_address = [addressObject];
-					body.shipping_address = [addressObject];
+				// Only update fields that were actually provided by the user
+				if (address1 !== undefined && address1 !== '') {
+					updatedAddress.address1 = address1;
 				}
+				if (address2 !== undefined && address2 !== '') {
+					updatedAddress.address2 = address2;
+				}
+				if (city !== undefined && city !== '') {
+					updatedAddress.location = city;
+					updatedAddress.city = city;
+				}
+				if (state !== undefined && state !== '') {
+					updatedAddress.state = state;
+				}
+				if (country !== undefined && country !== '') {
+					updatedAddress.country = country;
+				}
+				if (pincode !== undefined && pincode !== '') {
+					updatedAddress.pincode = pincode;
+				}
+				if (email !== undefined && email !== '') {
+					updatedAddress.email = email;
+				}
+				if (gstin !== undefined && gstin !== '') {
+					updatedAddress.gstin = gstin;
+				}
+				if (mobile !== undefined && mobile !== '') {
+					updatedAddress.mobile = mobile;
+				}
+
+				const updatedAddresses = addresses.map((addr, index) =>
+					index === addressSelector ? updatedAddress : addr,
+				);
+
+				const body: IDataObject = {
+					[addressKey]: updatedAddresses,
+				};
 
 				options.method = 'PUT';
 				options.url = `${baseUrl}/contact`;
 				options.body = body;
-				console.log(options.body);
-			}
-			else if (operation === 'updateAddress') {
-				const contactId = this.getNodeParameter('contactId', i);
-				const addressType = this.getNodeParameter('addressType', i) as string;
-				const addressFields = this.getNodeParameter('addressFields', i) as Record<string, string>;
-
-				// Initialize body with contact_id
-				const body: Record<string, any> = { contact_id: contactId };
-
-				// Create address object with only provided fields
-				const addressObject: Record<string, any> = {};
-				if (addressFields.address1 !== undefined && addressFields.address1 !== '') addressObject.address1 = addressFields.address1;
-				if (addressFields.address2 !== undefined && addressFields.address2 !== '') addressObject.address2 = addressFields.address2;
-				if (addressFields.city !== undefined && addressFields.city !== '') addressObject.city = addressFields.city;
-				if (addressFields.state !== undefined && addressFields.state !== '') addressObject.state = addressFields.state;
-				if (addressFields.country !== undefined && addressFields.country !== '') addressObject.country = addressFields.country;
-				if (addressFields.pincode !== undefined && addressFields.pincode !== '') addressObject.pincode = addressFields.pincode;
-
-				// Add address based on type
-				if (addressType === 'billing') {
-					body.billing_address = [addressObject];
-				} else if (addressType === 'shipping') {
-					body.shipping_address = [addressObject];
-				} else if (addressType === 'both') {
-					body.billing_address = [addressObject];
-					body.shipping_address = [addressObject];
-				}
-
-				options.method = 'PUT';
-				options.url = `${baseUrl}/contact`;
-				options.body = body;
-				console.log(options.body);
-			}
-			else if (operation === 'getContact') {
+			} else if (operation === 'getContact') {
 				const contactId = this.getNodeParameter('contactId', i);
 				options.url = `${baseUrl}/contact/${contactId}`;
-			}
-			else if (operation === 'getAllContacts') {
+			} else if (operation === 'getAllContacts') {
 				const perPageRaw = this.getNodeParameter('perPage', i);
 				const perPage = typeof perPageRaw === 'object' ? '' : String(perPageRaw);
 				const searchType = String(this.getNodeParameter('searchType', i));
@@ -202,8 +271,7 @@ export async function execute(this: IExecuteFunctions) {
 					search_term = typeof searchTermRaw === 'object' ? '' : String(searchTermRaw);
 				}
 				options.url = `${baseUrl}/contact?perpage=${perPage}&search_term=${search_term}`;
-			}
-			else if (operation === 'createCatalog') {
+			} else if (operation === 'createCatalog') {
 				const catalogName = this.getNodeParameter('catalogName', i);
 				const price = this.getNodeParameter('price', i);
 				const catalogType = this.getNodeParameter('catalog_type', i);
@@ -265,8 +333,7 @@ export async function execute(this: IExecuteFunctions) {
 					...(cess_type_api && cess_api !== undefined ? { cess_type: cess_type_api, cess: cess_api } : {}),
 				};
 				console.log(options.body);
-			}
-			else if (operation === 'updateCatalog') {
+			} else if (operation === 'updateCatalog') {
 				const catalogId = this.getNodeParameter('catalogId', i);
 				const updateFields = this.getNodeParameter('catalogUpdateFields', i) as Record<string, any>;
 				// Always include catalog_id
@@ -315,8 +382,7 @@ export async function execute(this: IExecuteFunctions) {
 				options.method = 'PUT';
 				options.url = `${baseUrl}/catalog`;
 				options.body = body;
-			}
-			else if (operation === 'updateVariant'){
+			} else if (operation === 'updateVariant'){
 				const catalogId = this.getNodeParameter('catalogId', i);
 				const variantId = this.getNodeParameter('variantId', i);
 				const updateFields = this.getNodeParameter('catalogUpdateVariantFields', i) as Record<string, any>;
@@ -342,14 +408,12 @@ export async function execute(this: IExecuteFunctions) {
 					variants: [variantUpdate],
 				};
 				console.log(options.body);
-			}
-			else if (operation === 'getCatalog') {
+			} else if (operation === 'getCatalog') {
 				const catalogId = this.getNodeParameter('catalogId', i);
 				console.log(catalogId);
 				options.method = 'GET';
 				options.url = `${baseUrl}/catalog/${catalogId}`;
-			}
-			else if (operation === 'getAllCatalogs') {
+			} else if (operation === 'getAllCatalogs') {
 				const perPageRaw = this.getNodeParameter('perPage', i);
 				const perPage = typeof perPageRaw === 'object' ? '' : String(perPageRaw);
 				const searchType = String(this.getNodeParameter('searchType', i));
@@ -360,8 +424,7 @@ export async function execute(this: IExecuteFunctions) {
 				}
 				options.method = 'GET';
 				options.url = `${baseUrl}/catalog?perpage=${perPage}&search_term=${search_term}`;
-			}
-			else if (operation === 'addVariant') {
+			} else if (operation === 'addVariant') {
 				const catalogId = this.getNodeParameter('catalogId', i);
 				const variant_name = this.getNodeParameter('variant_name', i);
 				const variant_price = this.getNodeParameter('variant_price', i);
@@ -411,6 +474,7 @@ export async function execute(this: IExecuteFunctions) {
 				console.log(options.body);
 			}
 			const result = await this.helpers.request(options);
+
 			returnData.push({ json: result });
 		} catch (error) {
 			if (continueOnFail) {
