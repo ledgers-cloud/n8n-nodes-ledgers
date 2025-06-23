@@ -172,6 +172,7 @@ export async function execute(this: IExecuteFunctions) {
 				const contactId = this.getNodeParameter('contactId', i) as string;
 				const addressType = this.getNodeParameter('addressType', i, 'billing') as string;
 				const addressSelector = this.getNodeParameter('addressSelector', i, 0) as number;
+				const updateFields = this.getNodeParameter('addressUpdateFields', i, {}) as Record<string, any>;
 
 				const getContactOptions: IRequestOptions = {
 					method: 'GET',
@@ -200,17 +201,6 @@ export async function execute(this: IExecuteFunctions) {
 				const selectedAddress = addresses[addressSelector];
 				const addressToUpdateId = selectedAddress.id;
 
-				// Get the new values from user input (only the fields they actually provided)
-				const address1 = this.getNodeParameter('address1', i) ?? '';
-				const address2 = this.getNodeParameter('address2', i) ?? '';
-				const city = this.getNodeParameter('city', i) ?? '';
-				const state = this.getNodeParameter('state', i) ?? '';
-				const country = this.getNodeParameter('country', i) ?? '';
-				const pincode = this.getNodeParameter('pincode', i) ?? '';
-				const email = this.getNodeParameter('email', i) ?? '';
-				const gstin = this.getNodeParameter('gstin', i) ?? '';
-				const mobile = this.getNodeParameter('mobile', i) ?? '';
-
 				// Start with the existing address data and only update fields that were provided
 				const updatedAddress: IDataObject = {
 					...selectedAddress, // Keep all existing data
@@ -218,42 +208,47 @@ export async function execute(this: IExecuteFunctions) {
 				};
 
 				// Only update fields that were actually provided by the user
-				if (address1 !== undefined && address1 !== '') {
-					updatedAddress.address1 = address1;
+				if (updateFields.address1 !== undefined && updateFields.address1 !== '') {
+					updatedAddress.address1 = updateFields.address1;
 				}
-				if (address2 !== undefined && address2 !== '') {
-					updatedAddress.address2 = address2;
+				if (updateFields.address2 !== undefined && updateFields.address2 !== '') {
+					updatedAddress.address2 = updateFields.address2;
 				}
-				if (city !== undefined && city !== '') {
-					updatedAddress.location = city;
-					updatedAddress.city = city;
+				if (updateFields.location !== undefined && updateFields.location !== '') {
+					updatedAddress.location = updateFields.location;
+					updatedAddress.city = updateFields.location;
 				}
-				if (state !== undefined && state !== '') {
-					updatedAddress.state = state;
+				if (updateFields.state !== undefined && updateFields.state !== '') {
+					updatedAddress.state = updateFields.state;
 				}
-				if (country !== undefined && country !== '') {
-					updatedAddress.country = country;
+				if (updateFields.country !== undefined && updateFields.country !== '') {
+					updatedAddress.country = updateFields.country;
 				}
-				if (pincode !== undefined && pincode !== '') {
-					updatedAddress.pincode = pincode;
+				if (updateFields.pincode !== undefined && updateFields.pincode !== '') {
+					updatedAddress.pincode = updateFields.pincode;
 				}
-				if (email !== undefined && email !== '') {
-					updatedAddress.email = email;
+				if (updateFields.email !== undefined && updateFields.email !== '') {
+					updatedAddress.email = updateFields.email;
 				}
-				if (gstin !== undefined && gstin !== '') {
-					updatedAddress.gstin = gstin;
+				if (updateFields.gstin !== undefined && updateFields.gstin !== '') {
+					updatedAddress.gstin = updateFields.gstin;
 				}
-				if (mobile !== undefined && mobile !== '') {
-					updatedAddress.mobile = mobile;
+				if (updateFields.mobile !== undefined && updateFields.mobile !== '') {
+					updatedAddress.mobile = updateFields.mobile;
 				}
 
 				const updatedAddresses = addresses.map((addr, index) =>
 					index === addressSelector ? updatedAddress : addr,
 				);
 
+				delete updatedAddress.id;
+
 				const body: IDataObject = {
+					contact_id: contactId,
 					[addressKey]: updatedAddresses,
 				};
+
+				console.log(body);
 
 				options.method = 'PUT';
 				options.url = `${baseUrl}/contact`;

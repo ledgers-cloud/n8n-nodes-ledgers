@@ -329,9 +329,27 @@ export class Ledgers implements INodeType {
 					}
 
 					return addresses.map((addr: any, index: number) => {
-						const displayName = addr.country || addr.state || addr.location || addr.address1 || addr.address2 || 'No address details';
+						// Build a complete address string with all available fields
+						const addressParts = [];
+
+						if (addressKey == 'billing_address' ? addr.billing_address1 : addr.shipping_address1) addressParts.push(addressKey == 'billing_address' ? addr.billing_address1 : addr.shipping_address1);
+						if (addressKey == 'billing_address' ? addr.billing_address2 : addr.shipping_address2) addressParts.push(addressKey == 'billing_address' ? addr.billing_address2 : addr.shipping_address2);
+						if (addr.city || addr.location) addressParts.push(addr.city || addr.location);
+						if (addr.state) addressParts.push(addr.state);
+						if (addr.country) addressParts.push(addr.country);
+						if (addr.pincode) addressParts.push(addr.pincode);
+
+						// If we have contact info, add it too
+						if (addr.email) addressParts.push(`Email: ${addr.email}`);
+						if (addr.mobile) addressParts.push(`Mobile: ${addr.mobile}`);
+						if (addr.gstin) addressParts.push(`GSTIN: ${addr.gstin}`);
+
+						const displayName = addressParts.length > 0
+							? `Address ${index + 1}: ${addressParts.join(', ')}`
+							: `Address ${index + 1}: No address details`;
+
 						return {
-							name: `Address ${index + 1}: ${displayName}`,
+							name: displayName,
 							value: index, // Use index as the value
 						};
 					});
