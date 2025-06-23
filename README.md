@@ -128,7 +128,7 @@ You can enable this in the node's settings under the **"Continue On Fail"** opti
 | ------- | ------------------------------------------------------------------ |
 | 0.0.1   | Stable Release of LEDGERS Custom Node under N8N                    |
 | 0.0.2   | Logo Rename for Linux OS                                           |
-| 0.0.3   | Catalog Operations Release                                         |
+| 0.0.3   | Catalog Operations Release with updates in Contact Operations      |
 
 ---
 
