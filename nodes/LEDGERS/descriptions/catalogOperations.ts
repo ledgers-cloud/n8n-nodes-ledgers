@@ -284,7 +284,7 @@ export const catalogOperations: INodeProperties[] = [
 				placeholder: 'Enter Cess Value',
 				displayOptions: {
 					show: {
-						cess_type: ['cess_type','percentage'],
+						cess_type: ['percentage'],
 					},
 				},
 			},
@@ -296,7 +296,7 @@ export const catalogOperations: INodeProperties[] = [
 				placeholder: 'Enter Cess Value',
 				displayOptions: {
 					show: {
-						cess_type: ['cess_type','flat'],
+						cess_type: ['flat'],
 					},
 				},
 			},
@@ -452,7 +452,7 @@ export const catalogOperations: INodeProperties[] = [
 				placeholder: 'Enter Cess Value',
 				displayOptions: {
 					show: {
-						cess_type: ['cess_type','percentage'],
+						cess_type: ['percentage'],
 					},
 				},
 			},
@@ -464,7 +464,7 @@ export const catalogOperations: INodeProperties[] = [
 				placeholder: 'Enter Cess Value',
 				displayOptions: {
 					show: {
-						cess_type: ['cess_type','flat'],
+						cess_type: ['flat'],
 					},
 				},
 			},
