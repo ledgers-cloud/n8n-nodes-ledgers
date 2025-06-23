@@ -85,10 +85,31 @@ export async function execute(this: IExecuteFunctions) {
 				if (mobileRaw) {
 					additionalFields.mobile = `${mobileRaw}|${isoCode}`;
 				}
+
 				additionalFields.mobile_country_code = selectedDialCode;
+				let address = {
+					billing_address1: additionalFields.billing_address1 ?? '',
+					billing_address2: additionalFields.billing_address2 ?? '',
+					location: additionalFields.location ?? '',
+					state: additionalFields.state ?? '',
+					country: additionalFields.country ?? '',
+					pincode: additionalFields.pincode ?? '',
+					email: additionalFields.email ?? '',
+					gstin: additionalFields.gstin ?? '',
+					mobile: additionalFields.mobile ?? '',
+				}
+				delete additionalFields.billing_address1;
+				delete additionalFields.billing_address2;
+				delete additionalFields.location;
+				delete additionalFields.state;
+				delete additionalFields.country;
+				delete additionalFields.pincode;
+				delete additionalFields.email;
+				delete additionalFields.gstin;
+				delete additionalFields.mobile;
 				options.method = 'POST';
 				options.url = `${baseUrl}/contact`;
-				options.body = { contact_name: contactName, ...additionalFields };
+				options.body = { contact_name: contactName, ...additionalFields, billing_address: [address] };
 			} else if (operation === 'updateContact') {
 				const contactId = this.getNodeParameter('contactId', i);
 				const updateFields = this.getNodeParameter('contactAdditionalFields', i) as Record<
