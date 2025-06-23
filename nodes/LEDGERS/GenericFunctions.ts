@@ -269,8 +269,6 @@ export async function execute(this: IExecuteFunctions) {
 					[addressKey]: updatedAddresses,
 				};
 
-				console.log(body);
-
 				options.method = 'PUT';
 				options.url = `${baseUrl}/contact`;
 				options.body = body;
@@ -348,7 +346,6 @@ export async function execute(this: IExecuteFunctions) {
 					})() : {}),
 					...(cess_type_api && cess_api !== undefined ? { cess_type: cess_type_api, cess: cess_api } : {}),
 				};
-				console.log(options.body);
 			} else if (operation === 'updateCatalog') {
 				const catalogId = this.getNodeParameter('catalogId', i);
 				const updateFields = this.getNodeParameter('catalogUpdateFields', i) as Record<string, any>;
@@ -423,10 +420,8 @@ export async function execute(this: IExecuteFunctions) {
 					catalog_id: catalogId,
 					variants: [variantUpdate],
 				};
-				console.log(options.body);
 			} else if (operation === 'getCatalog') {
 				const catalogId = this.getNodeParameter('catalogId', i);
-				console.log(catalogId);
 				options.method = 'GET';
 				options.url = `${baseUrl}/catalog/${catalogId}`;
 			} else if (operation === 'getAllCatalogs') {
@@ -487,7 +482,6 @@ export async function execute(this: IExecuteFunctions) {
 					catalog_id: catalogId,
 					variants: [newVariant],
 				};
-				console.log(options.body);
 			}
 			const result = await this.helpers.request(options);
 
