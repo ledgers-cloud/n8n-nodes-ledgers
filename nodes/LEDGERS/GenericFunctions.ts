@@ -220,49 +220,56 @@ export async function execute(this: IExecuteFunctions) {
 				}
 
 				const selectedAddress = addresses[addressSelector];
-				const addressToUpdateId = selectedAddress.id;
 
 				// Start with the existing address data and only update fields that were provided
 				const updatedAddress: IDataObject = {
-					...selectedAddress, // Keep all existing data
-					id: addressToUpdateId,
+					...selectedAddress, // Keep all existing data including the id
 				};
 
 				// Only update fields that were actually provided by the user
-				if (updateFields.address1 !== undefined && updateFields.address1 !== '') {
-					updatedAddress.address1 = updateFields.address1;
+				if (updateFields.address1 !== undefined) {
+					// Map address1 to the correct field based on address type
+					if (addressType === 'billing') {
+						updatedAddress.billing_address1 = updateFields.address1;
+					} else {
+						updatedAddress.shipping_address1 = updateFields.address1;
+					}
 				}
-				if (updateFields.address2 !== undefined && updateFields.address2 !== '') {
-					updatedAddress.address2 = updateFields.address2;
+				if (updateFields.address2 !== undefined) {
+					// Map address2 to the correct field based on address type
+					if (addressType === 'billing') {
+						updatedAddress.billing_address2 = updateFields.address2;
+					} else {
+						updatedAddress.shipping_address2 = updateFields.address2;
+					}
 				}
-				if (updateFields.location !== undefined && updateFields.location !== '') {
+				if (updateFields.location !== undefined) {
 					updatedAddress.location = updateFields.location;
 					updatedAddress.city = updateFields.location;
 				}
-				if (updateFields.state !== undefined && updateFields.state !== '') {
+				if (updateFields.state !== undefined) {
 					updatedAddress.state = updateFields.state;
 				}
-				if (updateFields.country !== undefined && updateFields.country !== '') {
+				if (updateFields.country !== undefined) {
 					updatedAddress.country = updateFields.country;
 				}
-				if (updateFields.pincode !== undefined && updateFields.pincode !== '') {
+				if (updateFields.pincode !== undefined) {
 					updatedAddress.pincode = updateFields.pincode;
 				}
-				if (updateFields.email !== undefined && updateFields.email !== '') {
+				if (updateFields.email !== undefined) {
 					updatedAddress.email = updateFields.email;
 				}
-				if (updateFields.gstin !== undefined && updateFields.gstin !== '') {
+				if (updateFields.gstin !== undefined) {
 					updatedAddress.gstin = updateFields.gstin;
 				}
-				if (updateFields.mobile !== undefined && updateFields.mobile !== '') {
+				if (updateFields.mobile !== undefined) {
 					updatedAddress.mobile = updateFields.mobile;
 				}
 
+				// Create updated addresses array with the selected address updated
 				const updatedAddresses = addresses.map((addr, index) =>
 					index === addressSelector ? updatedAddress : addr,
 				);
-
-				delete updatedAddress.id;
 
 				const body: IDataObject = {
 					contact_id: contactId,
@@ -272,6 +279,7 @@ export async function execute(this: IExecuteFunctions) {
 				options.method = 'PUT';
 				options.url = `${baseUrl}/contact`;
 				options.body = body;
+				console.log(options.body);
 			} else if (operation === 'getContact') {
 				const contactId = this.getNodeParameter('contactId', i);
 				options.url = `${baseUrl}/contact/${contactId}`;
@@ -284,7 +292,7 @@ export async function execute(this: IExecuteFunctions) {
 					const searchTermRaw = this.getNodeParameter('searchTerm', i) ?? '';
 					search_term = typeof searchTermRaw === 'object' ? '' : String(searchTermRaw);
 				}
-				options.url = `${baseUrl}/contact?perpage=${perPage}&search_term=${search_term}`;
+				options.url = `${baseUrl}/contact?perpage=${perPage}&sort=desc&search_term=${search_term}`;
 			} else if (operation === 'createCatalog') {
 				const catalogName = this.getNodeParameter('catalogName', i);
 				const price = this.getNodeParameter('price', i);
