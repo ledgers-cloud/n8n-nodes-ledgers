@@ -490,6 +490,22 @@ export async function execute(this: IExecuteFunctions) {
 					catalog_id: catalogId,
 					variants: [newVariant],
 				};
+			} else if (operation === 'createInvoice') {
+				const contact = this.getNodeParameter('contact', i) as IDataObject;
+				const items = this.getNodeParameter('items.item', i) as IDataObject[];
+				const seller_branch_id = this.getNodeParameter('seller_branch_id', i) as string;
+				const additionalFields = this.getNodeParameter('additionalFields', i, {}) as IDataObject;
+
+				const body: IDataObject = {
+					contact,
+					items,
+					seller_branch_id,
+					...additionalFields,
+				};
+
+				options.method = 'POST';
+				options.url = `${baseUrl}/invoice`;
+				options.body = body;
 			}
 			const result = await this.helpers.request(options);
 

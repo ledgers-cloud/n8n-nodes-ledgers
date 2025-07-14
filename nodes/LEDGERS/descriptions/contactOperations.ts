@@ -512,7 +512,7 @@ export const contactOperations: INodeProperties[] = [
 		type: 'options',
 		default: '',
 		displayOptions: {
-			show: { operation: ['updateAddress'] },
+			show: { resource: ['contact'], operation: ['updateAddress'] },
 		},
 		typeOptions: {
 			loadOptionsMethod: 'getAddressOptions',
