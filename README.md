@@ -124,12 +124,12 @@ You can enable this in the node's settings under the **"Continue On Fail"** opti
 
 ## 🕒 Version History
 
-| Version | Changes                                                            |
-| ------- | ------------------------------------------------------------------ |
-| 0.0.1   | Stable Release of LEDGERS Custom Node under N8N                    |
-| 0.0.2   | Logo Rename for Linux OS                                           |
-| 0.0.3   | Catalog Operations Release with updates in Contact Operations      |
-| 0.0.4   | Bug Fix Update      																							 |
+| Version | Changes                                                                      |
+| ------- | ---------------------------------------------------------------------------- |
+| 0.0.1   | Stable Release of LEDGERS Custom Node under N8N                              |
+| 0.0.2   | Logo Rename for Linux OS                                                     |
+| 0.0.3   | Catalog Operations Release with updates in Contact Operations                |
+| 0.0.4   | No code changes. Only updated package-lock.json to match npm registry state  |
 
 ---
 
