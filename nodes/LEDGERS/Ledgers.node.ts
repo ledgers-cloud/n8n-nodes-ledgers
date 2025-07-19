@@ -49,11 +49,16 @@ export class Ledgers implements INodeType {
 						name: 'Catalog',
 						value: 'catalog',
 					},
+					{
+						name: 'Invoice',
+						value: 'invoice',
+					},
 				],
 				default: 'contact',
 			},
 			...descriptions.contactOperations,
 			...descriptions.catalogOperations,
+			...descriptions.createInvoiceOperations,
 		],
 	};
 
@@ -112,7 +117,6 @@ export class Ledgers implements INodeType {
 					};
 
 					const responseData = await this.helpers.request(options);
-					console.log(responseData);
 					if (!responseData.result || !Array.isArray(responseData.result)) {
 						throw new ApplicationError('HSN/SAC API did not return expected data structure', {
 							level: 'warning',
@@ -179,7 +183,6 @@ export class Ledgers implements INodeType {
 
 					const apiToken = loginResponse.api_token;
 					const catalogId = this.getNodeParameter('catalogId', undefined, { extractValue: false }) as string;
-					console.log(apiToken, 'API response:', catalogId);
 					if (!catalogId) {
 						return [];
 					}
@@ -196,7 +199,6 @@ export class Ledgers implements INodeType {
 					};
 
 					const response = await this.helpers.request(options);
-					console.log('Catalog API response:', response);
 
 					// The API response structure is: { status: 'success', data: [ { ... , product_variants: [...] } ] }
 					if (!response.data || !Array.isArray(response.data) || !response.data[0].product_variants || !Array.isArray(response.data[0].product_variants)) {
@@ -279,11 +281,9 @@ export class Ledgers implements INodeType {
 				}
 			},
 			async getAddressOptions(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
-				console.log('getAddressOptions');
 				const continueOnFail = this.getNode().continueOnFail;
 				try {
 					const contactId = this.getNodeParameter('contactId', undefined, { extractValue: false }) as string;
-					console.log(contactId, 'contactId');
 					if (!contactId) {
 						return []; // No contact ID, so no addresses to show
 					}
@@ -313,9 +313,7 @@ export class Ledgers implements INodeType {
 					};
 
 					const contactData = await this.helpers.request(getContactOptions);
-					console.log(contactData);
 					if (!contactData.data) {
-						console.log('Contact not found or has no data');
 						return []; // Contact not found or has no data
 					}
 
@@ -324,14 +322,31 @@ export class Ledgers implements INodeType {
 					const addresses = contactData.data[addressKey];
 
 					if (!addresses || !Array.isArray(addresses)) {
-						console.log('No addresses of the selected type');
 						return []; // No addresses of the selected type
 					}
 
 					return addresses.map((addr: any, index: number) => {
-						const displayName = addr.country || addr.state || addr.location || addr.address1 || addr.address2 || 'No address details';
+						// Build a complete address string with all available fields
+						const addressParts = [];
+
+						if (addressKey == 'billing_address' ? addr.billing_address1 : addr.shipping_address1) addressParts.push(addressKey == 'billing_address' ? addr.billing_address1 : addr.shipping_address1);
+						if (addressKey == 'billing_address' ? addr.billing_address2 : addr.shipping_address2) addressParts.push(addressKey == 'billing_address' ? addr.billing_address2 : addr.shipping_address2);
+						if (addr.city || addr.location) addressParts.push(addr.city || addr.location);
+						if (addr.state) addressParts.push(addr.state);
+						if (addr.country) addressParts.push(addr.country);
+						if (addr.pincode) addressParts.push(addr.pincode);
+
+						// If we have contact info, add it too
+						if (addr.email) addressParts.push(`Email: ${addr.email}`);
+						if (addr.mobile) addressParts.push(`Mobile: ${addr.mobile}`);
+						if (addr.gstin) addressParts.push(`GSTIN: ${addr.gstin}`);
+
+						const displayName = addressParts.length > 0
+							? `Address ${index + 1}: ${addressParts.join(', ')}`
+							: `Address ${index + 1}: No address details`;
+
 						return {
-							name: `Address ${index + 1}: ${displayName}`,
+							name: displayName,
 							value: index, // Use index as the value
 						};
 					});

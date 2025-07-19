@@ -85,10 +85,31 @@ export async function execute(this: IExecuteFunctions) {
 				if (mobileRaw) {
 					additionalFields.mobile = `${mobileRaw}|${isoCode}`;
 				}
+
 				additionalFields.mobile_country_code = selectedDialCode;
+				let address = {
+					billing_address1: additionalFields.billing_address1 ?? '',
+					billing_address2: additionalFields.billing_address2 ?? '',
+					location: additionalFields.location ?? '',
+					state: additionalFields.state ?? '',
+					country: additionalFields.country ?? '',
+					pincode: additionalFields.pincode ?? '',
+					email: additionalFields.email ?? '',
+					gstin: additionalFields.gstin ?? '',
+					mobile: additionalFields.mobile ?? '',
+				}
+				delete additionalFields.billing_address1;
+				delete additionalFields.billing_address2;
+				delete additionalFields.location;
+				delete additionalFields.state;
+				delete additionalFields.country;
+				delete additionalFields.pincode;
+				delete additionalFields.email;
+				delete additionalFields.gstin;
+				delete additionalFields.mobile;
 				options.method = 'POST';
 				options.url = `${baseUrl}/contact`;
-				options.body = { contact_name: contactName, ...additionalFields };
+				options.body = { contact_name: contactName, ...additionalFields, billing_address: [address] };
 			} else if (operation === 'updateContact') {
 				const contactId = this.getNodeParameter('contactId', i);
 				const updateFields = this.getNodeParameter('contactAdditionalFields', i) as Record<
@@ -172,6 +193,7 @@ export async function execute(this: IExecuteFunctions) {
 				const contactId = this.getNodeParameter('contactId', i) as string;
 				const addressType = this.getNodeParameter('addressType', i, 'billing') as string;
 				const addressSelector = this.getNodeParameter('addressSelector', i, 0) as number;
+				const updateFields = this.getNodeParameter('addressUpdateFields', i, {}) as Record<string, any>;
 
 				const getContactOptions: IRequestOptions = {
 					method: 'GET',
@@ -198,66 +220,66 @@ export async function execute(this: IExecuteFunctions) {
 				}
 
 				const selectedAddress = addresses[addressSelector];
-				const addressToUpdateId = selectedAddress.id;
-
-				// Get the new values from user input (only the fields they actually provided)
-				const address1 = this.getNodeParameter('address1', i) ?? '';
-				const address2 = this.getNodeParameter('address2', i) ?? '';
-				const city = this.getNodeParameter('city', i) ?? '';
-				const state = this.getNodeParameter('state', i) ?? '';
-				const country = this.getNodeParameter('country', i) ?? '';
-				const pincode = this.getNodeParameter('pincode', i) ?? '';
-				const email = this.getNodeParameter('email', i) ?? '';
-				const gstin = this.getNodeParameter('gstin', i) ?? '';
-				const mobile = this.getNodeParameter('mobile', i) ?? '';
 
 				// Start with the existing address data and only update fields that were provided
 				const updatedAddress: IDataObject = {
-					...selectedAddress, // Keep all existing data
-					id: addressToUpdateId,
+					...selectedAddress, // Keep all existing data including the id
 				};
 
 				// Only update fields that were actually provided by the user
-				if (address1 !== undefined && address1 !== '') {
-					updatedAddress.address1 = address1;
+				if (updateFields.address1 !== undefined) {
+					// Map address1 to the correct field based on address type
+					if (addressType === 'billing') {
+						updatedAddress.billing_address1 = updateFields.address1;
+					} else {
+						updatedAddress.shipping_address1 = updateFields.address1;
+					}
 				}
-				if (address2 !== undefined && address2 !== '') {
-					updatedAddress.address2 = address2;
+				if (updateFields.address2 !== undefined) {
+					// Map address2 to the correct field based on address type
+					if (addressType === 'billing') {
+						updatedAddress.billing_address2 = updateFields.address2;
+					} else {
+						updatedAddress.shipping_address2 = updateFields.address2;
+					}
 				}
-				if (city !== undefined && city !== '') {
-					updatedAddress.location = city;
-					updatedAddress.city = city;
+				if (updateFields.location !== undefined) {
+					updatedAddress.location = updateFields.location;
+					updatedAddress.city = updateFields.location;
 				}
-				if (state !== undefined && state !== '') {
-					updatedAddress.state = state;
+				if (updateFields.state !== undefined) {
+					updatedAddress.state = updateFields.state;
 				}
-				if (country !== undefined && country !== '') {
-					updatedAddress.country = country;
+				if (updateFields.country !== undefined) {
+					updatedAddress.country = updateFields.country;
 				}
-				if (pincode !== undefined && pincode !== '') {
-					updatedAddress.pincode = pincode;
+				if (updateFields.pincode !== undefined) {
+					updatedAddress.pincode = updateFields.pincode;
 				}
-				if (email !== undefined && email !== '') {
-					updatedAddress.email = email;
+				if (updateFields.email !== undefined) {
+					updatedAddress.email = updateFields.email;
 				}
-				if (gstin !== undefined && gstin !== '') {
-					updatedAddress.gstin = gstin;
+				if (updateFields.gstin !== undefined) {
+					updatedAddress.gstin = updateFields.gstin;
 				}
-				if (mobile !== undefined && mobile !== '') {
-					updatedAddress.mobile = mobile;
+				if (updateFields.mobile !== undefined) {
+					updatedAddress.mobile = updateFields.mobile;
 				}
 
+				// Create updated addresses array with the selected address updated
 				const updatedAddresses = addresses.map((addr, index) =>
 					index === addressSelector ? updatedAddress : addr,
 				);
 
 				const body: IDataObject = {
+					contact_id: contactId,
 					[addressKey]: updatedAddresses,
 				};
 
 				options.method = 'PUT';
 				options.url = `${baseUrl}/contact`;
 				options.body = body;
+				console.log(options.body);
 			} else if (operation === 'getContact') {
 				const contactId = this.getNodeParameter('contactId', i);
 				options.url = `${baseUrl}/contact/${contactId}`;
@@ -270,7 +292,7 @@ export async function execute(this: IExecuteFunctions) {
 					const searchTermRaw = this.getNodeParameter('searchTerm', i) ?? '';
 					search_term = typeof searchTermRaw === 'object' ? '' : String(searchTermRaw);
 				}
-				options.url = `${baseUrl}/contact?perpage=${perPage}&search_term=${search_term}`;
+				options.url = `${baseUrl}/contact?perpage=${perPage}&sort=desc&search_term=${search_term}`;
 			} else if (operation === 'createCatalog') {
 				const catalogName = this.getNodeParameter('catalogName', i);
 				const price = this.getNodeParameter('price', i);
@@ -332,7 +354,6 @@ export async function execute(this: IExecuteFunctions) {
 					})() : {}),
 					...(cess_type_api && cess_api !== undefined ? { cess_type: cess_type_api, cess: cess_api } : {}),
 				};
-				console.log(options.body);
 			} else if (operation === 'updateCatalog') {
 				const catalogId = this.getNodeParameter('catalogId', i);
 				const updateFields = this.getNodeParameter('catalogUpdateFields', i) as Record<string, any>;
@@ -407,10 +428,8 @@ export async function execute(this: IExecuteFunctions) {
 					catalog_id: catalogId,
 					variants: [variantUpdate],
 				};
-				console.log(options.body);
 			} else if (operation === 'getCatalog') {
 				const catalogId = this.getNodeParameter('catalogId', i);
-				console.log(catalogId);
 				options.method = 'GET';
 				options.url = `${baseUrl}/catalog/${catalogId}`;
 			} else if (operation === 'getAllCatalogs') {
@@ -471,7 +490,22 @@ export async function execute(this: IExecuteFunctions) {
 					catalog_id: catalogId,
 					variants: [newVariant],
 				};
-				console.log(options.body);
+			} else if (operation === 'createInvoice') {
+				const contact = this.getNodeParameter('contact', i) as IDataObject;
+				const items = this.getNodeParameter('items.item', i) as IDataObject[];
+				const seller_branch_id = this.getNodeParameter('seller_branch_id', i) as string;
+				const additionalFields = this.getNodeParameter('additionalFields', i, {}) as IDataObject;
+
+				const body: IDataObject = {
+					contact,
+					items,
+					seller_branch_id,
+					...additionalFields,
+				};
+
+				options.method = 'POST';
+				options.url = `${baseUrl}/invoice`;
+				options.body = body;
 			}
 			const result = await this.helpers.request(options);
 
