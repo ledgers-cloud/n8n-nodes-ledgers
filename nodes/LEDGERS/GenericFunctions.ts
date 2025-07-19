@@ -21,15 +21,16 @@ export async function execute(this: IExecuteFunctions) {
 		});
 	}
 
-	const { xApiKey, email, password } = credentials;
-	const baseUrl = 'https://in-api.ledgers.cloud/v3';
+	const { xApiKey, email, password, apiUrl } = credentials;
+	// For India, append /v3, for UAE, use the URL as is
+	const baseUrl = String(apiUrl).includes('in-api.ledgers.cloud') ? `${apiUrl}/v3` : apiUrl;
 
 	// Step 1: Authenticate and get api_token once for all items
 	let apiToken: string;
 	try {
 		const loginOptions: IRequestOptions = {
 			method: 'POST',
-			url: 'https://in-api.ledgers.cloud/login',
+			url: `${apiUrl}/login`,
 			headers: {
 				'Content-Type': 'application/json',
 				'x-api-key': xApiKey,
@@ -142,7 +143,7 @@ export async function execute(this: IExecuteFunctions) {
 
 				const getContactOptions: IRequestOptions = {
 					method: 'GET',
-					url: `https://in-api.ledgers.cloud/v3/contact/${contactId}`,
+					url: `${baseUrl}/contact/${contactId}`,
 					headers: options.headers,
 					json: true,
 				};

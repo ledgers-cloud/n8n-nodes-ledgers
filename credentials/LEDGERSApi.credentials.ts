@@ -14,6 +14,23 @@ export class LEDGERSApi implements ICredentialType {
 
 	properties: INodeProperties[] = [
 		{
+			displayName: 'API URL',
+			name: 'apiUrl',
+			type: 'options',
+			options: [
+				{
+					name: 'India (Production)',
+					value: 'https://in-api.ledgers.cloud',
+				},
+				{
+					name: 'UAE (Development)',
+					value: 'https://ae-api-dev.ledgers.cloud',
+				},
+			],
+			default: 'https://in-api.ledgers.cloud',
+			required: true,
+		},
+		{
 			displayName: 'X-API-Key',
 			name: 'xApiKey',
 			type: 'string',
@@ -55,7 +72,7 @@ export class LEDGERSApi implements ICredentialType {
 	test: ICredentialTestRequest = {
 		request: {
 			method: 'POST',
-			url: 'https://in-api.ledgers.cloud/login',
+			url: '={{$credentials.apiUrl}}/login',
 			headers: {
 				'Content-Type': 'application/json',
 				'x-api-key': '={{$credentials.xApiKey}}',
