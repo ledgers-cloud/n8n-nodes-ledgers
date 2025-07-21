@@ -136,6 +136,69 @@ export async function execute(this: IExecuteFunctions) {
 				options.method = 'PUT';
 				options.url = `${baseUrl}/contact`;
 				options.body = body;
+			} else if (operation === 'createUaeContact') {
+				const contactName = this.getNodeParameter('contact_name', i);
+				const email = this.getNodeParameter('email', i);
+				const currency = this.getNodeParameter('currency', i);
+				const salutation = this.getNodeParameter('salutation', i);
+				const entityType = this.getNodeParameter('entity_type', i);
+				const businessCountry = this.getNodeParameter('business_country', i);
+				const mobileCountryCode = this.getNodeParameter('mobile_country_code', i);
+				const mobile = this.getNodeParameter('mobile', i);
+				const phone = this.getNodeParameter('phone', i);
+				const billingAddress = this.getNodeParameter('billing_address', i) as IDataObject;
+				const shippingAddress = this.getNodeParameter('shipping_address', i) as IDataObject;
+
+				// Prepare billing address
+				let billingAddressData = {};
+				if (billingAddress.billing_address_details) {
+					const billingDetails = billingAddress.billing_address_details as IDataObject;
+					billingAddressData = {
+						billing_address1: billingDetails.billing_address1 || '',
+						billing_address2: billingDetails.billing_address2 || '',
+						billing_city: billingDetails.billing_city || '',
+						billing_state: billingDetails.billing_state || '',
+						billing_country: billingDetails.billing_country || 'UNITED ARAB EMIRATES',
+						billing_postal_code: billingDetails.billing_postal_code || '',
+					};
+				}
+
+				// Prepare shipping address
+				let shippingAddressData = {};
+				if (shippingAddress.shipping_address_details) {
+					const shippingDetails = shippingAddress.shipping_address_details as IDataObject;
+					shippingAddressData = {
+						shipping_address1: shippingDetails.shipping_address1 || '',
+						shipping_address2: shippingDetails.shipping_address2 || '',
+						shipping_city: shippingDetails.shipping_city || '',
+						shipping_state: shippingDetails.shipping_state || '',
+						shipping_country: shippingDetails.shipping_country || 'UNITED ARAB EMIRATES',
+						shipping_postal_code: shippingDetails.shipping_postal_code || '',
+					};
+				}
+
+				// Format mobile with country code
+				let formattedMobile = '';
+				if (mobile) {
+					const isoCode = dialCodeToCountryCode[`+${mobileCountryCode}`] || 'ae';
+					formattedMobile = `${mobile}|${isoCode}`;
+				}
+
+				options.method = 'POST';
+				options.url = `${baseUrl}/contact`;
+				options.body = {
+					contact_name: contactName,
+					email,
+					currency,
+					salutation,
+					entity_type: entityType,
+					business_country: businessCountry,
+					mobile: formattedMobile,
+					mobile_country_code: `+${mobileCountryCode}`,
+					phone,
+					...billingAddressData,
+					...shippingAddressData,
+				};
 			} else if (operation === 'addAddress') {
 				const contactId = this.getNodeParameter('contactId', i) as string;
 				const addressFields = this.getNodeParameter('addressFields', i) as IDataObject;
@@ -281,6 +344,31 @@ export async function execute(this: IExecuteFunctions) {
 				options.url = `${baseUrl}/contact`;
 				options.body = body;
 				console.log(options.body);
+			} else if (operation === 'updateUaeContact') {
+				const contactId = this.getNodeParameter('contactId', i);
+				const updateFields = this.getNodeParameter('contactAdditionalFields', i) as Record<
+					string,
+					string
+				>;
+
+				const body: Record<string, any> = { contact_id: contactId };
+
+				for (const [key, value] of Object.entries(updateFields)) {
+					if (value !== undefined && value !== null && value !== '') {
+						if (key === 'mobile') {
+							const selectedDialCode = updateFields.mobile_country_code || '+971';
+							const isoCode = dialCodeToCountryCode[selectedDialCode] || 'ae';
+							body[key] = `${value}|${isoCode}`;
+							body.mobile_country_code = selectedDialCode;
+						} else {
+							body[key] = value;
+						}
+					}
+				}
+
+				options.method = 'PUT';
+				options.url = `${baseUrl}/contact`;
+				options.body = body;
 			} else if (operation === 'getContact') {
 				const contactId = this.getNodeParameter('contactId', i);
 				options.url = `${baseUrl}/contact/${contactId}`;

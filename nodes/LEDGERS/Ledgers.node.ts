@@ -44,6 +44,20 @@ export class Ledgers implements INodeType {
 					{
 						name: 'Contact',
 						value: 'contact',
+						displayOptions: {
+							show: {
+								'@credentials.ledgersApi.apiUrl': ['https://in-api.ledgers.cloud'],
+							},
+						},
+					},
+					{
+						name: 'UAE Contact',
+						value: 'uaeContact',
+						displayOptions: {
+							show: {
+								'@credentials.ledgersApi.apiUrl': ['https://ae-api.ledgers.cloud'],
+							},
+						},
 					},
 					{
 						name: 'Catalog',
@@ -57,6 +71,7 @@ export class Ledgers implements INodeType {
 				default: 'contact',
 			},
 			...descriptions.contactOperations,
+			...descriptions.uaeContactOperations,
 			...descriptions.catalogOperations,
 			...descriptions.createInvoiceOperations,
 		],

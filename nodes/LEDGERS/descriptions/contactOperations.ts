@@ -16,7 +16,9 @@ export const contactOperations: INodeProperties[] = [
 		],
 		default: 'createContact',
 		displayOptions: {
-			show: { resource: ['contact'] },
+			show: {
+				resource: ['contact'],
+			},
 		},
 		description: 'Choose the operation',
 	},
