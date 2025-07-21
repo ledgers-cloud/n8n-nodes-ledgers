@@ -22,8 +22,20 @@ export async function execute(this: IExecuteFunctions) {
 	}
 
 	const { xApiKey, email, password, apiUrl } = credentials;
-	// For India, append /v3, for UAE, use the URL as is
-	const baseUrl = String(apiUrl).includes('in-api.ledgers.cloud') ? `${apiUrl}/v3` : apiUrl;
+	const isIndia = String(apiUrl).includes('in-api.ledgers.cloud');
+	const baseUrl = isIndia ? `${apiUrl}/v3` : apiUrl;
+
+	// Validate operation-country match
+	const indiaOps = ['contact', 'createContact', 'updateContact', 'addAddress', 'updateAddress', 'getContact', 'getAllContacts', 'catalog', 'createCatalog', 'updateCatalog', 'getCatalog', 'getAllCatalogs', 'invoice', 'createInvoice'];
+
+	for (let i = 0; i < items.length; i++) {
+		const operation = this.getNodeParameter('operation', i);
+		const resource = this.getNodeParameter('resource', i);
+		if (!indiaOps.includes(operation) && resource !== 'catalog' && resource !== 'invoice' && resource !== 'contact') {
+			throw new ApplicationError('This operation/resource is only available for India API URL. Please update your credentials.');
+		}
+		// Catalog and Invoice always allowed
+	}
 
 	// Step 1: Authenticate and get api_token once for all items
 	let apiToken: string;
@@ -78,7 +90,7 @@ export async function execute(this: IExecuteFunctions) {
 
 			if (operation === 'createContact') {
 				const contactName = this.getNodeParameter('contactName', i);
-				const additionalFields = this.getNodeParameter('additionalFields', i) as Record<string, string>;
+				const additionalFields = this.getNodeParameter('additionalFields', i) as Record<string, any>;
 				const mobileRaw = additionalFields.mobile;
 				const selectedDialCode = additionalFields.mobile_country_code || '+91';
 				const isoCode = dialCodeToCountryCode[selectedDialCode] || 'in';
@@ -88,29 +100,53 @@ export async function execute(this: IExecuteFunctions) {
 				}
 
 				additionalFields.mobile_country_code = selectedDialCode;
-				let address = {
-					billing_address1: additionalFields.billing_address1 ?? '',
-					billing_address2: additionalFields.billing_address2 ?? '',
-					location: additionalFields.location ?? '',
-					state: additionalFields.state ?? '',
-					country: additionalFields.country ?? '',
-					pincode: additionalFields.pincode ?? '',
-					email: additionalFields.email ?? '',
-					gstin: additionalFields.gstin ?? '',
-					mobile: additionalFields.mobile ?? '',
+
+				// Extract billing address from fixedCollection
+				let billingAddress: any = {};
+				if (additionalFields.billing_address && additionalFields.billing_address.billing_address_details) {
+					const b = additionalFields.billing_address.billing_address_details;
+					billingAddress = {
+						billing_address1: b.billing_address1 ?? '',
+						billing_address2: b.billing_address2 ?? '',
+						billing_city: b.billing_city ?? '',
+						billing_state: b.billing_state ?? '',
+						billing_country: b.billing_country ?? '',
+						address_email: b.address_email ?? '',
+						address_gstin: b.address_gstin ?? '',
+						address_mobile: b.address_mobile ?? '',
+						billing_pincode: b.billing_pincode ?? '',
+					};
 				}
-				delete additionalFields.billing_address1;
-				delete additionalFields.billing_address2;
-				delete additionalFields.location;
-				delete additionalFields.state;
-				delete additionalFields.country;
-				delete additionalFields.pincode;
-				delete additionalFields.email;
-				delete additionalFields.gstin;
-				delete additionalFields.mobile;
+
+				// Extract shipping address from fixedCollection
+				let shippingAddress: any = {};
+				if (additionalFields.shipping_address && additionalFields.shipping_address.shipping_address_details) {
+					const s = additionalFields.shipping_address.shipping_address_details;
+					shippingAddress = {
+						shipping_address1: s.shipping_address1 ?? '',
+						shipping_address2: s.shipping_address2 ?? '',
+						shipping_city: s.shipping_city ?? '',
+						shipping_state: s.shipping_state ?? '',
+						shipping_country: s.shipping_country ?? '',
+						address_email: s.address_email ?? '',
+						address_gstin: s.address_gstin ?? '',
+						address_mobile: s.address_mobile ?? '',
+						shipping_pincode: s.shipping_pincode ?? '',
+					};
+				}
+
+				// Remove address fields from additionalFields to avoid duplication
+				delete additionalFields.billing_address;
+				delete additionalFields.shipping_address;
+
 				options.method = 'POST';
 				options.url = `${baseUrl}/contact`;
-				options.body = { contact_name: contactName, ...additionalFields, billing_address: [address] };
+				options.body = {
+					contact_name: contactName,
+					...additionalFields,
+					...(Object.keys(billingAddress).length ? { billing_address: [billingAddress] } : {}),
+					...(Object.keys(shippingAddress).length ? { shipping_address: [shippingAddress] } : {}),
+				};
 			} else if (operation === 'updateContact') {
 				const contactId = this.getNodeParameter('contactId', i);
 				const updateFields = this.getNodeParameter('contactAdditionalFields', i) as Record<
@@ -136,69 +172,6 @@ export async function execute(this: IExecuteFunctions) {
 				options.method = 'PUT';
 				options.url = `${baseUrl}/contact`;
 				options.body = body;
-			} else if (operation === 'createUaeContact') {
-				const contactName = this.getNodeParameter('contact_name', i);
-				const email = this.getNodeParameter('email', i);
-				const currency = this.getNodeParameter('currency', i);
-				const salutation = this.getNodeParameter('salutation', i);
-				const entityType = this.getNodeParameter('entity_type', i);
-				const businessCountry = this.getNodeParameter('business_country', i);
-				const mobileCountryCode = this.getNodeParameter('mobile_country_code', i);
-				const mobile = this.getNodeParameter('mobile', i);
-				const phone = this.getNodeParameter('phone', i);
-				const billingAddress = this.getNodeParameter('billing_address', i) as IDataObject;
-				const shippingAddress = this.getNodeParameter('shipping_address', i) as IDataObject;
-
-				// Prepare billing address
-				let billingAddressData = {};
-				if (billingAddress.billing_address_details) {
-					const billingDetails = billingAddress.billing_address_details as IDataObject;
-					billingAddressData = {
-						billing_address1: billingDetails.billing_address1 || '',
-						billing_address2: billingDetails.billing_address2 || '',
-						billing_city: billingDetails.billing_city || '',
-						billing_state: billingDetails.billing_state || '',
-						billing_country: billingDetails.billing_country || 'UNITED ARAB EMIRATES',
-						billing_postal_code: billingDetails.billing_postal_code || '',
-					};
-				}
-
-				// Prepare shipping address
-				let shippingAddressData = {};
-				if (shippingAddress.shipping_address_details) {
-					const shippingDetails = shippingAddress.shipping_address_details as IDataObject;
-					shippingAddressData = {
-						shipping_address1: shippingDetails.shipping_address1 || '',
-						shipping_address2: shippingDetails.shipping_address2 || '',
-						shipping_city: shippingDetails.shipping_city || '',
-						shipping_state: shippingDetails.shipping_state || '',
-						shipping_country: shippingDetails.shipping_country || 'UNITED ARAB EMIRATES',
-						shipping_postal_code: shippingDetails.shipping_postal_code || '',
-					};
-				}
-
-				// Format mobile with country code
-				let formattedMobile = '';
-				if (mobile) {
-					const isoCode = dialCodeToCountryCode[`+${mobileCountryCode}`] || 'ae';
-					formattedMobile = `${mobile}|${isoCode}`;
-				}
-
-				options.method = 'POST';
-				options.url = `${baseUrl}/contact`;
-				options.body = {
-					contact_name: contactName,
-					email,
-					currency,
-					salutation,
-					entity_type: entityType,
-					business_country: businessCountry,
-					mobile: formattedMobile,
-					mobile_country_code: `+${mobileCountryCode}`,
-					phone,
-					...billingAddressData,
-					...shippingAddressData,
-				};
 			} else if (operation === 'addAddress') {
 				const contactId = this.getNodeParameter('contactId', i) as string;
 				const addressFields = this.getNodeParameter('addressFields', i) as IDataObject;
@@ -344,44 +317,6 @@ export async function execute(this: IExecuteFunctions) {
 				options.url = `${baseUrl}/contact`;
 				options.body = body;
 				console.log(options.body);
-			} else if (operation === 'updateUaeContact') {
-				const contactId = this.getNodeParameter('contactId', i);
-				const updateFields = this.getNodeParameter('contactAdditionalFields', i) as Record<
-					string,
-					string
-				>;
-
-				const body: Record<string, any> = { contact_id: contactId };
-
-				for (const [key, value] of Object.entries(updateFields)) {
-					if (value !== undefined && value !== null && value !== '') {
-						if (key === 'mobile') {
-							const selectedDialCode = updateFields.mobile_country_code || '+971';
-							const isoCode = dialCodeToCountryCode[selectedDialCode] || 'ae';
-							body[key] = `${value}|${isoCode}`;
-							body.mobile_country_code = selectedDialCode;
-						} else {
-							body[key] = value;
-						}
-					}
-				}
-
-				options.method = 'PUT';
-				options.url = `${baseUrl}/contact`;
-				options.body = body;
-			} else if (operation === 'getContact') {
-				const contactId = this.getNodeParameter('contactId', i);
-				options.url = `${baseUrl}/contact/${contactId}`;
-			} else if (operation === 'getAllContacts') {
-				const perPageRaw = this.getNodeParameter('perPage', i);
-				const perPage = typeof perPageRaw === 'object' ? '' : String(perPageRaw);
-				const searchType = String(this.getNodeParameter('searchType', i));
-				let search_term = '';
-				if (searchType === 'name') {
-					const searchTermRaw = this.getNodeParameter('searchTerm', i) ?? '';
-					search_term = typeof searchTermRaw === 'object' ? '' : String(searchTermRaw);
-				}
-				options.url = `${baseUrl}/contact?perpage=${perPage}&sort=desc&search_term=${search_term}`;
 			} else if (operation === 'createCatalog') {
 				const catalogName = this.getNodeParameter('catalogName', i);
 				const price = this.getNodeParameter('price', i);

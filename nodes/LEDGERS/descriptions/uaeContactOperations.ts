@@ -7,7 +7,11 @@ export const uaeContactOperations: INodeProperties[] = [
 		name: 'operation',
 		type: 'options',
 		options: [
-			{ name: 'Create Contact', value: 'createUaeContact', action: 'Create a UAE contact' },
+			{ name: 'Add Address', value: 'addUaeAddress', action: 'Add address to UAE contact' },
+			{ name: 'Add Contact', value: 'createUaeContact', action: 'Add a UAE contact' },
+			{ name: 'Get All Contacts', value: 'getAllUaeContacts', action: 'Get all UAE contacts' },
+			{ name: 'Get Contact', value: 'getUaeContact', action: 'Get a UAE contact' },
+			{ name: 'Update Address', value: 'updateUaeAddress', action: 'Update address of UAE contact' },
 			{ name: 'Update Contact', value: 'updateUaeContact', action: 'Update a UAE contact' },
 		],
 		default: 'createUaeContact',
@@ -352,7 +356,7 @@ export const uaeContactOperations: INodeProperties[] = [
 				options: [
 					{ name: '🇦🇪 UAE (+971)', value: 971 },
 					{ name: '🇮🇳 India (+91)', value: 91 },
-					{ name: '��🇸 USA (+1)', value: 1 },
+					{ name: '🇺🇸 USA (+1)', value: 1 },
 					{ name: '🇬🇧 UK (+44)', value: 44 },
 					{ name: '🇸🇦 Saudi Arabia (+966)', value: 966 },
 					{ name: '🇶🇦 Qatar (+974)', value: 974 },
@@ -373,7 +377,7 @@ export const uaeContactOperations: INodeProperties[] = [
 					{ name: '🇮🇷 Iran (+98)', value: 98 },
 					{ name: '🇦🇫 Afghanistan (+93)', value: 93 },
 					{ name: '🇵🇰 Pakistan (+92)', value: 92 },
-					{ name: '��🇩 Bangladesh (+880)', value: 880 },
+					{ name: '🇧🇩 Bangladesh (+880)', value: 880 },
 					{ name: '🇱🇰 Sri Lanka (+94)', value: 94 },
 					{ name: '🇳🇵 Nepal (+977)', value: 977 },
 					{ name: '🇧🇹 Bhutan (+975)', value: 975 },
@@ -502,7 +506,7 @@ export const uaeContactOperations: INodeProperties[] = [
 					{ name: '🇹🇼 Taiwan (+886)', value: 886 },
 					{ name: '🇭🇰 Hong Kong (+852)', value: 852 },
 					{ name: '🇸🇬 Singapore (+65)', value: 65 },
-					{ name: '��🇾 Malaysia (+60)', value: 60 },
+					{ name: '🇲🇾 Malaysia (+60)', value: 60 },
 					{ name: '🇮🇩 Indonesia (+62)', value: 62 },
 					{ name: '🇵🇭 Philippines (+63)', value: 63 },
 					{ name: '🇧🇷 Brazil (+55)', value: 55 },
@@ -975,6 +979,139 @@ export const uaeContactOperations: INodeProperties[] = [
 						],
 						default: 'MR',
 					},
+				],
+			},
+		],
+	},
+	// Get Contact
+	{
+		displayName: 'Contact ID',
+		name: 'contactId',
+		type: 'string',
+		required: true,
+		default: '',
+		displayOptions: {
+			show: { operation: ['getUaeContact'] },
+		},
+	},
+	// Get All Contacts
+	{
+		displayName: 'Return All',
+		name: 'returnAll',
+		type: 'boolean',
+		default: false,
+		description: 'Whether to return all results or only up to a given limit',
+		displayOptions: {
+			show: {
+				operation: ['getAllUaeContacts'],
+				returnAll: [false],
+			},
+		},
+	},
+	{
+		displayName: 'Limit',
+		name: 'limit',
+		type: 'number',
+		typeOptions: { minValue: 1 },
+		default: 50,
+		description: 'Max number of results to return',
+		displayOptions: {
+			show: {
+				operation: ['getAllUaeContacts'],
+				returnAll: [false],
+			},
+		},
+	},
+	// Add Address
+	{
+		displayName: 'Contact ID',
+		name: 'contactId',
+		type: 'string',
+		required: true,
+		default: '',
+		displayOptions: {
+			show: { operation: ['addUaeAddress'] },
+		},
+	},
+	{
+		displayName: 'Address Type',
+		name: 'addressType',
+		type: 'options',
+		options: [
+			{ name: 'Billing', value: 'billing' },
+			{ name: 'Shipping', value: 'shipping' },
+		],
+		required: true,
+		default: 'billing',
+		displayOptions: {
+			show: { operation: ['addUaeAddress'] },
+		},
+	},
+	{
+		displayName: 'Address Details',
+		name: 'addressDetails',
+		type: 'fixedCollection',
+		typeOptions: { multipleValues: false },
+		default: {},
+		displayOptions: {
+			show: { operation: ['addUaeAddress'] },
+		},
+		options: [
+			{
+				displayName: 'Address',
+				name: 'address',
+				values: [
+					{ displayName: 'Address Line 1', name: 'address1', type: 'string', default: '' },
+					{ displayName: 'Address Line 2', name: 'address2', type: 'string', default: '' },
+					{ displayName: 'City', name: 'city', type: 'string', default: '' },
+					{ displayName: 'State', name: 'state', type: 'string', default: '' },
+					{ displayName: 'Country', name: 'country', type: 'string', default: '' },
+					{ displayName: 'Postal Code', name: 'postal_code', type: 'string', default: '' },
+				],
+			},
+		],
+	},
+	// Update Address
+	{
+		displayName: 'Contact ID',
+		name: 'contactId',
+		type: 'string',
+		required: true,
+		default: '',
+		displayOptions: {
+			show: { operation: ['updateUaeAddress'] },
+		},
+	},
+	{
+		displayName: 'Address ID',
+		name: 'addressId',
+		type: 'string',
+		required: true,
+		default: '',
+		displayOptions: {
+			show: { operation: ['updateUaeAddress'] },
+		},
+	},
+	{
+		displayName: 'Address Details',
+		name: 'addressDetails',
+		type: 'fixedCollection',
+		typeOptions: { multipleValues: false },
+		default: {},
+		displayOptions: {
+			show: { operation: ['updateUaeAddress'] },
+		},
+		options: [
+			{
+				displayName: 'Address',
+				name: 'address',
+				values: [
+					{ displayName: 'Address Line 1', name: 'address1', type: 'string', default: '' },
+					{ displayName: 'Address Line 2', name: 'address2', type: 'string', default: '' },
+					{ displayName: 'City', name: 'city', type: 'string', default: '' },
+					{ displayName: 'State', name: 'state', type: 'string', default: '' },
+					{ displayName: 'Country', name: 'country', type: 'string', default: '' },
+					{ displayName: 'Postal Code', name: 'postal_code', type: 'string', default: '' },
 				],
 			},
 		],

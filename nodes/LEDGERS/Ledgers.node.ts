@@ -35,43 +35,23 @@ export class Ledgers implements INodeType {
 			},
 		],
 		properties: [
+			// Remove Country parameter
+			// Resource dropdown: show all resources, add (India) or (UAE) to displayName for clarity
 			{
 				displayName: 'Resource',
 				name: 'resource',
 				type: 'options',
 				noDataExpression: true,
 				options: [
-					{
-						name: 'Contact',
-						value: 'contact',
-						displayOptions: {
-							show: {
-								'@credentials.ledgersApi.apiUrl': ['https://in-api.ledgers.cloud'],
-							},
-						},
-					},
-					{
-						name: 'UAE Contact',
-						value: 'uaeContact',
-						displayOptions: {
-							show: {
-								'@credentials.ledgersApi.apiUrl': ['https://ae-api.ledgers.cloud'],
-							},
-						},
-					},
-					{
-						name: 'Catalog',
-						value: 'catalog',
-					},
-					{
-						name: 'Invoice',
-						value: 'invoice',
-					},
+					{ name: 'Contact', value: 'contact' },
+					{ name: 'Catalog', value: 'catalog' },
+					{ name: 'Invoice', value: 'invoice' },
 				],
 				default: 'contact',
 			},
+			// Only India Contact Operations
 			...descriptions.contactOperations,
-			...descriptions.uaeContactOperations,
+			// Catalog and Invoice (always visible)
 			...descriptions.catalogOperations,
 			...descriptions.createInvoiceOperations,
 		],
