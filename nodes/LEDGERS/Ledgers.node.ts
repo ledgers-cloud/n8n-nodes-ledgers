@@ -53,7 +53,7 @@ export class Ledgers implements INodeType {
 			...descriptions.contactOperations,
 			// Catalog and Invoice (always visible)
 			...descriptions.catalogOperations,
-			...descriptions.createInvoiceOperations,
+			...descriptions.invoiceOperations,
 		],
 	};
 

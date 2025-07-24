@@ -22,10 +22,6 @@ export class LEDGERSApi implements ICredentialType {
 					name: 'https://in-api.ledgers.cloud (India)',
 					value: 'https://in-api.ledgers.cloud',
 				},
-				{
-					name: 'https://ae-api.ledgers.cloud (UAE)',
-					value: 'https://ae-api.ledgers.cloud',
-				},
 			],
 			default: 'https://in-api.ledgers.cloud',
 			required: true,

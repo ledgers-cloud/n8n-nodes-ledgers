@@ -74,8 +74,14 @@ export async function execute(this: IExecuteFunctions) {
 	for (let i = 0; i < items.length; i++) {
 		const continueOnFail = this.continueOnFail?.();
 		try {
-			const operation = this.getNodeParameter('operation', i);
-			const options: IRequestOptions = {
+					const operation = this.getNodeParameter('operation', i);
+		let viewType: string | undefined;
+		let invoiceId: string | undefined;
+		if (operation === 'viewInvoice') {
+			viewType = this.getNodeParameter('viewType', i) as string;
+			invoiceId = this.getNodeParameter('invoiceId', i) as string;
+		}
+		const options: IRequestOptions = {
 				method: 'GET', // Default method
 				url: '',
 				headers: {
@@ -103,8 +109,8 @@ export async function execute(this: IExecuteFunctions) {
 
 				// Extract billing address from fixedCollection
 				let billingAddress: any = {};
-				if (additionalFields.billing_address && additionalFields.billing_address.billing_address_details) {
-					const b = additionalFields.billing_address.billing_address_details;
+				if (additionalFields.billing_address) {
+					const b = additionalFields.billing_address;
 					billingAddress = {
 						billing_address1: b.billing_address1 ?? '',
 						billing_address2: b.billing_address2 ?? '',
@@ -120,8 +126,8 @@ export async function execute(this: IExecuteFunctions) {
 
 				// Extract shipping address from fixedCollection
 				let shippingAddress: any = {};
-				if (additionalFields.shipping_address && additionalFields.shipping_address.shipping_address_details) {
-					const s = additionalFields.shipping_address.shipping_address_details;
+				if (additionalFields.shipping_address) {
+					const s = additionalFields.shipping_address;
 					shippingAddress = {
 						shipping_address1: s.shipping_address1 ?? '',
 						shipping_address2: s.shipping_address2 ?? '',
@@ -530,10 +536,113 @@ export async function execute(this: IExecuteFunctions) {
 				options.method = 'POST';
 				options.url = `${baseUrl}/invoice`;
 				options.body = body;
+				console.log(options.body);
+			} else if (operation === 'viewInvoice') {
+				options.method = 'GET';
+				options.url = `${baseUrl}/invoice/${invoiceId}`;
+			} else if (operation === 'listInvoices') {
+				const filters = this.getNodeParameter('filters', i) as IDataObject;
+				const pageNumber = this.getNodeParameter('page_number', i) as number;
+				const pageSize = this.getNodeParameter('page_size', i) as number;
+				options.method = 'GET';
+				options.url = `${baseUrl}/invoice?page_number=${pageNumber ?? 1}&page_size=${pageSize ?? 5}&filter.date_from=${filters.date_from ?? ''}&filter.date_to=${filters.date_to ?? ''}&filter.payment_status=${filters.payment_status ?? ''}&filter.contact_id=${filters.contact_id ?? ''}`;
+				console.log(options.url);
 			}
 			const result = await this.helpers.request(options);
 
-			returnData.push({ json: result });
+			// Handle automatic download for viewInvoice when viewAndDownload is selected
+			if (operation === 'viewInvoice' && viewType === 'viewAndDownload') {
+				console.log('Full result:', JSON.stringify(result, null, 2));
+
+				// Check for PDF URL in different possible locations
+				let pdfUrl: string | undefined;
+				if (result.data && result.data.pdf_url) {
+					pdfUrl = result.data.pdf_url;
+				} else if (result.pdf_url) {
+					pdfUrl = result.pdf_url;
+				} else if (result.data && result.data[0] && result.data[0].pdf_url) {
+					pdfUrl = result.data[0].pdf_url;
+				} else if (result.data && Array.isArray(result.data)) {
+					// Check if data is an array and look for pdf_url in first item
+					for (const item of result.data) {
+						if (item && item.pdf_url) {
+							pdfUrl = item.pdf_url;
+							break;
+						}
+					}
+				}
+
+				console.log('PDF URL found:', pdfUrl);
+
+				if (pdfUrl) {
+					try {
+						// Download the PDF file
+						console.log('Attempting to download PDF from:', pdfUrl);
+
+						// Try with authentication headers first
+						let pdfResponse;
+						try {
+							pdfResponse = await this.helpers.request({
+								method: 'GET',
+								url: pdfUrl,
+								headers: {
+									'Content-Type': 'application/pdf',
+									'x-api-key': xApiKey,
+									'api-token': apiToken,
+								},
+							}) as any;
+						} catch (authError) {
+							console.log('Download with auth failed, trying without auth headers');
+							// Try without authentication headers
+							pdfResponse = await this.helpers.request({
+								method: 'GET',
+								url: pdfUrl,
+								headers: {
+									'Content-Type': 'application/pdf',
+								},
+							}) as any;
+						}
+
+						console.log('PDF download response type:', typeof pdfResponse);
+						console.log('PDF download response length:', pdfResponse ? pdfResponse.length : 'undefined');
+
+						// Create a binary data item for the PDF
+						const binaryData = {
+							data: pdfResponse,
+							fileName: `invoice_${invoiceId}.pdf`,
+							mimeType: 'application/pdf',
+						};
+
+						returnData.push({
+							json: result,
+							binary: {
+								['invoice.pdf']: binaryData,
+							},
+						});
+					} catch (downloadError) {
+						// If download fails, still return the invoice data but log the error
+						console.error('Failed to download PDF:', downloadError);
+						returnData.push({
+							json: {
+								...result,
+								downloadError: 'Failed to download PDF file',
+								downloadErrorDetails: (downloadError as Error).message,
+							},
+						});
+					}
+				} else {
+					// No PDF URL found
+					console.log('No PDF URL found in response');
+					returnData.push({
+						json: {
+							...result,
+							downloadError: 'No PDF URL found in the response',
+						},
+					});
+				}
+			} else {
+				returnData.push({ json: result });
+			}
 		} catch (error) {
 			if (continueOnFail) {
 				returnData.push({ json: { error: (error as Error).message } });
