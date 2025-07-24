@@ -46,14 +46,16 @@ export class Ledgers implements INodeType {
 					{ name: 'Contact', value: 'contact' },
 					{ name: 'Catalog', value: 'catalog' },
 					{ name: 'Invoice', value: 'invoice' },
+					{ name: 'Quote', value: 'quote' },
 				],
 				default: 'contact',
 			},
 			// Only India Contact Operations
 			...descriptions.contactOperations,
-			// Catalog and Invoice (always visible)
+			// Catalog, Invoice and Quote (always visible)
 			...descriptions.catalogOperations,
 			...descriptions.invoiceOperations,
+			...descriptions.quoteOperations,
 		],
 	};
 

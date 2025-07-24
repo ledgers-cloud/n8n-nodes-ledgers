@@ -131,6 +131,7 @@ You can enable this in the node's settings under the **"Continue On Fail"** opti
 | 0.0.3   | Catalog Operations Release with updates in Contact Operations               |
 | 0.0.4   | No code changes. Only updated package-lock.json to match npm registry state |
 | 0.0.5   | No code changes. Logo File Updated with Better Resolution                   |
+| 0.0.5   | No code changes. Final Logo File Updated with Better Resolution             |
 
 ---
 
