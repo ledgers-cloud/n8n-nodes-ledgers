@@ -538,14 +538,35 @@ export async function execute(this: IExecuteFunctions) {
 							if (!item.name || item.name === '') {
 								throw new ApplicationError(`Item Name is required for item`, { level: 'warning' });
 							}
-							if (!item.pid || item.pid === '') {
+							if (!item.pid || item.pid === '' || item.pid === 0) {
 								throw new ApplicationError(`Item ID is required for item`, { level: 'warning' });
 							}
 							if (!item.item_code || item.item_code === '') {
 								throw new ApplicationError(`SAC/HSN Code is required for item`, { level: 'warning' });
 							}
-							if (!item.variant_id || item.variant_id === '') {
+							if (!item.variant_id || item.variant_id === '' || item.variant_id === 0) {
 								throw new ApplicationError(`Variant ID is required for item`, { level: 'warning' });
+							}
+							if(!item.rate || item.rate === '' || item.rate === 0) {
+								throw new ApplicationError(`Rate is required for item`, { level: 'warning' });
+							}
+							if(!item.quantity || item.quantity === '' || item.quantity === 0) {
+								throw new ApplicationError(`Quantity is required for item`, { level: 'warning' });
+							}
+							if(!item.item_type || item.item_type === '') {
+								throw new ApplicationError(`Item Type is required for item`, { level: 'warning' });
+							}
+							if(!item.item_code || item.item_code === '') {
+								throw new ApplicationError(`Item Code is required for item`, { level: 'warning' });
+							}
+							if(!item.taxable_per_item || item.taxable_per_item === '' || item.taxable_per_item === 0) {
+								throw new ApplicationError(`Taxable Per Item is required for item`, { level: 'warning' });
+							}
+							if(!item.gst_rate || item.gst_rate === '') {
+								throw new ApplicationError(`GST Rate is required for item`, { level: 'warning' });
+							}
+							if(!item.price_type || item.price_type === '') {
+								throw new ApplicationError(`Price Type is required for item`, { level: 'warning' });
 							}
 						}
 
@@ -606,14 +627,35 @@ export async function execute(this: IExecuteFunctions) {
 							if (!item.name || item.name === '') {
 								throw new ApplicationError(`Item Name is required for item`, { level: 'warning' });
 							}
-							if (!item.pid || item.pid === '') {
+							if (!item.pid || item.pid === '' || item.pid === 0) {
 								throw new ApplicationError(`Item ID is required for item`, { level: 'warning' });
 							}
 							if (!item.item_code || item.item_code === '') {
 								throw new ApplicationError(`SAC/HSN Code is required for item`, { level: 'warning' });
 							}
-							if (!item.variant_id || item.variant_id === '') {
+							if (!item.variant_id || item.variant_id === '' || item.variant_id === 0) {
 								throw new ApplicationError(`Variant ID is required for item`, { level: 'warning' });
+							}
+							if(!item.rate || item.rate === '' || item.rate === 0) {
+								throw new ApplicationError(`Rate is required for item`, { level: 'warning' });
+							}
+							if(!item.quantity || item.quantity === '' || item.quantity === 0) {
+								throw new ApplicationError(`Quantity is required for item`, { level: 'warning' });
+							}
+							if(!item.item_type || item.item_type === '') {
+								throw new ApplicationError(`Item Type is required for item`, { level: 'warning' });
+							}
+							if(!item.item_code || item.item_code === '') {
+								throw new ApplicationError(`Item Code is required for item`, { level: 'warning' });
+							}
+							if(!item.taxable_per_item || item.taxable_per_item === '' || item.taxable_per_item === 0) {
+								throw new ApplicationError(`Taxable Per Item is required for item`, { level: 'warning' });
+							}
+							if(!item.gst_rate || item.gst_rate === '') {
+								throw new ApplicationError(`GST Rate is required for item`, { level: 'warning' });
+							}
+							if(!item.price_type || item.price_type === '') {
+								throw new ApplicationError(`Price Type is required for item`, { level: 'warning' });
 							}
 						}
 
