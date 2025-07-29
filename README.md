@@ -18,79 +18,58 @@ After installing, restart n8n and the node will be available in the editor.
 
 ---
 
-## 📌 Supported Operations
+## 📋 Supported Operations
 
-This node supports comprehensive operations across multiple business modules:
+The LEDGERS node supports the following operations:
 
-### **Contacts** (India API Only)
+### **Contacts** (India API)
+- **Create Contact** - Create a new contact with billing/shipping addresses
+- **Update Contact** - Update existing contact information
+- **Add Address** - Add billing or shipping addresses to existing contacts
+- **Update Address** - Update specific addresses for contacts
+- **Get Contact** - Retrieve a specific contact by ID
+- **Get All Contacts** - List all contacts with pagination and search
 
-* **Create Contact**: Add a new contact with details such as name, email, mobile (with country code), GSTIN, business name, billing address, shipping address, and more.
-* **Update Contact**: Update an existing contact's details by Contact ID. You can update fields like email, mobile, GSTIN, business name, address, and status.
-* **Add Address**: Add new billing or shipping addresses to an existing contact.
-* **Update Address**: Update specific addresses within a contact's address list.
-* **Get Contact by ID**: Retrieve a single contact's details using their Contact ID.
-* **Get All Contacts**: Fetch a list of all contacts with search and pagination support.
+### **Catalogs** (All Regions)
+- **Create Catalog** - Create new catalog items with variants
+- **Update Catalog** - Update catalog item details
+- **Update Variant** - Update specific variant details
+- **Add Variant** - Add new variants to existing catalogs
+- **Get Catalog** - Retrieve a specific catalog by ID
+- **Get All Catalogs** - List all catalogs with pagination and search
 
-### **Catalogs** (Available for all regions)
-
-* **Create Catalog**: Add a new catalog item (product or service) with details like name, price, type (sales/purchase), item type (goods/services), GST rate, units, SKU, description, and more.
-* **Update Catalog**: Update details of an existing catalog item, such as GST rate, units, description, status, HSN/SAC code, and cess details.
-* **Update Variant**: Update specific variant details within a catalog item.
-* **Add Variant**: Add a new variant to an existing catalog item.
-* **Get Catalog by ID**: Fetch details of a specific catalog item using its Catalog ID.
-* **Get All Catalogs**: Retrieve a list of all catalog items with search and pagination support.
-
-### **Invoices** (Available for all regions)
-
-* **Create Invoice**: Create a new invoice with contact details, items, seller branch ID, and additional fields like invoice date, validity date, billing/shipping addresses, and terms.
-* **View Invoice**: Retrieve a specific invoice by Invoice ID.
-* **List Invoices**: Fetch a list of invoices with filtering options:
-  * **Date Range**: Filter by date from and date to (both must be provided)
-  * **Payment Status**: Filter by Paid, Not Paid, Part Paid, or Deleted
-  * **Contact ID**: Filter by specific contact
-  * **Pagination**: Control page number and page size
-
-### **Quotes** (Available for all regions)
-
-* **Create Quote**: Create a new quote with contact details, items, seller branch ID, and additional fields like estimate date, validity date, billing/shipping addresses, and terms.
-* **View Quote**: Retrieve a specific quote by Quote ID.
-* **List Quotes**: Fetch a list of quotes with filtering options:
-  * **Date Range**: Filter by date from and date to (both must be provided)
-  * **Pagination**: Control page number and page size
+### **Sales** (All Regions)
+- **Create Invoice** - Generate new invoices with contact and item details
+- **View Invoice** - Retrieve specific invoice details
+- **List Invoices** - List all invoices with filtering and pagination
+- **Create Quote** - Generate new quotes/estimates with contact and item details
+- **View Quote** - Retrieve specific quote details
+- **List Quotes** - List all quotes with filtering and pagination
 
 ---
 
-## 🗂️ Operation Details
+## 🔧 Operation Details
 
-### Contacts
+### **Contact Operations**
+- **Required Fields**: Contact name, mobile, email
+- **Address Support**: Billing and shipping addresses with GSTIN
+- **Country Codes**: Support for multiple country dial codes
+- **Validation**: Mobile number format validation
 
-- **Create Contact**: Requires contact name. Optional fields include email, mobile (with country code), GSTIN, business name, billing address, shipping address, and more.
-- **Update Contact**: Requires Contact ID. You can update any contact fields including status.
-- **Add Address**: Requires Contact ID and address details. Supports both billing and shipping addresses.
-- **Update Address**: Requires Contact ID, address type, and address selector. Update specific address fields.
-- **Get Contact by ID**: Requires Contact ID. Returns complete contact details.
-- **Get All Contacts**: Supports search by name and pagination controls.
+### **Catalog Operations**
+- **Item Types**: Goods and Services support
+- **GST Integration**: Built-in GST rates (0%, 5%, 12%, 18%, 28%)
+- **Variants**: Multiple variants per catalog item
+- **HSN/SAC Codes**: Automatic code suggestions via AI
+- **Cess Support**: Flat and percentage-based cess
 
-### Catalogs
-
-- **Create Catalog**: Requires catalog name, price, catalog type, and item type. Additional fields include GST rate, units, SKU, description, HSN/SAC code, and cess details.
-- **Update Catalog**: Requires Catalog ID. Update any catalog fields including GST rate, units, description, status, and HSN/SAC code.
-- **Update Variant**: Requires Catalog ID and Variant ID. Update specific variant details.
-- **Add Variant**: Requires Catalog ID, variant name, and price. Add new variants to existing catalogs.
-- **Get Catalog by ID**: Requires Catalog ID. Returns complete catalog details with variants.
-- **Get All Catalogs**: Supports search by name and pagination controls.
-
-### Invoices
-
-- **Create Invoice**: Requires contact details, item detail, and seller branch ID. Each item must include name, ID, variant ID, rate, quantity, item type, HSN/SAC code, taxable amount, GST rate, and price type. Additional fields include invoice date, validity date, billing/shipping addresses, and terms.
-- **View Invoice**: Requires Invoice ID. Returns complete invoice details.
-- **List Invoices**: Supports date range filtering (both from and to dates required), payment status filtering, contact ID filtering, and pagination.
-
-### Quotes
-
-- **Create Quote**: Requires contact details, items detail, and seller branch ID. Each item must include name, ID, variant ID, rate, quantity, item type, HSN/SAC code, taxable amount, GST rate, and price type. Additional fields include estimate date, validity date, billing/shipping addresses, and terms.
-- **View Quote**: Requires Quote ID. Returns complete quote details.
-- **List Quotes**: Supports date range filtering (both from and to dates required) and pagination.
+### **Sales Operations**
+- **Invoice Creation**: Full invoice generation with contact and item details
+- **Quote Generation**: Estimate creation with validity periods
+- **Item Management**: Multiple items with rates, quantities, and tax calculations
+- **Date Filtering**: Date range filtering for listing operations
+- **Payment Status**: Track payment status (Paid, Not Paid, Part Paid, Deleted)
+- **Validation**: Rate validation (non-negative), date range completeness
 
 ---
 

@@ -26,15 +26,15 @@ export async function execute(this: IExecuteFunctions) {
 	const baseUrl = isIndia ? `${apiUrl}/v3` : apiUrl;
 
 	// Validate operation-country match
-	const indiaOps = ['contact', 'createContact', 'updateContact', 'addAddress', 'updateAddress', 'getContact', 'getAllContacts', 'catalog', 'createCatalog', 'updateCatalog', 'getCatalog', 'getAllCatalogs', 'invoice', 'createInvoice', 'quote', 'createQuote'];
+	const indiaOps = ['contact', 'createContact', 'updateContact', 'addAddress', 'updateAddress', 'getContact', 'getAllContacts', 'catalog', 'createCatalog', 'updateCatalog', 'getCatalog', 'getAllCatalogs', 'sales', 'createInvoice', 'createQuote', 'viewInvoice', 'viewQuote', 'listInvoices', 'listQuotes'];
 
 	for (let i = 0; i < items.length; i++) {
 		const operation = this.getNodeParameter('operation', i);
 		const resource = this.getNodeParameter('resource', i);
-		if (!indiaOps.includes(operation) && resource !== 'catalog' && resource !== 'invoice' && resource !== 'contact' && resource !== 'quote') {
+		if (!indiaOps.includes(operation) && resource !== 'catalog' && resource !== 'sales' && resource !== 'contact') {
 			throw new ApplicationError('This operation/resource is only available for India API URL. Please update your credentials.');
 		}
-		// Catalog, Invoice and Quote always allowed
+		// Catalog and Sales always allowed
 	}
 
 	// Step 1: Authenticate and get api_token once for all items
@@ -108,12 +108,12 @@ export async function execute(this: IExecuteFunctions) {
 							billingAddress = {
 								billing_address1: b.billing_address1 ?? '',
 								billing_address2: b.billing_address2 ?? '',
-								billing_city: b.billing_city ?? '',
-								billing_state: b.billing_state ?? '',
-								billing_country: b.billing_country ?? '',
-								address_email: b.address_email ?? '',
-								address_gstin: b.address_gstin ?? '',
-								address_mobile: b.address_mobile ?? '',
+								city: b.billing_city ?? '',
+								state: b.billing_state ?? '',
+								country: b.billing_country ?? '',
+								email: b.billing_email ?? '',
+								gstin: b.billing_gstin ?? '',
+								mobile: b.billing_mobile ?? '',
 								billing_pincode: b.billing_pincode ?? '',
 							};
 						}
@@ -125,12 +125,12 @@ export async function execute(this: IExecuteFunctions) {
 							shippingAddress = {
 								shipping_address1: s.shipping_address1 ?? '',
 								shipping_address2: s.shipping_address2 ?? '',
-								shipping_city: s.shipping_city ?? '',
-								shipping_state: s.shipping_state ?? '',
-								shipping_country: s.shipping_country ?? '',
-								address_email: s.address_email ?? '',
-								address_gstin: s.address_gstin ?? '',
-								address_mobile: s.address_mobile ?? '',
+								city: s.shipping_city ?? '',
+								state: s.shipping_state ?? '',
+								country: s.shipping_country ?? '',
+								email: s.shipping_email ?? '',
+								gstin: s.shipping_gstin ?? '',
+								mobile: s.shipping_mobile ?? '',
 								shipping_pincode: s.shipping_pincode ?? '',
 							};
 						}
@@ -712,6 +712,83 @@ export async function execute(this: IExecuteFunctions) {
 
 						options.method = 'GET';
 						options.url = `${baseUrl}/estimate?page_number=${pageNumber ?? 1}&page_size=${pageSize ?? 5}&filter.date_from=${filters.date_from ?? ''}&filter.date_to=${filters.date_to ?? ''}&filter.payment_status=${filters.payment_status ?? ''}&filter.contact_id=${filters.contact_id ?? ''}`;
+					} else if (operation === 'createReceipt') {
+						const contact = this.getNodeParameter('contact', i) as IDataObject;
+						const amount = this.getNodeParameter('amount', i) as string;
+						const paymentMethod = this.getNodeParameter('payment_method', i) as string;
+						const coaId = this.getNodeParameter('coa_id', i) as string;
+						const additionalFields = this.getNodeParameter('additionalFields', i, {}) as IDataObject;
+
+						// Validate required fields
+						if (!contact.name || contact.name === '') {
+							throw new ApplicationError('Contact Name is required for creating receipt', { level: 'warning' });
+						}
+						if (!contact.id || contact.id === '') {
+							throw new ApplicationError('Contact ID is required for creating receipt', { level: 'warning' });
+						}
+						if (!amount || amount === '' || parseFloat(amount) <= 0) {
+							throw new ApplicationError('Amount is required and must be greater than 0 for creating receipt', { level: 'warning' });
+						}
+						if (!paymentMethod || paymentMethod === '') {
+							throw new ApplicationError('Payment Method is required for creating receipt', { level: 'warning' });
+						}
+						if (!coaId || coaId === '') {
+							throw new ApplicationError('Expense Type (COA ID) is required for creating receipt', { level: 'warning' });
+						}
+
+						// Format receipt date to YYYY-MM-DD format (date only, no time)
+						if (additionalFields.receipt_date) {
+							const receiptDate = new Date(additionalFields.receipt_date as string);
+							additionalFields.receipt_date = receiptDate.toISOString().split('T')[0];
+						}
+
+						// Build the receipt body based on the JSON structure
+						const body: IDataObject = {
+							contact,
+							amount: parseFloat(amount),
+							payment_method: paymentMethod,
+							coa_id: parseInt(coaId),
+						};
+
+						// Add optional fields if provided
+						if (additionalFields.billing_address) {
+							body.billing_address = additionalFields.billing_address;
+						}
+						if (additionalFields.shipping_address) {
+							body.shipping_address = additionalFields.shipping_address;
+						}
+						if (additionalFields.currency) {
+							body.currency = additionalFields.currency;
+						}
+						if (additionalFields.receipt_number) {
+							body.receipt_number = additionalFields.receipt_number;
+						}
+						if (additionalFields.receipt_date) {
+							body.receipt_date = additionalFields.receipt_date;
+						}
+						if (additionalFields.notes) {
+							body.notes = additionalFields.notes;
+						}
+						if (additionalFields.transaction_number) {
+							body.transaction_number = additionalFields.transaction_number;
+						}
+						if (additionalFields.collected_by) {
+							body.collected_by = additionalFields.collected_by;
+						}
+						if (additionalFields.reconcile) {
+							body.reconcile = additionalFields.reconcile;
+						}
+						if (additionalFields.notification !== undefined) {
+							body.notification = additionalFields.notification === 'Yes' ? 1 : 0;
+						}
+						if (additionalFields.currency_info) {
+							body.currency_info = additionalFields.currency_info;
+						}
+
+						options.method = 'POST';
+						options.url = `${baseUrl}/receipt`;
+						options.body = body;
+						console.log('Receipt creation body:', options.body);
 					}
 					const result = await this.helpers.request(options);
 					returnData.push({ json: result });

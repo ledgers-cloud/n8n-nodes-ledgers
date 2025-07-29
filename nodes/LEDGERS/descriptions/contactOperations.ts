@@ -378,27 +378,6 @@ export const contactOperations: INodeProperties[] = [
 						default: 'INDIA',
 					},
 					{
-						displayName: 'Email',
-						name: 'address_email',
-						type: 'string',
-						default: '',
-						placeholder: 'Enter email',
-					},
-					{
-						displayName: 'GSTIN',
-						name: 'address_gstin',
-						type: 'string',
-						default: '',
-						placeholder: 'Enter GST',
-					},
-					{
-						displayName: 'Mobile',
-						name: 'address_mobile',
-						type: 'string',
-						default: '',
-						placeholder: 'Enter mobile',
-					},
-					{
 						displayName: 'Pincode',
 						name: 'billing_pincode',
 						type: 'string',
