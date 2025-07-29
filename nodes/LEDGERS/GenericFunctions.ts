@@ -550,6 +550,9 @@ export async function execute(this: IExecuteFunctions) {
 							if(!item.rate || item.rate === '' || item.rate === 0) {
 								throw new ApplicationError(`Rate is required for item`, { level: 'warning' });
 							}
+							if(typeof item.rate === 'number' && item.rate < 0) {
+								throw new ApplicationError(`Rate cannot be negative for item`, { level: 'warning' });
+							}
 							if(!item.quantity || item.quantity === '' || item.quantity === 0) {
 								throw new ApplicationError(`Quantity is required for item`, { level: 'warning' });
 							}
@@ -565,8 +568,10 @@ export async function execute(this: IExecuteFunctions) {
 							if(!item.gst_rate || item.gst_rate === '') {
 								throw new ApplicationError(`GST Rate is required for item`, { level: 'warning' });
 							}
-							if(!item.price_type || item.price_type === '') {
-								throw new ApplicationError(`Price Type is required for item`, { level: 'warning' });
+							if(item.rate && item.non_taxable_per_item) {
+								if(item.rate < item.non_taxable_per_item) {
+									throw new ApplicationError(`Non-Taxable value cannot be greater than Rate for item`, { level: 'warning' });
+								}
 							}
 						}
 
@@ -600,6 +605,12 @@ export async function execute(this: IExecuteFunctions) {
 						const filters = this.getNodeParameter('filters', i) as IDataObject;
 						const pageNumber = this.getNodeParameter('page_number', i) as number;
 						const pageSize = this.getNodeParameter('page_size', i) as number;
+
+						// Validate date range - both from and to dates must be provided if either is selected
+						if ((filters.date_from && !filters.date_to) || (!filters.date_from && filters.date_to)) {
+							throw new ApplicationError('Both Date From and Date To must be provided for date range filtering', { level: 'warning' });
+						}
+
 						options.method = 'GET';
 						options.url = `${baseUrl}/invoice?page_number=${pageNumber ?? 1}&page_size=${pageSize ?? 5}&filter.date_from=${filters.date_from ?? ''}&filter.date_to=${filters.date_to ?? ''}&filter.payment_status=${filters.payment_status ?? ''}&filter.contact_id=${filters.contact_id ?? ''}`;
 						console.log(options.url);
@@ -639,6 +650,9 @@ export async function execute(this: IExecuteFunctions) {
 							if(!item.rate || item.rate === '' || item.rate === 0) {
 								throw new ApplicationError(`Rate is required for item`, { level: 'warning' });
 							}
+							if(typeof item.rate === 'number' && item.rate < 0) {
+								throw new ApplicationError(`Rate cannot be negative for item`, { level: 'warning' });
+							}
 							if(!item.quantity || item.quantity === '' || item.quantity === 0) {
 								throw new ApplicationError(`Quantity is required for item`, { level: 'warning' });
 							}
@@ -654,8 +668,10 @@ export async function execute(this: IExecuteFunctions) {
 							if(!item.gst_rate || item.gst_rate === '') {
 								throw new ApplicationError(`GST Rate is required for item`, { level: 'warning' });
 							}
-							if(!item.price_type || item.price_type === '') {
-								throw new ApplicationError(`Price Type is required for item`, { level: 'warning' });
+							if(item.rate && item.non_taxable_per_item) {
+								if(item.rate < item.non_taxable_per_item) {
+									throw new ApplicationError(`Non-Taxable value cannot be greater than Rate for item`, { level: 'warning' });
+								}
 							}
 						}
 
@@ -688,6 +704,12 @@ export async function execute(this: IExecuteFunctions) {
 						const filters = this.getNodeParameter('filters', i) as IDataObject;
 						const pageNumber = this.getNodeParameter('page_number', i) as number;
 						const pageSize = this.getNodeParameter('page_size', i) as number;
+
+						// Validate date range - both from and to dates must be provided if either is selected
+						if ((filters.date_from && !filters.date_to) || (!filters.date_from && filters.date_to)) {
+							throw new ApplicationError('Both Date From and Date To must be provided for date range filtering', { level: 'warning' });
+						}
+
 						options.method = 'GET';
 						options.url = `${baseUrl}/estimate?page_number=${pageNumber ?? 1}&page_size=${pageSize ?? 5}&filter.date_from=${filters.date_from ?? ''}&filter.date_to=${filters.date_to ?? ''}&filter.payment_status=${filters.payment_status ?? ''}&filter.contact_id=${filters.contact_id ?? ''}`;
 					}

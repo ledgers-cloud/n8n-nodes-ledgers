@@ -1040,19 +1040,13 @@ export const InvoiceOperations: INodeProperties[] = [
 					{ name: 'Part Paid', value: 'Part Paid' },
 					{ name: 'Deleted', value: 'Deleted' },
 				], default: 'Paid' },
-				{
-					displayName: 'Date Range',
-					name: 'date_range',
-					type: 'fixedCollection',
-					typeOptions: { multipleValues: false },
-					default: {},
-					options: [
-						{ displayName: 'Date From', name: 'date_from', type: 'string', placeholder: 'YYYY-MM-DD', default: '' },
-						{ displayName: 'Date To', name: 'date_to', type: 'string', placeholder: 'YYYY-MM-DD', default: '' },
-					],
-				},
-      {
-        displayName: 'Contact ID', name: 'contact_id', type: 'string', default: '' },
+			{
+				displayName: 'Date From', name: 'date_from', type: 'dateTime', typeOptions: { dateOnly: true, showTime: false }, default: '' },
+			{
+				displayName: 'Date To', name: 'date_to', type: 'dateTime', typeOptions: { dateOnly: true, showTime: false }, default: '' },
+			{
+				displayName: 'Contact ID', name: 'contact_id', type: 'string', default: ''
+			},
 		],
     displayOptions: {
       show: {

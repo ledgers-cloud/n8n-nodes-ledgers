@@ -20,7 +20,7 @@ export class Ledgers implements INodeType {
 		group: ['transform'],
 		version: 1,
 		description: 'Interact with LEDGERS API',
-		subtitle: '={{ $parameter["operation"] + ": " + $parameter["resource"] }}',
+		subtitle: '={{ $parameter["resource"] + ": " + $parameter["operation"] }}',
 		defaults: {
 			name: 'LEDGERS',
 		},

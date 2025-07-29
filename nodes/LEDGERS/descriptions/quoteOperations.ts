@@ -812,16 +812,9 @@ export const QuoteOperations: INodeProperties[] = [
     default: {},
     options: [
       {
-        displayName: 'Date Range',
-        name: 'date_range',
-        type: 'fixedCollection',
-        typeOptions: { multipleValues: false },
-        default: {},
-        options: [
-          { displayName: 'Date From', name: 'date_from', type: 'string', placeholder: 'YYYY-MM-DD', default: '' },
-          { displayName: 'Date To', name: 'date_to', type: 'string', placeholder: 'YYYY-MM-DD', default: '' },
-        ],
-      },
+        displayName: 'Date From', name: 'date_from', type: 'dateTime', typeOptions: { dateOnly: true, showTime: false }, default: '' },
+      {
+        displayName: 'Date To', name: 'date_to', type: 'dateTime', typeOptions: { dateOnly: true, showTime: false }, default: '' },
     ],
     displayOptions: {
       show: {
