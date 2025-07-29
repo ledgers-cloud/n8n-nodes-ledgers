@@ -1,6 +1,6 @@
 # n8n-nodes-ledgers-cloud
 
-This is an n8n community node for integrating with [LEDGERS](https://ledgers.cloud/) – a comprehensive business platform offering features like accounting, invoicing, contacts, and catalogs.
+This is an n8n community node for integrating with [LEDGERS](https://ledgers.cloud/) – a comprehensive business platform offering features like accounting, invoicing, contacts, catalogs, and quotes.
 
 Use this node to automate LEDGERS workflows directly from within [n8n](https://n8n.io), the fair-code licensed workflow automation platform.
 
@@ -12,7 +12,7 @@ To install this community node, follow the instructions in the [n8n community no
 
 ```bash
 npm install @ledgers/n8n-nodes-ledgers-cloud
-````
+```
 
 After installing, restart n8n and the node will be available in the editor.
 
@@ -20,27 +20,43 @@ After installing, restart n8n and the node will be available in the editor.
 
 ## 📌 Supported Operations
 
-This node currently supports the following operations:
+This node supports comprehensive operations across multiple business modules:
 
-### **Contacts**
+### **Contacts** (India API Only)
 
-* **Create Contact**: Add a new contact with details such as name, email, mobile, GSTIN, business name, and address.
+* **Create Contact**: Add a new contact with details such as name, email, mobile (with country code), GSTIN, business name, billing address, shipping address, and more.
 * **Update Contact**: Update an existing contact's details by Contact ID. You can update fields like email, mobile, GSTIN, business name, address, and status.
+* **Add Address**: Add new billing or shipping addresses to an existing contact.
+* **Update Address**: Update specific addresses within a contact's address list.
 * **Get Contact by ID**: Retrieve a single contact's details using their Contact ID.
-* **Get All Contacts**: Fetch a list of all contacts. Supports advanced search:
-  * **Search by Name**: Find contacts by partial or full name match.
-  * **Limit Results**: Control the number of contacts returned per page.
+* **Get All Contacts**: Fetch a list of all contacts with search and pagination support.
 
-### **Catalogs**
+### **Catalogs** (Available for all regions)
 
-* **Create Catalog**: Add a new catalog item (product or service) with details like name, price, type (sales/purchase), item type (goods/services), GST, units, SKU, and more.
-* **Get All Catalogs**: Retrieve a list of all catalog items. Supports:
-  * **Search by Name**: Find catalog items by name.
-  * **Limit Results**: Control the number of catalog items returned per page.
+* **Create Catalog**: Add a new catalog item (product or service) with details like name, price, type (sales/purchase), item type (goods/services), GST rate, units, SKU, description, and more.
+* **Update Catalog**: Update details of an existing catalog item, such as GST rate, units, description, status, HSN/SAC code, and cess details.
+* **Update Variant**: Update specific variant details within a catalog item.
+* **Add Variant**: Add a new variant to an existing catalog item.
 * **Get Catalog by ID**: Fetch details of a specific catalog item using its Catalog ID.
-* **Update Catalog**: Update details of an existing catalog item, such as GST rate, units, description, status, and more.
-* **Add Variant (Existing Catalog)**: Add a new variant to an existing catalog item.
-* **Update Variant (Existing Catalog)**: Update details of a specific variant within a catalog item.
+* **Get All Catalogs**: Retrieve a list of all catalog items with search and pagination support.
+
+### **Invoices** (Available for all regions)
+
+* **Create Invoice**: Create a new invoice with contact details, items, seller branch ID, and additional fields like invoice date, validity date, billing/shipping addresses, and terms.
+* **View Invoice**: Retrieve a specific invoice by Invoice ID.
+* **List Invoices**: Fetch a list of invoices with filtering options:
+  * **Date Range**: Filter by date from and date to (both must be provided)
+  * **Payment Status**: Filter by Paid, Not Paid, Part Paid, or Deleted
+  * **Contact ID**: Filter by specific contact
+  * **Pagination**: Control page number and page size
+
+### **Quotes** (Available for all regions)
+
+* **Create Quote**: Create a new quote with contact details, items, seller branch ID, and additional fields like estimate date, validity date, billing/shipping addresses, and terms.
+* **View Quote**: Retrieve a specific quote by Quote ID.
+* **List Quotes**: Fetch a list of quotes with filtering options:
+  * **Date Range**: Filter by date from and date to (both must be provided)
+  * **Pagination**: Control page number and page size
 
 ---
 
@@ -48,25 +64,33 @@ This node currently supports the following operations:
 
 ### Contacts
 
-- **Create Contact**: Requires a contact name. You can optionally provide email, mobile (with country code), GSTIN, business name, billing address, city, state, and country.
-- **Update Contact**: Requires the Contact ID. You can update any of the fields available during creation, plus status (active/inactive).
-- **Get Contact by ID**: Requires the Contact ID. Returns all details for the specified contact.
-- **Get All Contacts**: You can search by name (partial match) or limit the number of results per page. Useful for filtering large contact lists.
+- **Create Contact**: Requires contact name. Optional fields include email, mobile (with country code), GSTIN, business name, billing address, shipping address, and more.
+- **Update Contact**: Requires Contact ID. You can update any contact fields including status.
+- **Add Address**: Requires Contact ID and address details. Supports both billing and shipping addresses.
+- **Update Address**: Requires Contact ID, address type, and address selector. Update specific address fields.
+- **Get Contact by ID**: Requires Contact ID. Returns complete contact details.
+- **Get All Contacts**: Supports search by name and pagination controls.
 
 ### Catalogs
 
-- **Create Catalog**: Requires catalog name, price, catalog type (sales/purchase), and item type (goods/services). Additional fields include GST type, GST rate, units, SKU, description, status, HSN/SAC code, and cess details.
-- **Get All Catalogs**: Search by catalog name or limit the number of results per page. Useful for quickly finding catalog items.
-- **Get Catalog by ID**: Requires the Catalog ID. Returns all details for the specified catalog item.
-- **Update Catalog**: Requires the Catalog ID. You can update GST rate, units, description, status, and other catalog fields.
-- **Add Variant (Existing Catalog)**: Add a new variant to an existing catalog item. Requires Catalog ID, variant name, price, and optional fields like GST type, SKU, and description.
-- **Update Variant (Existing Catalog)**: Update details of a specific variant within a catalog item. Requires Catalog ID and Variant ID.
+- **Create Catalog**: Requires catalog name, price, catalog type, and item type. Additional fields include GST rate, units, SKU, description, HSN/SAC code, and cess details.
+- **Update Catalog**: Requires Catalog ID. Update any catalog fields including GST rate, units, description, status, and HSN/SAC code.
+- **Update Variant**: Requires Catalog ID and Variant ID. Update specific variant details.
+- **Add Variant**: Requires Catalog ID, variant name, and price. Add new variants to existing catalogs.
+- **Get Catalog by ID**: Requires Catalog ID. Returns complete catalog details with variants.
+- **Get All Catalogs**: Supports search by name and pagination controls.
 
----
+### Invoices
 
-## 🚧 Roadmap
+- **Create Invoice**: Requires contact details, item detail, and seller branch ID. Each item must include name, ID, variant ID, rate, quantity, item type, HSN/SAC code, taxable amount, GST rate, and price type. Additional fields include invoice date, validity date, billing/shipping addresses, and terms.
+- **View Invoice**: Requires Invoice ID. Returns complete invoice details.
+- **List Invoices**: Supports date range filtering (both from and to dates required), payment status filtering, contact ID filtering, and pagination.
 
-We plan to add support for **Sales Invoices** and **Purchase Invoices** modules in future releases. Stay tuned for more features!
+### Quotes
+
+- **Create Quote**: Requires contact details, items detail, and seller branch ID. Each item must include name, ID, variant ID, rate, quantity, item type, HSN/SAC code, taxable amount, GST rate, and price type. Additional fields include estimate date, validity date, billing/shipping addresses, and terms.
+- **View Quote**: Requires Quote ID. Returns complete quote details.
+- **List Quotes**: Supports date range filtering (both from and to dates required) and pagination.
 
 ---
 
@@ -74,11 +98,33 @@ We plan to add support for **Sales Invoices** and **Purchase Invoices** modules 
 
 To authenticate with the LEDGERS API, you must provide the following:
 
-* **X-API-Key** – [Get your API Key from LEDGERS](https://ledgers.cloud/c/developers)
+* **X-API-Key** – [Get your API Key from LEDGERS](https://ledgers.cloud/in/n8n/)
 * **Email** – Your registered LEDGERS account email
 * **Password** – Your LEDGERS account password
+* **API URL** – Your LEDGERS API endpoint (e.g., https://in-api.ledgers.cloud for India)
 
 > ⚠️ The node performs a login to retrieve an `api_token`, which is used in all subsequent API requests. If login fails, the node will return the appropriate error message from the API.
+
+---
+
+## 🚀 Coming Soon
+
+**LEDGERS UAE** will be available for all operations (Contacts, Catalogs, Invoices, and Quotes) in an upcoming release.
+
+---
+
+## 🚧 Roadmap
+
+### **Upcoming Features**
+- **UAE LEDGERS Support**: Full support for UAE region including all operations (Contacts, Catalogs, Invoices, Quotes)
+- **Enhanced Filtering**: Additional filtering options for invoice and quote listings
+- **Bulk Operations**: Support for bulk create/update operations
+- **Advanced Search**: Enhanced search capabilities across all modules
+
+### **Future Enhancements**
+- **Real-time Notifications**: Webhook support for real-time updates
+- **Advanced Reporting**: Integration with LEDGERS reporting features
+- **Multi-currency Support**: Enhanced currency handling for international operations
 
 ---
 
@@ -90,26 +136,64 @@ To authenticate with the LEDGERS API, you must provide the following:
 | Credential Test     | ✅ Implemented |
 | Auto Token Handling | ✅ Implemented |
 | Continue On Fail    | ✅ Supported   |
+| Date Range Validation| ✅ Implemented |
+| Negative Rate Validation| ✅ Implemented |
 
 ---
 
-## 🚀 Usage
+## 🚀 Usage Examples
 
-1. Install the node via npm.
-2. Add credentials of type **LEDGERS API** in the n8n credentials UI.
-3. Enter your `X-API-Key`, `email`, and `password`.
-4. Use the **LEDGERS** node to perform contact-related operations.
+### Create a Contact
+1. Select **Contact** as resource
+2. Choose **Create Contact** operation
+3. Provide contact name and optional details
+4. Add billing/shipping addresses if needed
 
-Example: To create a new contact, choose **Create Contact** as the operation and provide the required fields.
+### Create an Invoice
+1. Select **Invoice** as resource
+2. Choose **Create Invoice** operation
+3. Provide contact details
+4. Add items with required fields (name, ID, rate, quantity, etc.)
+5. Set seller branch ID and optional fields
+
+### List Invoices with Filters
+1. Select **Invoice** as resource
+2. Choose **List Invoices** operation
+3. Set page number and page size
+4. Add filters (date range, payment status, contact ID)
+
+### Create a Catalog Item
+1. Select **Catalog** as resource
+2. Choose **Create Catalog** operation
+3. Provide catalog name, price, type, and item type
+4. Add optional fields like GST rate, units, SKU
 
 ---
 
-## ⚠️ Error Handling & Continue On Fail
+## ⚠️ Validation Rules
+
+### Date Range Filtering
+- When using date range filters in List Invoices or List Quotes, **both Date From and Date To must be provided**
+- If only one date is provided, the operation will fail with a validation error
+
+### Rate Validation
+- Item rates cannot be negative
+- Non-taxable amount cannot be greater than the rate
+
+### Required Fields
+- Contact operations require valid contact details
+- Invoice/Quote items require name, ID, variant ID, rate, quantity, item type, HSN/SAC code, taxable amount, GST rate, and price type
+- Catalog operations require name, price, type, and item type
+
+---
+
+## 🔄 Error Handling & Continue On Fail
 
 This node supports **"Continue On Fail"**, meaning:
 
-* If one item fails (e.g., due to an invalid contact ID or missing required field), it logs the error and continues processing the rest of the items.
+* If one item fails (e.g., due to an invalid ID or missing required field), it logs the error and continues processing the rest of the items.
 * If disabled, the node stops execution upon the first error.
+* Validation errors are clearly communicated with specific error messages.
 
 You can enable this in the node's settings under the **"Continue On Fail"** option.
 
@@ -118,7 +202,8 @@ You can enable this in the node's settings under the **"Continue On Fail"** opti
 ## 📚 Resources
 
 * [n8n Community Node Docs](https://docs.n8n.io/integrations/community-nodes/)
-* [LEDGERS Website](https://ledgers.cloud/)
+* [LEDGERS Website](https://ledgers.cloud/in/n8n/)
+* [LEDGERS API Documentation](https://ledgers.readme.io/reference/authentication)
 
 ---
 
@@ -131,7 +216,8 @@ You can enable this in the node's settings under the **"Continue On Fail"** opti
 | 0.0.3   | Catalog Operations Release with updates in Contact Operations               |
 | 0.0.4   | No code changes. Only updated package-lock.json to match npm registry state |
 | 0.0.5   | No code changes. Logo File Updated with Better Resolution                   |
-| 0.0.5   | No code changes. Final Logo File Updated with Better Resolution             |
+| 0.0.6   | No code changes. Final Logo File Updated with Better Resolution             |
+| 0.0.7   | Sales Operations like Invoice, Quotes, Receipt and Credit Note              |
 
 ---
 

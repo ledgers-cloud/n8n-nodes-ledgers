@@ -1,6 +1,6 @@
 {
   "name": "@ledgers/n8n-nodes-ledgers-cloud",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "n8n node for interacting with LEDGERS.cloud API",
   "keywords": [
     "n8n",
@@ -13,7 +13,7 @@
     "n8n-community-node-package"
   ],
   "license": "MIT",
-  "homepage": "https://ledgers.cloud/",
+  "homepage": "https://ledgers.cloud/in/n8n/",
   "author": {
     "name": "LEDGERS",
     "email": "devops@ledgers.cloud"
