@@ -419,8 +419,10 @@ export class Ledgers implements INodeType {
 
 					return returnData;
 				} catch (error) {
-					// Return empty array to allow custom input when any error occurs
-					return [];
+					if (continueOnFail) {
+						return [];
+					}
+					throw error;
 				}
 			},
 		},
