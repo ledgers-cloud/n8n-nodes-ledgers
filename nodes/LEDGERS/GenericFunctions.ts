@@ -713,11 +713,20 @@ export async function execute(this: IExecuteFunctions) {
 						options.method = 'GET';
 						options.url = `${baseUrl}/estimate?page_number=${pageNumber ?? 1}&page_size=${pageSize ?? 5}&filter.date_from=${filters.date_from ?? ''}&filter.date_to=${filters.date_to ?? ''}&filter.payment_status=${filters.payment_status ?? ''}&filter.contact_id=${filters.contact_id ?? ''}`;
 					} else if (operation === 'createReceipt') {
+						console.log('=== CreateReceipt Debug Info ===');
 						const contact = this.getNodeParameter('contact', i) as IDataObject;
 						const amount = this.getNodeParameter('amount', i) as string;
 						const paymentMethod = this.getNodeParameter('payment_method', i) as string;
-						const coaId = this.getNodeParameter('coa_id', i) as string;
+						const sellerBranchId = this.getNodeParameter('seller_id', i) as string;
 						const additionalFields = this.getNodeParameter('additionalFields', i, {}) as IDataObject;
+						const coaId = additionalFields.coa_id as string;
+
+						console.log('Contact:', contact);
+						console.log('Amount:', amount);
+						console.log('Payment Method:', paymentMethod);
+						console.log('Seller Branch ID:', sellerBranchId);
+						console.log('Additional Fields:', additionalFields);
+						console.log('COA ID:', coaId);
 
 						// Validate required fields
 						if (!contact.name || contact.name === '') {
@@ -749,6 +758,44 @@ export async function execute(this: IExecuteFunctions) {
 							payment_method: paymentMethod,
 							coa_id: parseInt(coaId),
 						};
+
+						// Fetch branch data if seller_branch_id is provided
+						if (false && sellerBranchId && sellerBranchId.trim() !== '') {
+							try {
+								// Fetch branch data directly
+								const branchOptions: IRequestOptions = {
+									method: 'GET',
+									url: `${baseUrl}/business/branch/${sellerBranchId}`,
+									headers: {
+										'Content-Type': 'application/json',
+										'x-api-key': xApiKey,
+										'api-token': apiToken,
+									},
+									json: true,
+								};
+
+								const branchResponse = await this.helpers.request(branchOptions);
+								if (branchResponse.status === 200 && branchResponse.data && Array.isArray(branchResponse.data) && branchResponse.data.length > 0) {
+									const branchData = branchResponse.data[0];
+									// Add seller_info with branch data
+									body.seller_info = {
+										business_name: branchData.branch_name || '',
+										gstin: branchData.gstin || '',
+										branch_id: branchData.branch_id || '',
+										address: {
+											address_line_1: branchData.address?.line1 || '',
+											address_line_2: branchData.address?.line2 || '',
+											city: branchData.address?.city || '',
+											state: branchData.address?.state || '',
+											country: branchData.address?.country || '',
+											pincode: branchData.address?.pincode || ''
+										}
+									};
+								}
+							} catch (error) {
+
+							}
+						}
 
 						// Add optional fields if provided
 						if (additionalFields.billing_address) {

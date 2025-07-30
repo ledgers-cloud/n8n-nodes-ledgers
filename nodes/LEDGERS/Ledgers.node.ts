@@ -353,7 +353,7 @@ export class Ledgers implements INodeType {
 				}
 			},
 			async getPaymentMethods(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
-				const continueOnFail = this.getNode().continueOnFail;
+				// const continueOnFail = this.getNode().continueOnFail;
 				try {
 					const credentials = await this.getCredentials('ledgersApi');
 					const { xApiKey, email, password } = credentials;
@@ -419,14 +419,54 @@ export class Ledgers implements INodeType {
 
 					return returnData;
 				} catch (error) {
-					if (continueOnFail) {
-						return [];
-					}
-					throw error;
+					return [];
 				}
 			},
 		},
 	};
+
+	// Helper method to fetch branch data for createReceipt
+	async fetchBranchData(this: IExecuteFunctions, branchId: string): Promise<any> {
+		try {
+			const credentials = await this.getCredentials('ledgersApi');
+			const { xApiKey, email, password } = credentials;
+			const loginOptions: IRequestOptions = {
+				method: 'POST',
+				url: 'https://in-api.ledgers.cloud/login',
+				headers: {
+					'Content-Type': 'application/json',
+					'x-api-key': xApiKey,
+				},
+				body: { email, password },
+				json: true,
+			};
+
+			const loginResponse = await this.helpers.request(loginOptions);
+			if (loginResponse.status !== 200 || !loginResponse.api_token) {
+				return null;
+			}
+
+			const apiToken = loginResponse.api_token;
+			const options: IRequestOptions = {
+				method: 'GET',
+				url: `https://in-api.ledgers.cloud/v3/business/branch/${branchId}`,
+				headers: {
+					'Content-Type': 'application/json',
+					'x-api-key': xApiKey,
+					'api-token': apiToken,
+				},
+				json: true,
+			};
+
+			const response = await this.helpers.request(options);
+			if (response.status === 200 && response.data && Array.isArray(response.data) && response.data.length > 0) {
+				return response.data[0]; // Return the first branch data
+			}
+			return null;
+		} catch (error) {
+			return null;
+		}
+	}
 
 	async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
 		return await execute.call(this);
