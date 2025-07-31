@@ -411,6 +411,12 @@ export class Ledgers implements INodeType {
 							}
 						}
 					}
+					else{
+						returnData.push({
+							name: 'Cash',
+							value: 1,
+						});
+					}
 
 					// If no payment methods found, return empty array to allow custom input
 					if (returnData.length === 0) {
