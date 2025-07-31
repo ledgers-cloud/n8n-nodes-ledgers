@@ -37,6 +37,11 @@ export const SalesOperations: INodeProperties[] = [
         value: 'listQuotes',
         action: 'List all quotes',
       },
+			{
+				name: 'List Receipts',
+				value: 'listReceipts',
+				action: 'List all receipts',
+			},
       {
         name: 'View Invoice',
         value: 'viewInvoice',
@@ -47,6 +52,11 @@ export const SalesOperations: INodeProperties[] = [
         value: 'viewQuote',
         action: 'View a quote',
       },
+			{
+				name: 'View Receipt',
+				value: 'viewReceipt',
+				action: 'View a receipt',
+			},
     ],
     default: 'createInvoice',
   },
@@ -498,13 +508,13 @@ export const SalesOperations: INodeProperties[] = [
 				options: [
 					{
 						displayName: 'Address Line 1',
-						name: 'address_line1',
+						name: 'line1',
 						type: 'string',
 						default: '',
 					},
 					{
 						displayName: 'Address Line 2',
-						name: 'address_line2',
+						name: 'line2',
 						type: 'string',
 						default: '',
 					},
@@ -1356,7 +1366,7 @@ export const SalesOperations: INodeProperties[] = [
 			show: {
 				resource: ['sales'],
 				operation: ['createReceipt'],
-				payment_method: ['cash'],
+				payment_method: ['cash', 'Cash', 'CASH', 'cash payment', 'Cash Payment', 'CASH PAYMENT', '1'], // Multiple variations for cash
 			},
 		},
 	},
@@ -1370,7 +1380,9 @@ export const SalesOperations: INodeProperties[] = [
 			show: {
 				resource: ['sales'],
 				operation: ['createReceipt'],
-				payment_method: ['!cash'],
+			},
+			hide: {
+				payment_method: ['cash', 'Cash', 'CASH', 'cash payment', 'Cash Payment', 'CASH PAYMENT', '1'], // Hide for cash variations
 			},
 		},
 	},
@@ -2413,7 +2425,6 @@ export const SalesOperations: INodeProperties[] = [
 					{ displayName: 'Shipping Address Line 2', name: 'ship_addr2', type: 'string', default: '' },
 					{ displayName: 'Shipping City', name: 'ship_city', type: 'string', default: '' },
 					{ displayName: 'Shipping Country', name: 'ship_country', type: 'string', default: '' },
-					{ displayName: 'Shipping GSTIN', name: 'ship_gstin', type: 'string', default: '' },
 					{ displayName: 'Shipping Pincode', name: 'ship_pincode', type: 'string', default: '' },
 					{ displayName: 'Shipping State', name: 'ship_state', type: 'string', default: '' },
 				],
@@ -2448,6 +2459,20 @@ export const SalesOperations: INodeProperties[] = [
     type: 'string',
     default: '',
   },
+	// Receipt ID for view operations
+	{
+		displayName: 'Receipt ID',
+		name: 'receiptId',
+		required: true,
+		displayOptions: {
+			show: {
+				resource: ['sales'],
+				operation: ['viewReceipt'],
+			},
+		},
+		type: 'string',
+		default: '',
+	},
   // Pagination for list operations
   {
     displayName: 'Page Number',
@@ -2456,7 +2481,7 @@ export const SalesOperations: INodeProperties[] = [
     displayOptions: {
       show: {
         resource: ['sales'],
-        operation: ['listInvoices', 'listQuotes'],
+        operation: ['listInvoices', 'listQuotes', 'listReceipts'],
       },
     },
     type: 'number',
@@ -2469,7 +2494,7 @@ export const SalesOperations: INodeProperties[] = [
     displayOptions: {
       show: {
         resource: ['sales'],
-        operation: ['listInvoices', 'listQuotes'],
+        operation: ['listInvoices', 'listQuotes', 'listReceipts'],
       },
     },
     type: 'number',
@@ -2527,6 +2552,39 @@ export const SalesOperations: INodeProperties[] = [
       },
       {
         displayName: 'Date To', name: 'date_to', type: 'dateTime', typeOptions: { dateOnly: true, showTime: false }, default: '',
+      },
+    ],
+  },
+	// Filters for list operations
+	{
+    displayName: 'Filters',
+    name: 'filters',
+    type: 'collection',
+    placeholder: 'Add Field',
+    default: {},
+    displayOptions: {
+      show: {
+        resource: ['sales'],
+        operation: ['listReceipts'],
+      },
+    },
+    options: [
+      {
+        displayName: 'Contact ID', name: 'contact_id', type: 'string', default: '',
+      },
+      {
+        displayName: 'Date From', name: 'date_from', type: 'dateTime', typeOptions: { dateOnly: true, showTime: false }, default: '',
+      },
+      {
+        displayName: 'Date To', name: 'date_to', type: 'dateTime', typeOptions: { dateOnly: true, showTime: false }, default: '',
+      },
+      {
+        displayName: 'Reconcile Status', name: 'recon_status', type: 'options', options: [
+          { name: 'Fully Reconciled', value: 'Fully Reconciled' },
+          { name: 'Partially Reconciled', value: 'Partially Reconciled' },
+          { name: 'Unreconciled', value: 'Unreconciled' },
+					{ name: 'Deleted', value: 'Deleted' },
+        ], default: 'Fully Reconciled',
       },
     ],
   },

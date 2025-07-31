@@ -719,14 +719,20 @@ export async function execute(this: IExecuteFunctions) {
 						const paymentMethod = this.getNodeParameter('payment_method', i) as string;
 						const sellerBranchId = this.getNodeParameter('seller_id', i) as string;
 						const additionalFields = this.getNodeParameter('additionalFields', i, {}) as IDataObject;
-						const coaId = additionalFields.coa_id as string;
-
-						console.log('Contact:', contact);
-						console.log('Amount:', amount);
-						console.log('Payment Method:', paymentMethod);
-						console.log('Seller Branch ID:', sellerBranchId);
-						console.log('Additional Fields:', additionalFields);
-						console.log('COA ID:', coaId);
+						const coaIdRaw = additionalFields.coa_id;
+						let coaId;
+						if (typeof coaIdRaw === 'string' && coaIdRaw.startsWith('{')) {
+							try {
+								const parsed = JSON.parse(coaIdRaw);
+								coaId = parsed.id;
+							} catch {
+								coaId = coaIdRaw;
+							}
+						} else if (typeof coaIdRaw === 'object' && coaIdRaw !== null) {
+							coaId = (coaIdRaw as any).id;
+						} else {
+							coaId = coaIdRaw;
+						}
 
 						// Validate required fields
 						if (!contact.name || contact.name === '') {
@@ -760,7 +766,7 @@ export async function execute(this: IExecuteFunctions) {
 						};
 
 						// Fetch branch data if seller_branch_id is provided
-						if (false && sellerBranchId && sellerBranchId.trim() !== '') {
+						if (sellerBranchId && sellerBranchId.trim() !== '') {
 							try {
 								// Fetch branch data directly
 								const branchOptions: IRequestOptions = {
@@ -823,7 +829,7 @@ export async function execute(this: IExecuteFunctions) {
 							body.collected_by = additionalFields.collected_by;
 						}
 						if (additionalFields.reconcile) {
-							body.reconcile = additionalFields.reconcile;
+							body.reconcile = [additionalFields.reconcile];
 						}
 						if (additionalFields.notification !== undefined) {
 							body.notification = additionalFields.notification === 'Yes' ? 1 : 0;
@@ -835,7 +841,19 @@ export async function execute(this: IExecuteFunctions) {
 						options.method = 'POST';
 						options.url = `${baseUrl}/receipt`;
 						options.body = body;
+						console.log('Payment Method Value:', paymentMethod);
 						console.log('Receipt creation body:', options.body);
+					} else if (operation === 'listReceipts') {
+						const filters = this.getNodeParameter('filters', i) as IDataObject;
+						const pageNumber = this.getNodeParameter('page_number', i) as number;
+						const pageSize = this.getNodeParameter('page_size', i) as number;
+
+						options.method = 'GET';
+						options.url = `${baseUrl}/receipt?page_number=${pageNumber ?? 1}&page_size=${pageSize ?? 5}&filter.date_from=${filters.date_from ?? ''}&filter.date_to=${filters.date_to ?? ''}&filter.recon_status=${filters.recon_status ?? ''}&filter.contact_id=${filters.contact_id ?? ''}&filter.search=${filters.search ?? ''}`;
+					} else if (operation === 'viewReceipt') {
+						const receiptId = this.getNodeParameter('receiptId', i) as string;
+						options.method = 'GET';
+						options.url = `${baseUrl}/receipt/${receiptId}`;
 					}
 					const result = await this.helpers.request(options);
 					returnData.push({ json: result });
