@@ -596,7 +596,6 @@ export async function execute(this: IExecuteFunctions) {
 						options.method = 'POST';
 						options.url = `${baseUrl}/invoice`;
 						options.body = body;
-						console.log(options.body);
 					} else if (operation === 'viewInvoice') {
 						const invoiceId = this.getNodeParameter('invoiceId', i) as string;
 						options.method = 'GET';
@@ -611,9 +610,18 @@ export async function execute(this: IExecuteFunctions) {
 							throw new ApplicationError('Both Date From and Date To must be provided for date range filtering', { level: 'warning' });
 						}
 
+						if (filters.date_from) {
+							const dateFrom = new Date(filters.date_from as string);
+							filters.date_from = dateFrom.toISOString().split('T')[0];
+						}
+
+						if(filters.date_to) {
+							const dateTo = new Date(filters.date_to as string);
+							filters.date_to = dateTo.toISOString().split('T')[0];
+						}
+
 						options.method = 'GET';
 						options.url = `${baseUrl}/invoice?page_number=${pageNumber ?? 1}&page_size=${pageSize ?? 5}&filter.date_from=${filters.date_from ?? ''}&filter.date_to=${filters.date_to ?? ''}&filter.payment_status=${filters.payment_status ?? ''}&filter.contact_id=${filters.contact_id ?? ''}`;
-						console.log(options.url);
 					} else if (operation === 'createQuote') {
 						const contact = this.getNodeParameter('contact', i) as IDataObject;
 						const items = this.getNodeParameter('items.item', i) as IDataObject[];
@@ -695,7 +703,6 @@ export async function execute(this: IExecuteFunctions) {
 						options.method = 'POST';
 						options.url = `${baseUrl}/estimate`;
 						options.body = body;
-						console.log(options.body);
 					} else if (operation === 'viewQuote') {
 						const quoteId = this.getNodeParameter('quoteId', i) as string;
 						options.method = 'GET';
@@ -710,10 +717,19 @@ export async function execute(this: IExecuteFunctions) {
 							throw new ApplicationError('Both Date From and Date To must be provided for date range filtering', { level: 'warning' });
 						}
 
+						if (filters.date_from) {
+							const dateFrom = new Date(filters.date_from as string);
+							filters.date_from = dateFrom.toISOString().split('T')[0];
+						}
+
+						if(filters.date_to) {
+							const dateTo = new Date(filters.date_to as string);
+							filters.date_to = dateTo.toISOString().split('T')[0];
+						}
+
 						options.method = 'GET';
 						options.url = `${baseUrl}/estimate?page_number=${pageNumber ?? 1}&page_size=${pageSize ?? 5}&filter.date_from=${filters.date_from ?? ''}&filter.date_to=${filters.date_to ?? ''}&filter.payment_status=${filters.payment_status ?? ''}&filter.contact_id=${filters.contact_id ?? ''}`;
 					} else if (operation === 'createReceipt') {
-						console.log('=== CreateReceipt Debug Info ===');
 						const contact = this.getNodeParameter('contact', i) as IDataObject;
 						const amount = this.getNodeParameter('amount', i) as string;
 						const paymentMethod = this.getNodeParameter('payment_method', i) as string;
@@ -747,6 +763,7 @@ export async function execute(this: IExecuteFunctions) {
 						if (!paymentMethod || paymentMethod === '') {
 							throw new ApplicationError('Payment Method is required for creating receipt', { level: 'warning' });
 						}
+
 						if (!coaId || coaId === '') {
 							throw new ApplicationError('Expense Type (COA ID) is required for creating receipt', { level: 'warning' });
 						}
@@ -764,6 +781,10 @@ export async function execute(this: IExecuteFunctions) {
 							payment_method: paymentMethod,
 							coa_id: parseInt(coaId),
 						};
+
+						if(additionalFields.transaction_number) {
+							body.transaction_number = additionalFields.transaction_number;
+						}
 
 						// Fetch branch data if seller_branch_id is provided
 						if (sellerBranchId && sellerBranchId.trim() !== '') {
@@ -799,7 +820,6 @@ export async function execute(this: IExecuteFunctions) {
 									};
 								}
 							} catch (error) {
-
 							}
 						}
 
@@ -841,12 +861,24 @@ export async function execute(this: IExecuteFunctions) {
 						options.method = 'POST';
 						options.url = `${baseUrl}/receipt`;
 						options.body = body;
-						console.log('Payment Method Value:', paymentMethod);
-						console.log('Receipt creation body:', options.body);
 					} else if (operation === 'listReceipts') {
 						const filters = this.getNodeParameter('filters', i) as IDataObject;
 						const pageNumber = this.getNodeParameter('page_number', i) as number;
 						const pageSize = this.getNodeParameter('page_size', i) as number;
+
+						if ((filters.date_from && !filters.date_to) || (!filters.date_from && filters.date_to)) {
+							throw new ApplicationError('Both Date From and Date To must be provided for date range filtering', { level: 'warning' });
+						}
+
+						if (filters.date_from) {
+							const dateFrom = new Date(filters.date_from as string);
+							filters.date_from = dateFrom.toISOString().split('T')[0];
+						}
+
+						if(filters.date_to) {
+							const dateTo = new Date(filters.date_to as string);
+							filters.date_to = dateTo.toISOString().split('T')[0];
+						}
 
 						options.method = 'GET';
 						options.url = `${baseUrl}/receipt?page_number=${pageNumber ?? 1}&page_size=${pageSize ?? 5}&filter.date_from=${filters.date_from ?? ''}&filter.date_to=${filters.date_to ?? ''}&filter.recon_status=${filters.recon_status ?? ''}&filter.contact_id=${filters.contact_id ?? ''}&filter.search=${filters.search ?? ''}`;

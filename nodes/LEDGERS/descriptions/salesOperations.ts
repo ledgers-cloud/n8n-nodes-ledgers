@@ -1348,41 +1348,13 @@ export const SalesOperations: INodeProperties[] = [
 		typeOptions: {
 			loadOptionsMethod: 'getPaymentMethods',
 		},
+		required: true,
+		placeholder: 'Select Payment Method',
 		description: 'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
 		displayOptions: {
 			show: {
 				resource: ['sales'],
 				operation: ['createReceipt'],
-			},
-		},
-	},
-	{
-		displayName: 'Collected By',
-		name: 'collected_by',
-		type: 'string',
-		default: '',
-		description: 'Enter the name of person who collected the cash payment',
-		displayOptions: {
-			show: {
-				resource: ['sales'],
-				operation: ['createReceipt'],
-				payment_method: ['cash', 'Cash', 'CASH', 'cash payment', 'Cash Payment', 'CASH PAYMENT', '1'], // Multiple variations for cash
-			},
-		},
-	},
-	{
-		displayName: 'Reference Number',
-		name: 'reference_number',
-		type: 'string',
-		default: '',
-		description: 'Enter the reference number for the payment',
-		displayOptions: {
-			show: {
-				resource: ['sales'],
-				operation: ['createReceipt'],
-			},
-			hide: {
-				payment_method: ['cash', 'Cash', 'CASH', 'cash payment', 'Cash Payment', 'CASH PAYMENT', '1'], // Hide for cash variations
 			},
 		},
 	},
@@ -2428,6 +2400,12 @@ export const SalesOperations: INodeProperties[] = [
 					{ displayName: 'Shipping Pincode', name: 'ship_pincode', type: 'string', default: '' },
 					{ displayName: 'Shipping State', name: 'ship_state', type: 'string', default: '' },
 				],
+			},{
+				displayName: 'Transaction Number',
+				name: 'transaction_number',
+				type: 'string',
+				default: '',
+				description: 'Enter the transaction number for the payment',
 			},
     ],
   },
