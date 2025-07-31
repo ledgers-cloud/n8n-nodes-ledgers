@@ -405,8 +405,8 @@ export class Ledgers implements INodeType {
 						for (const setting of paymentMethodsData.settings) {
 							if (setting.id && setting.value) {
 								returnData.push({
-									name: setting.value, // Display the payment method name
-									value: setting.id,   // Use the ID as the value
+									name: setting.value ?? 'Cash', // Display the payment method name
+									value: setting.id ?? 1,   // Use the ID as the value
 								});
 							}
 						}

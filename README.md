@@ -45,6 +45,9 @@ The LEDGERS node supports the following operations:
 - **Create Quote** - Generate new quotes/estimates with contact and item details
 - **View Quote** - Retrieve specific quote details
 - **List Quotes** - List all quotes with filtering and pagination
+- **Create Receipt** - Generate payment receipts with flexible payment method support
+- **View Receipt** - Retrieve specific receipt details
+- **List Receipts** - List all receipts with filtering and pagination
 
 ---
 
@@ -66,9 +69,12 @@ The LEDGERS node supports the following operations:
 ### **Sales Operations**
 - **Invoice Creation**: Full invoice generation with contact and item details
 - **Quote Generation**: Estimate creation with validity periods
+- **Receipt Management**: Payment receipt creation with flexible payment methods
 - **Item Management**: Multiple items with rates, quantities, and tax calculations
 - **Date Filtering**: Date range filtering for listing operations
 - **Payment Status**: Track payment status (Paid, Not Paid, Part Paid, Deleted)
+- **Payment Methods**: Flexible payment method selection with custom input fallback
+- **Reconciliation**: Support for invoice reconciliation in receipts
 - **Validation**: Rate validation (non-negative), date range completeness
 
 ---
@@ -95,8 +101,8 @@ To authenticate with the LEDGERS API, you must provide the following:
 ## 🚧 Roadmap
 
 ### **Upcoming Features**
-- **UAE LEDGERS Support**: Full support for UAE region including all operations (Contacts, Catalogs, Invoices, Quotes)
-- **Enhanced Filtering**: Additional filtering options for invoice and quote listings
+- **UAE LEDGERS Support**: Full support for UAE region including all operations (Contacts, Catalogs, Invoices, Quotes, Receipts)
+- **Enhanced Filtering**: Additional filtering options for all listing operations
 - **Bulk Operations**: Support for bulk create/update operations
 - **Advanced Search**: Enhanced search capabilities across all modules
 
@@ -117,6 +123,9 @@ To authenticate with the LEDGERS API, you must provide the following:
 | Continue On Fail    | ✅ Supported   |
 | Date Range Validation| ✅ Implemented |
 | Negative Rate Validation| ✅ Implemented |
+| Receipt Operations  | ✅ Implemented |
+| Payment Method Fallback| ✅ Implemented |
+| Invoice Reconciliation| ✅ Implemented |
 
 ---
 
@@ -129,17 +138,31 @@ To authenticate with the LEDGERS API, you must provide the following:
 4. Add billing/shipping addresses if needed
 
 ### Create an Invoice
-1. Select **Invoice** as resource
+1. Select **Sales** as resource
 2. Choose **Create Invoice** operation
 3. Provide contact details
 4. Add items with required fields (name, ID, rate, quantity, etc.)
 5. Set seller branch ID and optional fields
 
+### Create a Receipt
+1. Select **Sales** as resource
+2. Choose **Create Receipt** operation
+3. Provide contact details and amount
+4. Select payment method (with automatic fallback to custom input if API fails)
+5. Set seller ID and expense type (COA ID)
+6. Add optional fields like transaction number, reconciliation details
+
 ### List Invoices with Filters
-1. Select **Invoice** as resource
+1. Select **Sales** as resource
 2. Choose **List Invoices** operation
 3. Set page number and page size
 4. Add filters (date range, payment status, contact ID)
+
+### List Receipts with Filters
+1. Select **Sales** as resource
+2. Choose **List Receipts** operation
+3. Set page number and page size
+4. Add filters (date range, reconcile status, contact ID)
 
 ### Create a Catalog Item
 1. Select **Catalog** as resource
@@ -152,7 +175,7 @@ To authenticate with the LEDGERS API, you must provide the following:
 ## ⚠️ Validation Rules
 
 ### Date Range Filtering
-- When using date range filters in List Invoices or List Quotes, **both Date From and Date To must be provided**
+- When using date range filters in List Invoices, List Quotes, or List Receipts, **both Date From and Date To must be provided**
 - If only one date is provided, the operation will fail with a validation error
 
 ### Rate Validation
@@ -162,7 +185,21 @@ To authenticate with the LEDGERS API, you must provide the following:
 ### Required Fields
 - Contact operations require valid contact details
 - Invoice/Quote items require name, ID, variant ID, rate, quantity, item type, HSN/SAC code, taxable amount, GST rate, and price type
+- Receipt operations require contact details, amount, payment method, and expense type (COA ID)
 - Catalog operations require name, price, type, and item type
+
+### Payment Method Handling
+- Payment methods are loaded from the LEDGERS API when available
+- If the API fails or returns no data, users can type custom payment method values
+- This ensures receipts can always be created even when the payment methods API is unavailable
+
+### Receipt Operations Features
+- **Flexible Payment Methods**: Automatic fallback to custom input when API is unavailable
+- **Seller Information**: Automatic branch data fetching and inclusion in receipts
+- **Invoice Reconciliation**: Support for reconciling receipts against existing invoices
+- **Transaction Tracking**: Optional transaction number field for payment reference
+- **Multiple Address Types**: Support for both billing and shipping addresses
+- **Notification Support**: Option to send receipt notifications
 
 ---
 
@@ -196,7 +233,7 @@ You can enable this in the node's settings under the **"Continue On Fail"** opti
 | 0.0.4   | No code changes. Only updated package-lock.json to match npm registry state |
 | 0.0.5   | No code changes. Logo File Updated with Better Resolution                   |
 | 0.0.6   | No code changes. Final Logo File Updated with Better Resolution             |
-| 0.0.7   | Sales Operations like Invoice, Quotes, Receipt and Credit Note              |
+| 0.0.7   | Sales Operations like Invoice, Quotes and Receipt Release                   |
 
 ---
 
