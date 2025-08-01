@@ -276,29 +276,8 @@ export const catalogOperations: INodeProperties[] = [
 				displayName: 'Cess Value',
 				name: 'cess_value',
 				type: 'number',
-				typeOptions: {
-					minValue: 0,
-					maxValue: 100,
-				},
 				default: 0,
 				placeholder: 'Enter Cess Value',
-				displayOptions: {
-					show: {
-						cess_type: ['percentage'],
-					},
-				},
-			},
-			{
-				displayName: 'Cess Value',
-				name: 'cess_value',
-				type: 'number',
-				default: 0,
-				placeholder: 'Enter Cess Value',
-				displayOptions: {
-					show: {
-						cess_type: ['flat'],
-					},
-				},
 			},
 		],
 	},
@@ -444,29 +423,9 @@ export const catalogOperations: INodeProperties[] = [
 				displayName: 'Cess Value',
 				name: 'cess_value',
 				type: 'number',
-				typeOptions: {
-					minValue: 0,
-					maxValue: 100,
-				},
-				default: 0,
+				default: '',
 				placeholder: 'Enter Cess Value',
-				displayOptions: {
-					show: {
-						cess_type: ['percentage'],
-					},
-				},
-			},
-			{
-				displayName: 'Cess Value',
-				name: 'cess_value',
-				type: 'number',
-				default: 0,
-				placeholder: 'Enter Cess Value',
-				displayOptions: {
-					show: {
-						cess_type: ['flat'],
-					},
-				},
+				description: 'For percentage: Enter value between 1-100. For flat: Enter absolute value.',
 			},
 		],
 	},

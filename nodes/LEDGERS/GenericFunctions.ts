@@ -101,6 +101,21 @@ export async function execute(this: IExecuteFunctions) {
 
 						additionalFields.mobile_country_code = selectedDialCode;
 
+						// Auto-fill PAN from GSTIN if GSTIN is provided and PAN is not already set
+						if (additionalFields.gstin && !additionalFields.pan) {
+							const gstin = additionalFields.gstin.toString().trim();
+							// GSTIN format: 2-digit state code + 10-digit PAN + 1-digit entity + 1-digit checksum + 1-alphabet
+							// PAN is characters 3-12 (index 2-11) of GSTIN
+							if (gstin.length === 15) {
+								const extractedPAN = gstin.substring(2, 12);
+								// Validate PAN format (5 letters + 4 digits + 1 letter)
+								const panPattern = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
+								if (panPattern.test(extractedPAN)) {
+									additionalFields.pan = extractedPAN;
+								}
+							}
+						}
+
 						// Extract billing address from fixedCollection
 						let billingAddress: any = {};
 						if (additionalFields.billing_address) {
@@ -108,13 +123,13 @@ export async function execute(this: IExecuteFunctions) {
 							billingAddress = {
 								billing_address1: b.billing_address1 ?? '',
 								billing_address2: b.billing_address2 ?? '',
-								city: b.billing_city ?? '',
+								location: b.billing_city ?? '',
 								state: b.billing_state ?? '',
 								country: b.billing_country ?? '',
 								email: b.billing_email ?? '',
 								gstin: b.billing_gstin ?? '',
 								mobile: b.billing_mobile ?? '',
-								billing_pincode: b.billing_pincode ?? '',
+								pincode: b.billing_pincode ?? '',
 							};
 						}
 
@@ -125,13 +140,13 @@ export async function execute(this: IExecuteFunctions) {
 							shippingAddress = {
 								shipping_address1: s.shipping_address1 ?? '',
 								shipping_address2: s.shipping_address2 ?? '',
-								city: s.shipping_city ?? '',
+								location: s.shipping_city ?? '',
 								state: s.shipping_state ?? '',
 								country: s.shipping_country ?? '',
 								email: s.shipping_email ?? '',
 								gstin: s.shipping_gstin ?? '',
 								mobile: s.shipping_mobile ?? '',
-								shipping_pincode: s.shipping_pincode ?? '',
+								pincode: s.shipping_pincode ?? '',
 							};
 						}
 
@@ -157,8 +172,8 @@ export async function execute(this: IExecuteFunctions) {
 						const body: Record<string, any> = { contact_id: contactId };
 
 						for (const [key, value] of Object.entries(updateFields)) {
-							if (value !== undefined && value !== null && value !== '') {
-								if (key === 'mobile') {
+							if (value !== undefined && value !== null) {
+								if (key === 'mobile' && value !== '') {
 									const selectedDialCode = updateFields.mobile_country_code || '+91';
 									const isoCode = dialCodeToCountryCode[selectedDialCode] || 'in';
 									body[key] = `${value}|${isoCode}`;
@@ -316,7 +331,21 @@ export async function execute(this: IExecuteFunctions) {
 						options.method = 'PUT';
 						options.url = `${baseUrl}/contact`;
 						options.body = body;
-						console.log(options.body);
+					} else if (operation === 'getContact') {
+						const contactId = this.getNodeParameter('contactId', i);
+						options.method = 'GET';
+						options.url = `${baseUrl}/contact/${contactId}`;
+					} else if (operation === 'getAllContacts') {
+						const perPageRaw = this.getNodeParameter('perPage', i);
+						const perPage = typeof perPageRaw === 'object' ? '' : String(perPageRaw);
+						const searchType = String(this.getNodeParameter('searchType', i));
+						let search_term = '';
+						if (searchType === 'name') {
+							const searchTermRaw = this.getNodeParameter('searchTerm', i) ?? '';
+							search_term = typeof searchTermRaw === 'object' ? '' : String(searchTermRaw);
+						}
+						options.method = 'GET';
+						options.url = `${baseUrl}/contact?perpage=${perPage}&search_term=${search_term ?? ''}&sort=desc&field=id`;
 					} else if (operation === 'createCatalog') {
 						const catalogName = this.getNodeParameter('catalogName', i);
 						const price = this.getNodeParameter('price', i);
@@ -333,15 +362,30 @@ export async function execute(this: IExecuteFunctions) {
 						if (price === undefined || price === null || price === '' || price === 0 || price === '0') {
 							throw new ApplicationError('Price must be a number greater than zero.');
 						}
-						// Handle cess_type and cess_value
+						// Handle cess_type and cess_value with validation
 						let cess_type_api, cess_api;
-						if (additionalFields.cess_type && additionalFields.cess_value !== undefined) {
+						if (additionalFields.cess_type) {
+							// If cess type is selected, cess value must be entered
+							if (additionalFields.cess_value === undefined || additionalFields.cess_value === null || additionalFields.cess_value === '') {
+								throw new ApplicationError('Cess value is required when cess type is selected.');
+							}
+
+							const cessValue = Number(additionalFields.cess_value);
+
 							if (additionalFields.cess_type === 'flat') {
+								// For flat cess, accept any positive number
+								if (cessValue < 0) {
+									throw new ApplicationError('Cess value must be a positive number for flat cess type.');
+								}
 								cess_type_api = 'flat_value';
-								cess_api = additionalFields.cess_value;
+								cess_api = cessValue;
 							} else if (additionalFields.cess_type === 'percentage') {
+								// For percentage cess, value must be between 1-100
+								if (cessValue < 1 || cessValue > 100) {
+									throw new ApplicationError('Cess value must be between 1 and 100 for percentage cess type.');
+								}
 								cess_type_api = 'percentage';
-								cess_api = additionalFields.cess_value;
+								cess_api = cessValue;
 							}
 							// Remove from additionalFields to avoid duplication
 							delete additionalFields.cess_type;
@@ -383,15 +427,30 @@ export async function execute(this: IExecuteFunctions) {
 						const updateFields = this.getNodeParameter('catalogUpdateFields', i) as Record<string, any>;
 						// Always include catalog_id
 						const body: Record<string, any> = { catalog_id: catalogId };
-						// Handle cess_type and cess_value
+						// Handle cess_type and cess_value with validation
 						let cess_type_api, cess_api;
-						if (updateFields.cess_type && updateFields.cess_value !== undefined) {
+						if (updateFields.cess_type) {
+							// If cess type is selected, cess value must be entered
+							if (updateFields.cess_value === undefined || updateFields.cess_value === null || updateFields.cess_value === '') {
+								throw new ApplicationError('Cess value is required when cess type is selected.');
+							}
+
+							const cessValue = Number(updateFields.cess_value);
+
 							if (updateFields.cess_type === 'flat') {
+								// For flat cess, accept any positive number
+								if (cessValue < 0) {
+									throw new ApplicationError('Cess value must be a positive number for flat cess type.');
+								}
 								cess_type_api = 'flat_value';
-								cess_api = updateFields.cess_value;
+								cess_api = cessValue;
 							} else if (updateFields.cess_type === 'percentage') {
+								// For percentage cess, value must be between 1-100
+								if (cessValue < 1 || cessValue > 100) {
+									throw new ApplicationError('Cess value must be between 1 and 100 for percentage cess type.');
+								}
 								cess_type_api = 'percentage';
-								cess_api = updateFields.cess_value;
+								cess_api = cessValue;
 							}
 							delete updateFields.cess_type;
 							delete updateFields.cess_value;
@@ -466,7 +525,7 @@ export async function execute(this: IExecuteFunctions) {
 							search_term = typeof searchTermRaw === 'object' ? '' : String(searchTermRaw);
 						}
 						options.method = 'GET';
-						options.url = `${baseUrl}/catalog?perpage=${perPage}&search_term=${search_term}`;
+						options.url = `${baseUrl}/catalog?perpage=${perPage}&search_term=${search_term}&field=id&sort=desc`;
 					} else if (operation === 'addVariant') {
 						const catalogId = this.getNodeParameter('catalogId', i);
 						const variant_name = this.getNodeParameter('variant_name', i);
@@ -602,7 +661,6 @@ export async function execute(this: IExecuteFunctions) {
 						options.url = `${baseUrl}/invoice/${invoiceId}`;
 					} else if (operation === 'listInvoices') {
 						const filters = this.getNodeParameter('filters', i) as IDataObject;
-						const pageNumber = this.getNodeParameter('page_number', i) as number;
 						const pageSize = this.getNodeParameter('page_size', i) as number;
 
 						// Validate date range - both from and to dates must be provided if either is selected
@@ -621,7 +679,7 @@ export async function execute(this: IExecuteFunctions) {
 						}
 
 						options.method = 'GET';
-						options.url = `${baseUrl}/invoice?page_number=${pageNumber ?? 1}&page_size=${pageSize ?? 5}&filter.date_from=${filters.date_from ?? ''}&filter.date_to=${filters.date_to ?? ''}&filter.payment_status=${filters.payment_status ?? ''}&filter.contact_id=${filters.contact_id ?? ''}`;
+						options.url = `${baseUrl}/invoice?page_size=${pageSize ?? 5}&filter.date_from=${filters.date_from ?? ''}&filter.date_to=${filters.date_to ?? ''}&filter.payment_status=${filters.payment_status ?? ''}&filter.contact_id=${filters.contact_id ?? ''}`;
 					} else if (operation === 'createQuote') {
 						const contact = this.getNodeParameter('contact', i) as IDataObject;
 						const items = this.getNodeParameter('items.item', i) as IDataObject[];
@@ -709,7 +767,6 @@ export async function execute(this: IExecuteFunctions) {
 						options.url = `${baseUrl}/estimate/${quoteId}`;
 					} else if (operation === 'listQuotes') {
 						const filters = this.getNodeParameter('filters', i) as IDataObject;
-						const pageNumber = this.getNodeParameter('page_number', i) as number;
 						const pageSize = this.getNodeParameter('page_size', i) as number;
 
 						// Validate date range - both from and to dates must be provided if either is selected
@@ -728,7 +785,7 @@ export async function execute(this: IExecuteFunctions) {
 						}
 
 						options.method = 'GET';
-						options.url = `${baseUrl}/estimate?page_number=${pageNumber ?? 1}&page_size=${pageSize ?? 5}&filter.date_from=${filters.date_from ?? ''}&filter.date_to=${filters.date_to ?? ''}&filter.payment_status=${filters.payment_status ?? ''}&filter.contact_id=${filters.contact_id ?? ''}`;
+						options.url = `${baseUrl}/estimate?&page_size=${pageSize ?? 5}&filter.date_from=${filters.date_from ?? ''}&filter.date_to=${filters.date_to ?? ''}&filter.payment_status=${filters.payment_status ?? ''}&filter.contact_id=${filters.contact_id ?? ''}`;
 					} else if (operation === 'createReceipt') {
 						const contact = this.getNodeParameter('contact', i) as IDataObject;
 						const amount = this.getNodeParameter('amount', i) as string;
@@ -863,7 +920,6 @@ export async function execute(this: IExecuteFunctions) {
 						options.body = body;
 					} else if (operation === 'listReceipts') {
 						const filters = this.getNodeParameter('filters', i) as IDataObject;
-						const pageNumber = this.getNodeParameter('page_number', i) as number;
 						const pageSize = this.getNodeParameter('page_size', i) as number;
 
 						if ((filters.date_from && !filters.date_to) || (!filters.date_from && filters.date_to)) {
@@ -881,7 +937,7 @@ export async function execute(this: IExecuteFunctions) {
 						}
 
 						options.method = 'GET';
-						options.url = `${baseUrl}/receipt?page_number=${pageNumber ?? 1}&page_size=${pageSize ?? 5}&filter.date_from=${filters.date_from ?? ''}&filter.date_to=${filters.date_to ?? ''}&filter.recon_status=${filters.recon_status ?? ''}&filter.contact_id=${filters.contact_id ?? ''}&filter.search=${filters.search ?? ''}`;
+						options.url = `${baseUrl}/receipt?page_size=${pageSize ?? 5}&filter.date_from=${filters.date_from ?? ''}&filter.date_to=${filters.date_to ?? ''}&filter.recon_status=${filters.recon_status ?? ''}&filter.contact_id=${filters.contact_id ?? ''}&filter.search=${filters.search ?? ''}`;
 					} else if (operation === 'viewReceipt') {
 						const receiptId = this.getNodeParameter('receiptId', i) as string;
 						options.method = 'GET';

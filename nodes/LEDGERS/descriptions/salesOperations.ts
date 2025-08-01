@@ -2453,19 +2453,6 @@ export const SalesOperations: INodeProperties[] = [
 	},
   // Pagination for list operations
   {
-    displayName: 'Page Number',
-    name: 'page_number',
-    required: true,
-    displayOptions: {
-      show: {
-        resource: ['sales'],
-        operation: ['listInvoices', 'listQuotes', 'listReceipts'],
-      },
-    },
-    type: 'number',
-    default: 1,
-  },
-  {
     displayName: 'Page Size',
     name: 'page_size',
     required: true,
