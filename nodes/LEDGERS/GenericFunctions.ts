@@ -26,15 +26,15 @@ export async function execute(this: IExecuteFunctions) {
 	const baseUrl = isIndia ? `${apiUrl}/v3` : apiUrl;
 
 	// Validate operation-country match
-	const indiaOps = ['contact', 'createContact', 'updateContact', 'addAddress', 'updateAddress', 'getContact', 'getAllContacts', 'catalog', 'createCatalog', 'updateCatalog', 'getCatalog', 'getAllCatalogs', 'sales', 'createInvoice', 'createQuote', 'viewInvoice', 'viewQuote', 'listInvoices', 'listQuotes'];
+	const indiaOps = ['contact', 'createContact', 'updateContact', 'addAddress', 'updateAddress', 'getContact', 'getAllContacts', 'catalog', 'createCatalog', 'updateCatalog', 'getCatalog', 'getAllCatalogs', 'sales', 'createInvoice', 'createQuote', 'viewInvoice', 'viewQuote', 'listInvoices', 'listQuotes', 'createReceipt', 'viewReceipt', 'listReceipts', 'purchase', 'createPurchaseInvoice', 'listPurchaseInvoices', 'viewPurchaseInvoice', 'createPurchaseOrder', 'listPurchaseOrders', 'viewPurchaseOrder', 'createVoucher', 'listVouchers', 'viewVoucher'];
 
 	for (let i = 0; i < items.length; i++) {
 		const operation = this.getNodeParameter('operation', i);
 		const resource = this.getNodeParameter('resource', i);
-		if (!indiaOps.includes(operation) && resource !== 'catalog' && resource !== 'sales' && resource !== 'contact') {
+		if (!indiaOps.includes(operation) && resource !== 'catalog' && resource !== 'sales' && resource !== 'contact' && resource !== 'purchase') {
 			throw new ApplicationError('This operation/resource is only available for India API URL. Please update your credentials.');
 		}
-		// Catalog and Sales always allowed
+		// Catalog, Sales, and Purchase always allowed
 	}
 
 	// Step 1: Authenticate and get api_token once for all items
