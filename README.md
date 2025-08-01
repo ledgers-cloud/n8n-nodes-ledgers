@@ -1,8 +1,38 @@
 # n8n-nodes-ledgers-cloud
 
-This is an n8n community node for integrating with [LEDGERS](https://ledgers.cloud/) – a comprehensive business platform offering features like accounting, invoicing, contacts, catalogs, and quotes.
+This is an n8n community node for integrating with [LEDGERS](https://ledgers.cloud/) – a comprehensive business platform offering features like accounting, invoicing, contacts, catalogs, quotes, and receipt management.
 
 Use this node to automate LEDGERS workflows directly from within [n8n](https://n8n.io), the fair-code licensed workflow automation platform.
+
+## 🎯 What is LEDGERS Node?
+
+The LEDGERS node is a powerful automation tool that connects your n8n workflows with the LEDGERS cloud platform. It enables businesses to:
+
+- **Automate Business Operations**: Streamline contact management, inventory tracking, and financial operations
+- **Integrate Systems**: Connect LEDGERS with other business tools in your workflow
+- **Reduce Manual Work**: Automate repetitive tasks like invoice generation, receipt creation, and data synchronization
+- **Scale Operations**: Handle bulk operations and complex business logic through automated workflows
+- **Maintain Data Consistency**: Ensure accurate data flow between LEDGERS and other systems
+
+## 🏢 Business Use Cases
+
+### **Small to Medium Businesses**
+- **Complete Business Automation**: Manage entire customer lifecycle from contact creation to payment collection
+- **E-commerce Integration**: Automatically sync orders, create invoices, and track payments
+- **Service-based Businesses**: Generate quotes, convert to invoices, and manage service delivery
+- **Retail Operations**: Manage inventory, create sales documents, and track customer interactions
+
+### **Enterprise Operations**
+- **Multi-system Integration**: Connect LEDGERS with CRM, ERP, and other business systems
+- **Bulk Data Processing**: Handle large volumes of transactions and data synchronization
+- **Automated Workflows**: Create complex business rules and automated decision-making processes
+- **Reporting and Analytics**: Extract data for business intelligence and reporting systems
+
+### **Industry-Specific Applications**
+- **Professional Services**: Time-based billing, project management, and client communication
+- **Manufacturing**: Purchase order management, inventory tracking, and supplier relations
+- **Consulting**: Project-based invoicing, expense tracking, and client management
+- **Subscription Services**: Recurring billing, customer lifecycle management, and payment processing
 
 ---
 
@@ -22,7 +52,7 @@ After installing, restart n8n and the node will be available in the editor.
 
 The LEDGERS node supports the following operations:
 
-### **Contacts** (India API)
+### **Contacts**
 - **Create Contact** - Create a new contact with billing/shipping addresses
 - **Update Contact** - Update existing contact information
 - **Add Address** - Add billing or shipping addresses to existing contacts
@@ -30,7 +60,7 @@ The LEDGERS node supports the following operations:
 - **Get Contact** - Retrieve a specific contact by ID
 - **Get All Contacts** - List all contacts with pagination and search
 
-### **Catalogs** (All Regions)
+### **Catalogs**
 - **Create Catalog** - Create new catalog items with variants
 - **Update Catalog** - Update catalog item details
 - **Update Variant** - Update specific variant details
@@ -38,7 +68,7 @@ The LEDGERS node supports the following operations:
 - **Get Catalog** - Retrieve a specific catalog by ID
 - **Get All Catalogs** - List all catalogs with pagination and search
 
-### **Sales** (All Regions)
+### **Sales**
 - **Create Invoice** - Generate new invoices with contact and item details
 - **View Invoice** - Retrieve specific invoice details
 - **List Invoices** - List all invoices with filtering and pagination
@@ -77,6 +107,37 @@ The LEDGERS node supports the following operations:
 - **Reconciliation**: Support for invoice reconciliation in receipts
 - **Validation**: Rate validation (non-negative), date range completeness
 
+## 💼 Uses of Sales Operations
+
+The Sales module in LEDGERS node is designed for comprehensive revenue management and customer transaction handling:
+
+### **Invoice Management**
+- **Automated Billing**: Create invoices automatically based on triggers (orders, time periods, etc.)
+- **Multi-item Invoicing**: Handle complex invoices with multiple products/services
+- **Tax Calculations**: Automatic GST calculations with different tax rates
+- **Customer Integration**: Link invoices directly to contact records
+- **Status Tracking**: Monitor payment status and follow up on overdue invoices
+
+### **Quote/Estimate Management**
+- **Sales Pipeline**: Generate quotes for potential customers automatically
+- **Quote Tracking**: Monitor quote status and conversion rates
+- **Validity Management**: Set and track quote expiration dates
+- **Quote-to-Invoice**: Convert accepted quotes to invoices seamlessly
+
+### **Receipt Management**
+- **Payment Recording**: Automatically record payments against invoices
+- **Multiple Payment Methods**: Support various payment types (cash, bank transfer, cards, etc.)
+- **Reconciliation**: Match receipts with outstanding invoices
+- **Payment Tracking**: Maintain complete payment history
+- **Flexible Input**: Handle custom payment methods when API data is unavailable
+
+### **Business Workflow Examples**
+- **E-commerce Integration**: Auto-generate invoices from online orders
+- **Subscription Billing**: Create recurring invoices for subscription services
+- **Payment Processing**: Record payments and update invoice status automatically
+- **Financial Reporting**: Extract sales data for accounting and reporting systems
+- **Customer Communication**: Trigger email notifications for invoices and receipts
+
 ---
 
 ## 🔐 Credentials
@@ -92,24 +153,21 @@ To authenticate with the LEDGERS API, you must provide the following:
 
 ---
 
-## 🚀 Coming Soon
+## 🚀 Upcoming Release
 
-**LEDGERS UAE** will be available for all operations (Contacts, Catalogs, Invoices, and Quotes) in an upcoming release.
+### **Purchase Operations**
+- **Create Purchase Order**: Generate purchase orders for suppliers
+- **View Purchase Order**: Retrieve specific purchase order details
+- **List Purchase Orders**: List all purchase orders with filtering
+- **Purchase Invoice Management**: Handle supplier invoices and payments
+- **Supplier Management**: Enhanced supplier contact operations
+- **Inventory Integration**: Link purchases with catalog items
 
----
-
-## 🚧 Roadmap
-
-### **Upcoming Features**
-- **UAE LEDGERS Support**: Full support for UAE region including all operations (Contacts, Catalogs, Invoices, Quotes, Receipts)
-- **Enhanced Filtering**: Additional filtering options for all listing operations
-- **Bulk Operations**: Support for bulk create/update operations
-- **Advanced Search**: Enhanced search capabilities across all modules
-
-### **Future Enhancements**
-- **Real-time Notifications**: Webhook support for real-time updates
-- **Advanced Reporting**: Integration with LEDGERS reporting features
-- **Multi-currency Support**: Enhanced currency handling for international operations
+### **UAE LEDGERS Support**
+- **Complete UAE Operations**: Full support for UAE region including all current operations
+- **Multi-region Workflows**: Handle both India and UAE operations in single workflows
+- **Currency Support**: Enhanced multi-currency handling for UAE operations
+- **Localization**: UAE-specific business rules and compliance features
 
 ---
 
@@ -225,15 +283,15 @@ You can enable this in the node's settings under the **"Continue On Fail"** opti
 
 ## 🕒 Version History
 
-| Version | Changes                                                                     |
-| ------- | --------------------------------------------------------------------------- |
-| 0.0.1   | Stable Release of LEDGERS Custom Node under N8N                             |
-| 0.0.2   | Logo Rename for Linux OS                                                    |
-| 0.0.3   | Catalog Operations Release with updates in Contact Operations               |
-| 0.0.4   | No code changes. Only updated package-lock.json to match npm registry state |
-| 0.0.5   | No code changes. Logo File Updated with Better Resolution                   |
-| 0.0.6   | No code changes. Final Logo File Updated with Better Resolution             |
-| 0.0.7   | Sales Operations like Invoice, Quotes and Receipt Release                   |
+| Version | Changes                                                                          |
+| ------- | ---------------------------------------------------------------------------------|
+| 0.0.1   | Stable Release of LEDGERS Custom Node under N8N                                  |
+| 0.0.2   | Logo Rename for Linux OS                                                         |
+| 0.0.3   | Catalog Operations Release with updates in Contact Operations                    |
+| 0.0.4   | No code changes. Only updated package-lock.json to match npm registry state      |
+| 0.0.5   | No code changes. Logo File Updated with Better Resolution                        |
+| 0.0.6   | No code changes. Final Logo File Updated with Better Resolution                  |
+| 0.0.7   | Sales Operations like Invoice, Quotes and Receipt Release with enhanced features |
 
 ---
 
