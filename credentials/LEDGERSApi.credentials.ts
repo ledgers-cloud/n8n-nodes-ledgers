@@ -14,6 +14,19 @@ export class LEDGERSApi implements ICredentialType {
 
 	properties: INodeProperties[] = [
 		{
+			displayName: 'API URL',
+			name: 'apiUrl',
+			type: 'options',
+			options: [
+				{
+					name: 'https://in-api.ledgers.cloud (India)',
+					value: 'https://in-api.ledgers.cloud',
+				},
+			],
+			default: 'https://in-api.ledgers.cloud',
+			required: true,
+		},
+		{
 			displayName: 'X-API-Key',
 			name: 'xApiKey',
 			type: 'string',

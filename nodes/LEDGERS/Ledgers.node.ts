@@ -20,7 +20,7 @@ export class Ledgers implements INodeType {
 		group: ['transform'],
 		version: 1,
 		description: 'Interact with LEDGERS API',
-		subtitle: '={{ $parameter["operation"] + ": " + $parameter["resource"] }}',
+		subtitle: '={{ $parameter["resource"] + ": " + $parameter["operation"] }}',
 		defaults: {
 			name: 'LEDGERS',
 		},
@@ -35,25 +35,25 @@ export class Ledgers implements INodeType {
 			},
 		],
 		properties: [
+			// Remove Country parameter
+			// Resource dropdown: show all resources, add (India) or (UAE) to displayName for clarity
 			{
 				displayName: 'Resource',
 				name: 'resource',
 				type: 'options',
 				noDataExpression: true,
 				options: [
-					{
-						name: 'Contact',
-						value: 'contact',
-					},
-					{
-						name: 'Catalog',
-						value: 'catalog',
-					},
+					{ name: 'Contact Operation', value: 'contact' },
+					{ name: 'Catalog Operation', value: 'catalog' },
+					{ name: 'Sales Operation', value: 'sales' },
 				],
 				default: 'contact',
 			},
-			...descriptions.contactOperations,
+			// Sales and Catalog operations (always visible)
+			...descriptions.salesOperations,
 			...descriptions.catalogOperations,
+			// Only India Contact Operations
+			...descriptions.contactOperations,
 		],
 	};
 
@@ -352,8 +352,127 @@ export class Ledgers implements INodeType {
 					throw error;
 				}
 			},
+			async getPaymentMethods(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+				// const continueOnFail = this.getNode().continueOnFail;
+				try {
+					const credentials = await this.getCredentials('ledgersApi');
+					const { xApiKey, email, password } = credentials;
+
+					// Authenticate to get api_token
+					const loginOptions: IRequestOptions = {
+						method: 'POST',
+						url: 'https://in-api.ledgers.cloud/login',
+						headers: {
+							'Content-Type': 'application/json',
+							'x-api-key': xApiKey,
+						},
+						body: { email, password },
+						json: true,
+					};
+
+					const loginResponse = await this.helpers.request(loginOptions);
+					if (loginResponse.status !== 200 || !loginResponse.api_token) {
+						// Return empty array to allow custom input when authentication fails
+						return [];
+					}
+
+					const apiToken = loginResponse.api_token;
+
+					const options: IRequestOptions = {
+						method: 'GET',
+						url: 'https://in-api.ledgers.cloud/v3/settings/paymentsmode',
+						headers: {
+							'Content-Type': 'application/json',
+							'x-api-key': xApiKey,
+							'api-token': apiToken,
+						},
+						json: true,
+					};
+
+					const response = await this.helpers.request(options);
+
+					if (!response.data || !Array.isArray(response.data)) {
+						// Return empty array to allow custom input when no data
+						return [];
+					}
+
+					const returnData: INodePropertyOptions[] = [];
+
+					// Find the payment_methods object in the data array
+					const paymentMethodsData = response.data.find((item: any) => item.type === 'payment_methods');
+
+					if (paymentMethodsData && paymentMethodsData.settings && Array.isArray(paymentMethodsData.settings)) {
+						for (const setting of paymentMethodsData.settings) {
+							if (setting.id && setting.value) {
+								returnData.push({
+									name: setting.value ?? 'Cash', // Display the payment method name
+									value: setting.id ?? 1,   // Use the ID as the value
+								});
+							}
+						}
+					}
+					else{
+						returnData.push({
+							name: 'Cash',
+							value: 1,
+						});
+					}
+
+					// If no payment methods found, return empty array to allow custom input
+					if (returnData.length === 0) {
+						return [];
+					}
+
+					return returnData;
+				} catch (error) {
+					return [];
+				}
+			},
 		},
 	};
+
+	// Helper method to fetch branch data for createReceipt
+	async fetchBranchData(this: IExecuteFunctions, branchId: string): Promise<any> {
+		try {
+			const credentials = await this.getCredentials('ledgersApi');
+			const { xApiKey, email, password } = credentials;
+			const loginOptions: IRequestOptions = {
+				method: 'POST',
+				url: 'https://in-api.ledgers.cloud/login',
+				headers: {
+					'Content-Type': 'application/json',
+					'x-api-key': xApiKey,
+				},
+				body: { email, password },
+				json: true,
+			};
+
+			const loginResponse = await this.helpers.request(loginOptions);
+			if (loginResponse.status !== 200 || !loginResponse.api_token) {
+				return null;
+			}
+
+			const apiToken = loginResponse.api_token;
+			const options: IRequestOptions = {
+				method: 'GET',
+				url: `https://in-api.ledgers.cloud/v3/business/branch/${branchId}`,
+				headers: {
+					'Content-Type': 'application/json',
+					'x-api-key': xApiKey,
+					'api-token': apiToken,
+				},
+				json: true,
+			};
+
+			const response = await this.helpers.request(options);
+			if (response.status === 200 && response.data && Array.isArray(response.data) && response.data.length > 0) {
+				return response.data[0]; // Return the first branch data
+			}
+			return null;
+		} catch (error) {
+			return null;
+		}
+	}
 
 	async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
 		return await execute.call(this);
