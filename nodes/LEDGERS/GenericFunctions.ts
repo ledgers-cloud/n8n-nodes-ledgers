@@ -942,6 +942,179 @@ export async function execute(this: IExecuteFunctions) {
 						const receiptId = this.getNodeParameter('receiptId', i) as string;
 						options.method = 'GET';
 						options.url = `${baseUrl}/receipt/${receiptId}`;
+					} else if(operation === 'createPurchaseInvoice') {
+						const purchaseOrderId = this.getNodeParameter('purchase_order_id', i) as string;
+						const additionalFields = this.getNodeParameter('additionalFields', i, {}) as IDataObject;
+						const paymentDateRaw = this.getNodeParameter('payment_date', i) as string;
+						const paymentDate = new Date(paymentDateRaw as string);
+						const paymentDateString = paymentDate.toISOString().split('T')[0];
+						const body: IDataObject = {
+							purchase_order_id: purchaseOrderId,
+							payment_date: paymentDateString,
+							payment_mode: payment_mode.name,
+						};
+					} else if (operation === 'createVoucher') {
+						const branchId = this.getNodeParameter('branch_id', i) as string;
+						const voucherType = this.getNodeParameter('voucher_type', i) as string;
+						const paymentDateRaw = this.getNodeParameter('payment_date', i) as string;
+						const currency = this.getNodeParameter('currency', i) as string;
+						const paymentMode = this.getNodeParameter('payment_mode', i) as string;
+						const additionalFields = this.getNodeParameter('additionalFields', i, {}) as IDataObject;
+						const paymentDate = new Date(paymentDateRaw as string);
+						const paymentDateString = paymentDate.toISOString().split('T')[0];
+						var payment_mode = JSON.parse(paymentMode as string);
+						const body: IDataObject = {
+							branch_id: branchId,
+							voucher_type: voucherType,
+							payment_date: paymentDateString,
+							currency: currency,
+							payment_mode: payment_mode.name,
+						};
+						if(voucherType === '1') {
+							const expenseType = this.getNodeParameter('expense_type', i) as string;
+							if(expenseType === 'single') {
+								const expenseHeadRaw = this.getNodeParameter('expense_head', i) as string;
+								const amount = this.getNodeParameter('amount', i) as string;
+								const taxRate = this.getNodeParameter('tax_rate', i) as string;
+								let expenseHead;
+								if (typeof expenseHeadRaw === 'string' && expenseHeadRaw.startsWith('{')) {
+									try {
+										const parsed = JSON.parse(expenseHeadRaw);
+										expenseHead = parsed.id;
+									} catch {
+										expenseHead = expenseHeadRaw;
+									}
+								} else if (typeof expenseHeadRaw === 'object' && expenseHeadRaw !== null) {
+									expenseHead = (expenseHeadRaw as any).id;
+								} else {
+									expenseHead = expenseHeadRaw;
+								}
+								body.expense_head = parseInt(expenseHead);
+								body.amount = amount;
+								body.tax_rate = taxRate;
+							} else if(expenseType === 'multiple') {
+								const multipleAccounts = this.getNodeParameter('multiple_accounts.expense_head', i, []) as IDataObject[];
+								body.multiple_expense = [];
+								for(let j = 0; j < multipleAccounts.length; j++) {
+									const account = multipleAccounts[j];
+									let expenseHead;
+									if (typeof account.expense_head === 'string' && account.expense_head.startsWith('{')) {
+										try {
+											const parsed = JSON.parse(account.expense_head);
+											expenseHead = parsed.id;
+										} catch {
+											expenseHead = account.expense_head;
+										}
+									} else if (typeof account.expense_head === 'object' && account.expense_head !== null) {
+										expenseHead = (account.expense_head as any).id;
+									} else {
+										expenseHead = account.expense_head;
+									}
+									(body.multiple_expense as any[]).push({
+										expense_id: expenseHead,
+										amount: account.amount,
+										tax_rate: account.tax,
+									});
+								}
+							}
+							if(additionalFields.contact_id) {
+								body.contact_id = additionalFields.contact_id;
+							}
+							if(additionalFields.payment_status) {
+								body.payment_status = additionalFields.payment_status;
+							}
+							if(additionalFields.reverse_charge) {
+								body.reverse_charge = additionalFields.reverse_charge;
+							}
+							if(additionalFields.tax_credit_type) {
+								body.tax_credit_type = additionalFields.tax_credit_type;
+							}
+						} else if(voucherType === '2') {
+							const amount = this.getNodeParameter('amount', i) as string;
+							const contactId = this.getNodeParameter('contact_id', i) as string;
+							body.amount = amount;
+							body.contact_id = contactId;
+							const additionalFields_type2 = this.getNodeParameter('additionalFields', i, {}) as IDataObject;
+							if(additionalFields_type2.reconcile_details) {
+								const reconcileDetails = this.getNodeParameter('additionalFields.reconcile_details.reconcile', i, []) as IDataObject[];
+								body.reconcile_details = [];
+								for(let j = 0; j < reconcileDetails.length; j++){
+									const reconcile = reconcileDetails[j];
+									(body.reconcile_details as any[]).push({
+										purchase_invoice_id: reconcile.purchase_invoice_id,
+										amount: reconcile.amount,
+									});
+								}
+							}
+						} else if(voucherType === '3') {
+							const employeeID = this.getNodeParameter('employee_id', i) as string;
+							const accountName = this.getNodeParameter('account_name', i) as string;
+							const salary_month = this.getNodeParameter('salary_month', i) as string;
+							const amount = this.getNodeParameter('amount', i) as string;
+							const salary_details = this.getNodeParameter('salary_details', i, {}) as IDataObject;
+							let expenseHead;
+							if (typeof accountName === 'string' && accountName.startsWith('{')) {
+								try {
+									const parsed = JSON.parse(accountName);
+									expenseHead = parsed.id;
+								} catch {
+									expenseHead = accountName;
+								}
+							} else if (typeof accountName === 'object' && accountName !== null) {
+								expenseHead = (accountName as any).id;
+							} else {
+								expenseHead = accountName;
+							}
+							body.contact_id = employeeID;
+							body.expense_head = parseInt(expenseHead);
+							body.amount = amount;
+							body.salary_month = salary_month;
+
+							// Only include salary details fields that have data
+							const salaryDetailsPayload: any = {};
+							if (salary_details.employer_esi && salary_details.employer_esi !== '') {
+								salaryDetailsPayload.er_esi = salary_details.employer_esi;
+							}
+							if (salary_details.employer_pf && salary_details.employer_pf !== '') {
+								salaryDetailsPayload.er_pf = salary_details.employer_pf;
+							}
+							if (salary_details.esi && salary_details.esi !== '') {
+								salaryDetailsPayload.esi = salary_details.esi;
+							}
+							if (salary_details.tds && salary_details.tds !== '') {
+								salaryDetailsPayload.tds = salary_details.tds;
+							}
+							if (salary_details.pt && salary_details.pt !== '') {
+								salaryDetailsPayload.p_tax = salary_details.pt;
+							}
+							if (salary_details.pf && salary_details.pf !== '') {
+								salaryDetailsPayload.pf = salary_details.pf;
+							}
+							if (salary_details.welfare && salary_details.welfare !== '') {
+								salaryDetailsPayload.welfare = salary_details.welfare;
+							}
+
+							// Only add salary_details to body if there are any fields with data
+							if (Object.keys(salaryDetailsPayload).length > 0) {
+								body.salary_details = salaryDetailsPayload;
+							}
+						}
+						options.method = 'POST';
+						options.url = `${baseUrl}/vouchers`;
+						options.body = body;
+						console.log(body);
+					} else if(operation === 'listVouchers') {
+						const voucherType = this.getNodeParameter('voucher_type', i) as string;
+						const pageSize = this.getNodeParameter('page_size', i) as number;
+						const filters = this.getNodeParameter('filters', i) as IDataObject;
+						options.method = 'GET';
+						options.url = `${baseUrl}/vouchers?&voucher_type=${voucherType ?? ''}&size=${pageSize ?? 5}&start_from=0&from_date=${filters.from_date ?? ''}&to_date=${filters.to_date ?? ''}&order_by=${filters.order_by ?? ''}&order_column=${filters.order_column ?? ''}`;
+						console.log(options.url);
+					} else if(operation === 'viewVoucher') {
+						const voucherId = this.getNodeParameter('id', i) as string;
+						options.method = 'GET';
+						options.url = `${baseUrl}/vouchers/${voucherId}`;
+						console.log(options.url);
 					}
 					const result = await this.helpers.request(options);
 					returnData.push({ json: result });

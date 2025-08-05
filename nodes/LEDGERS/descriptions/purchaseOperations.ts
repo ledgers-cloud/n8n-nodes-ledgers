@@ -18,11 +18,11 @@ export const purchaseOperations: INodeProperties[] = [
 				value: 'createPurchaseInvoice',
 				action: 'Create a purchase invoice',
 			},
-			{
-				name: 'Create Purchase Order',
-				value: 'createPurchaseOrder',
-				action: 'Create a purchase order',
-			},
+			// {
+			// 	name: 'Create Purchase Order',
+			// 	value: 'createPurchaseOrder',
+			// 	action: 'Create a purchase order',
+			// },
 			{
 				name: 'Create Voucher',
 				value: 'createVoucher',
@@ -33,11 +33,11 @@ export const purchaseOperations: INodeProperties[] = [
 				value: 'listPurchaseInvoices',
 				action: 'List all purchase invoices',
 			},
-			{
-				name: 'List Purchase Orders',
-				value: 'listPurchaseOrders',
-				action: 'List all purchase orders',
-			},
+			// {
+			// 	name: 'List Purchase Orders',
+			// 	value: 'listPurchaseOrders',
+			// 	action: 'List all purchase orders',
+			// },
 			{
 				name: 'List Vouchers',
 				value: 'listVouchers',
@@ -48,11 +48,11 @@ export const purchaseOperations: INodeProperties[] = [
 				value: 'viewPurchaseInvoice',
 				action: 'View a purchase invoice',
 			},
-			{
-				name: 'View Purchase Order',
-				value: 'viewPurchaseOrder',
-				action: 'View a purchase order',
-			},
+			// {
+			// 	name: 'View Purchase Order',
+			// 	value: 'viewPurchaseOrder',
+			// 	action: 'View a purchase order',
+			// },
 			{
 				name: 'View Voucher',
 				value: 'viewVoucher',
@@ -1142,7 +1142,7 @@ export const purchaseOperations: INodeProperties[] = [
 		type: 'options',
 		default: '',
 		typeOptions: {
-			loadOptionsMethod: 'getPaymentMethods',
+			loadOptionsMethod: 'getPaymentMethodsPurchase',
 		},
 		required: true,
 		placeholder: 'Select Payment Method',
@@ -1418,14 +1418,14 @@ export const purchaseOperations: INodeProperties[] = [
 				type: 'fixedCollection',
 				placeholder: 'Add Reconcile',
 				default: {},
+				typeOptions: {
+					multipleValues: true,
+				},
 				options: [
 					{
 						displayName: 'Reconcile',
 						name: 'reconcile',
-						type: 'collection',
-						placeholder: 'Add Reconcile',
-						default: {},
-						options: [
+						values: [
 							{
 								displayName: 'Purchase Invoice ID',
 								name: 'purchase_invoice_id',
@@ -1470,6 +1470,7 @@ export const purchaseOperations: INodeProperties[] = [
 			loadOptionsMethod: 'getCoaAccounts',
 		},
 		default: '',
+		required: true,
 		placeholder: 'Select Account Type',
 		description: 'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
 		displayOptions: {
@@ -1484,7 +1485,7 @@ export const purchaseOperations: INodeProperties[] = [
 	//Salary Month and Year
 	{
 		displayName: 'Salary Month/Year',
-		name: 'salary_date',
+		name: 'salary_month',
 		type: 'string',
 		required: true,
 		default: '',
@@ -1497,6 +1498,22 @@ export const purchaseOperations: INodeProperties[] = [
 			},
 		},
 		placeholder: 'MM-YYYY',
+	},
+
+	//Salary Amount
+	{
+		displayName: 'Amount',
+		name: 'amount',
+		type: 'number',
+		default: 0,
+		required: true,
+		displayOptions: {
+			show: {
+				resource: ['purchase'],
+				operation: ['createVoucher'],
+				voucher_type: ['3'],
+			},
+		},
 	},
 
 	//Salary Additional Fields
@@ -1515,49 +1532,49 @@ export const purchaseOperations: INodeProperties[] = [
 		},
 		options: [
 			{
-				displayName: 'Employer ESI',
-				name: 'employer_esi',
-				type: 'string',
-				placeholder: 'Add Employer ESI',
-				default: '',
-			},
-			{
-				displayName: 'Employer PF',
-				name: 'employer_pf',
-				type: 'string',
-				placeholder: 'Add Employer PF',
-				default: '',
-			},
-			{
-				displayName: 'ESI',
+				displayName: 'Employee State Insurance',
 				name: 'esi',
 				type: 'string',
 				placeholder: 'Add ESI',
 				default: '',
 			},
 			{
-				displayName: 'PF',
-				name: 'pf',
+				displayName: 'Employer Provident Fund',
+				name: 'employer_pf',
 				type: 'string',
-				placeholder: 'Add PF',
+				placeholder: 'Add Employer PF',
 				default: '',
 			},
 			{
-				displayName: 'PT',
+				displayName: 'Employer State Insurance',
+				name: 'employer_esi',
+				type: 'string',
+				placeholder: 'Add Employer ESI',
+				default: '',
+			},
+			{
+				displayName: 'Professional Tax',
 				name: 'pt',
 				type: 'string',
 				placeholder: 'Add PT',
 				default: '',
 			},
 			{
-				displayName: 'TDS',
+				displayName: 'Provident Fund',
+				name: 'pf',
+				type: 'string',
+				placeholder: 'Add PF',
+				default: '',
+			},
+			{
+				displayName: 'Tax Deducted at Source',
 				name: 'tds',
 				type: 'string',
 				placeholder: 'Add TDS',
 				default: '',
 			},
 			{
-				displayName: 'Welfare',
+				displayName: 'Welfare Fund',
 				name: 'welfare',
 				type: 'string',
 				placeholder: 'Add Welfare',
@@ -1574,7 +1591,7 @@ export const purchaseOperations: INodeProperties[] = [
     displayOptions: {
       show: {
         resource: ['purchase'],
-        operation: ['listPurchaseInvoices', 'listVouchers', 'listPurchaseOrders'],
+        operation: ['listPurchaseInvoices', 'listVouchers'],
       },
     },
     type: 'number',
@@ -1667,36 +1684,36 @@ export const purchaseOperations: INodeProperties[] = [
 			},
 		],
 	},
-	{
-		displayName: 'Filters',
-		name: 'filters',
-		type: 'collection',
-		placeholder: 'Add Field',
-		default: {},
-		displayOptions: {
-			show: {
-				resource: ['purchase'],
-				operation: ['listPurchaseOrders'],
-			},
-		},
-		options: [
-			{
-				displayName: 'Converted Status', name: 'converted_status', type: 'options', options: [
-					{ name: 'Converted', value: 'converted' },
-					{ name: 'Not Converted', value: 'not_converted' },
-				],
-				default: 'not_converted',
-			},
-			{
-				displayName: 'From Date', name: 'from_date', type: 'dateTime', typeOptions: { dateOnly: true, showTime: false },
-				default: '',
-			},
-			{
-				displayName: 'To Date', name: 'to_date', type: 'dateTime', typeOptions: { dateOnly: true, showTime: false },
-				default: '',
-			},
-		],
-	},
+	// {
+	// 	displayName: 'Filters',
+	// 	name: 'filters',
+	// 	type: 'collection',
+	// 	placeholder: 'Add Field',
+	// 	default: {},
+	// 	displayOptions: {
+	// 		show: {
+	// 			resource: ['purchase'],
+	// 			operation: ['listPurchaseOrders'],
+	// 		},
+	// 	},
+	// 	options: [
+	// 		{
+	// 			displayName: 'Converted Status', name: 'converted_status', type: 'options', options: [
+	// 				{ name: 'Converted', value: 'converted' },
+	// 				{ name: 'Not Converted', value: 'not_converted' },
+	// 			],
+	// 			default: 'not_converted',
+	// 		},
+	// 		{
+	// 			displayName: 'From Date', name: 'from_date', type: 'dateTime', typeOptions: { dateOnly: true, showTime: false },
+	// 			default: '',
+	// 		},
+	// 		{
+	// 			displayName: 'To Date', name: 'to_date', type: 'dateTime', typeOptions: { dateOnly: true, showTime: false },
+	// 			default: '',
+	// 		},
+	// 	],
+	// },
 	{
 		displayName: 'ID',
 		name: 'id',
@@ -1705,7 +1722,7 @@ export const purchaseOperations: INodeProperties[] = [
 		displayOptions: {
 			show: {
 				resource: ['purchase'],
-				operation: ['viewPurchaseInvoice', 'viewVoucher', 'viewPurchaseOrder'],
+				operation: ['viewPurchaseInvoice', 'viewVoucher'],
 			},
 		},
 		required: true,
