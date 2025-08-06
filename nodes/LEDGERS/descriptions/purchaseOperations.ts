@@ -190,10 +190,23 @@ export const purchaseOperations: INodeProperties[] = [
 		},
 	},
 	{
+		displayName: 'Same Address for Billing and Shipping',
+		name: 'same_address',
+		type: 'boolean',
+		default: true,
+		displayOptions: {
+			show: {
+				resource: ['purchase'],
+				operation: ['createPurchaseInvoice'],
+			},
+		},
+	},
+	{
 		displayName: 'Billing Address',
 		name: 'billing_address',
 		type: 'collection',
 		typeOptions: { multipleValues: false },
+		required: true,
 		default: {},
 		options: [
 			{ displayName: 'Billing Address Line 1', name: 'bill_addr1', type: 'string', default: '' },
@@ -202,6 +215,7 @@ export const purchaseOperations: INodeProperties[] = [
 			{ displayName: 'Billing Company Name', name: 'bill_company_name', type: 'string', default: '' },
 			{ displayName: 'Billing Country', name: 'bill_country', type: 'string', default: '' },
 			{ displayName: 'Billing Pincode', name: 'bill_pincode', type: 'string', default: '' },
+			{ displayName: 'Billing State', name: 'bill_state', type: 'string', default: '' },
 		],
 		displayOptions: {
 			show: {
@@ -215,6 +229,7 @@ export const purchaseOperations: INodeProperties[] = [
 		name: 'shipping_address',
 		type: 'collection',
 		typeOptions: { multipleValues: false },
+		required: true,
 		default: {},
 		options: [
 			{ displayName: 'Shipping Address Line 1', name: 'ship_addr1', type: 'string', default: '' },
@@ -223,11 +238,13 @@ export const purchaseOperations: INodeProperties[] = [
 			{ displayName: 'Shipping Company Name', name: 'ship_company_name', type: 'string', default: '' },
 			{ displayName: 'Shipping Country', name: 'ship_country', type: 'string', default: '' },
 			{ displayName: 'Shipping Pincode', name: 'ship_pincode', type: 'string', default: '' },
+			{ displayName: 'Shipping State', name: 'ship_state', type: 'string', default: '' },
 		],
 		displayOptions: {
 			show: {
 				resource: ['purchase'],
 				operation: ['createPurchaseInvoice'],
+				same_address: [false],
 			},
 		},
 	},
@@ -247,6 +264,24 @@ export const purchaseOperations: INodeProperties[] = [
         displayName: 'Item',
         name: 'item',
         values: [
+					{
+						displayName: 'Cess Type',
+						name: 'cess_type',
+						type: 'options',
+						options: [
+							{ name: 'Percentage', value: 'percentage' },
+							{ name: 'Flat Value', value: 'flat_value' },
+						],
+						default: 'percentage',
+					},
+					{
+						displayName: 'Cess Value',
+						name: 'cess_per',
+						type: 'number',
+						default: '',
+						placeholder: 'Enter Cess Value',
+						description: 'For percentage: Enter value between 1-100. For flat: Enter absolute value.',
+					},
           { displayName: 'Description', name: 'item_description', type: 'string', default: '' },
           { displayName: 'Discount', name: 'item_discount', type: 'number', default: 0 },
 					{
@@ -264,6 +299,7 @@ export const purchaseOperations: INodeProperties[] = [
             displayName: 'GST Rate',
             name: 'gst_rate',
             type: 'options',
+						required: true,
             options: [
               { name: '0.1%', value: '0.1' },
               { name: '0.25%', value: '0.25' },
@@ -284,22 +320,22 @@ export const purchaseOperations: INodeProperties[] = [
             default: '5',
           },
           { displayName: 'HSN/SAC Code', name: 'item_code', type: 'string', default: '' },
-          { displayName: 'Item ID', name: 'pid', type: 'string', default: '' },
-          { displayName: 'Item Name', name: 'item_name', type: 'string', default: '' },
-          { displayName: 'Item Type', name: 'item_type', type: 'options', options: [
+          { displayName: 'Item ID', name: 'pid', type: 'string', default: '', required: true },
+          { displayName: 'Item Name', name: 'item_name', type: 'string', default: '', required: true },
+          { displayName: 'Item Type', name: 'item_type', required: true, type: 'options', options: [
             { name: 'Goods', value: '1' },
             { name: 'Service', value: '2' },
           ], default: '1' },
           { displayName: 'Non Taxable Amount', name: 'non_taxable_amount', type: 'number', default: 0 },
-          { displayName: 'Price Type', name: 'price_type', type: 'options', options: [
+          { displayName: 'Price Type', name: 'price_type', required: true, type: 'options', options: [
             { name: 'Inclusive of GST', value: 0 },
             { name: 'Exclusive of GST', value: 1 },
           ], default: 0 },
-          { displayName: 'Quantity', name: 'quantity', type: 'number', default: 1 },
-          { displayName: 'Rate', name: 'rate', type: 'number', default: 0 },
+          { displayName: 'Quantity', name: 'quantity', type: 'number', default: 1, required: true },
+          { displayName: 'Rate', name: 'rate', type: 'number', default: 0, required: true },
 					{ displayName: 'SKU', name: 'sku', type: 'string', default: '' },
           { displayName: 'Taxable Amount', name: 'taxable_amount', type: 'number', default: 0 },
-          { displayName: 'Variant ID', name: 'vid', type: 'string', default: '' },
+          { displayName: 'Variant ID', name: 'vid', type: 'string', default: '', required: true },
         ],
       },
     ],

@@ -943,16 +943,136 @@ export async function execute(this: IExecuteFunctions) {
 						options.method = 'GET';
 						options.url = `${baseUrl}/receipt/${receiptId}`;
 					} else if(operation === 'createPurchaseInvoice') {
+						const purchaseNumber = this.getNodeParameter('purchase_number', i) as string;
 						const purchaseOrderId = this.getNodeParameter('purchase_order_id', i) as string;
-						const additionalFields = this.getNodeParameter('additionalFields', i, {}) as IDataObject;
-						const paymentDateRaw = this.getNodeParameter('payment_date', i) as string;
-						const paymentDate = new Date(paymentDateRaw as string);
-						const paymentDateString = paymentDate.toISOString().split('T')[0];
+						const dueDateRaw = this.getNodeParameter('due_date', i) as string;
+						const purchaseDateRaw = this.getNodeParameter('pur_inv_date', i) as string;
+						const purchaseDate = new Date(purchaseDateRaw as string);
+						const purchaseDateString = purchaseDate.toISOString().split('T')[0];
+						const dueDate = new Date(dueDateRaw as string);
+						const dueDateString = dueDate.toISOString().split('T')[0];
+						const taxType = this.getNodeParameter('tax_id1_type', i) as string;
+						const contactId = this.getNodeParameter('contact_id', i) as string;
+						const businessBranchId = this.getNodeParameter('business_branch_id', i) as string;
+						const sellerTaxId = this.getNodeParameter('seller_tax_id', i) as string;
+						const notes = this.getNodeParameter('notes', i) as string;
+						const billingAddress = this.getNodeParameter('billing_address', i) as IDataObject;
+						const items = this.getNodeParameter('items.item', i, []) as IDataObject[];
+						const sameAddress = this.getNodeParameter('same_address', i) as boolean;
+						// const additionalFields = this.getNodeParameter('additionalFields', i, {}) as IDataObject;
 						const body: IDataObject = {
+							purchase_number: purchaseNumber,
 							purchase_order_id: purchaseOrderId,
-							payment_date: paymentDateString,
-							payment_mode: payment_mode.name,
-						};
+							due_date: dueDateString,
+							pur_inv_date: purchaseDateString,
+							tax_id1_type: taxType,
+							contact_id: contactId,
+							business_branch_id: businessBranchId,
+							notes: notes,
+							seller_tax_id: sellerTaxId,
+							status: 1,
+							type: 1,
+							data_source: 2,
+						}
+						// Fetch branch data if seller_branch_id is provided
+						if (businessBranchId && businessBranchId.trim() !== '') {
+							try {
+								// Fetch branch data directly
+								const branchOptions: IRequestOptions = {
+									method: 'GET',
+									url: `${baseUrl}/business/branch/${businessBranchId}`,
+									headers: {
+										'Content-Type': 'application/json',
+										'x-api-key': xApiKey,
+										'api-token': apiToken,
+									},
+									json: true,
+								};
+
+								const branchResponse = await this.helpers.request(branchOptions);
+								if (branchResponse.status === 200 && branchResponse.data && Array.isArray(branchResponse.data) && branchResponse.data.length > 0) {
+									const branchData = branchResponse.data[0];
+									// Add seller_info with branch data
+									body.business_info = {
+										name: branchData.branch_name || '',
+										tax_no: branchData.gstin || '',
+										id: branchData.branch_id || '',
+										mobile: branchData.phone || '',
+										email: branchData.email || '',
+										addr1: branchData.address?.line1 || '',
+										addr2: branchData.address?.line2 || '',
+										city: branchData.address?.city || '',
+										state: branchData.address?.state || '',
+										country: branchData.address?.country || '',
+										pincode: branchData.address?.pincode || '',
+										pos: branchData.address?.state
+									};
+								}
+							} catch (error) {
+							}
+						}
+						body.billing_details = {
+							"bill_addr1": billingAddress.bill_addr1,
+							"bill_addr2": billingAddress.bill_addr2,
+							"bill_city": billingAddress.bill_city,
+							"bill_company": billingAddress.bill_company_name,
+							"bill_country": billingAddress.bill_country,
+							"bill_pincode": billingAddress.bill_pincode,
+							"bill_state": billingAddress.bill_state,
+						}
+						if(sameAddress) {
+							(body.billing_details as any).bill_ship_address_same = 1;
+							body.shipping_details = {
+								"ship_addr1": billingAddress.bill_addr1,
+								"ship_addr2": billingAddress.bill_addr2,
+								"ship_city": billingAddress.bill_city,
+								"ship_company": billingAddress.bill_company_name,
+								"ship_country": billingAddress.bill_country,
+								"ship_pincode": billingAddress.bill_pincode,
+								"ship_state": billingAddress.bill_state,
+							}
+						} else {
+							const shippingAddress = this.getNodeParameter('shipping_address', i) as IDataObject;
+							body.shipping_details = {
+								"ship_addr1": shippingAddress.ship_addr1,
+								"ship_addr2": shippingAddress.ship_addr2,
+								"ship_city": shippingAddress.ship_city,
+								"ship_company": shippingAddress.ship_company_name,
+								"ship_country": shippingAddress.ship_country,
+								"ship_pincode": shippingAddress.ship_pincode,
+								"ship_state": shippingAddress.ship_state,
+							}
+						}
+						body.items = [];
+						for(let j = 0; j < items.length; j++) {
+							const item = items[j];
+							const parsed = JSON.parse(item.coa_id as string);
+							var expense_id = parsed.id;
+							var expense_type = parsed.name;
+							(body.items as any[]).push({
+								"item_description": item.item_description ?? '',
+								"item_code": item.item_code ?? '',
+								"item_type": item.item_type ?? '',
+								"pid": item.pid,
+								"item_name": item.item_name ?? '',
+								"quantity": item.quantity ?? '',
+								"price_type": item.price_type ?? '',
+								"rate": item.rate ?? '',
+								"cess_type": item.cess_type ?? '',
+								"cess_per": item.cess_per ?? '',
+								"taxable_amt": item.taxable_amount ?? '',
+								"gst_rate": item.gst_rate ?? '',
+								"non_taxable_amt": item.non_taxable_amount ?? '',
+								"discount": item.item_discount ?? '',
+								"vid":item.vid,
+								"expense_id": expense_id,
+								"expense_type": expense_type,
+							})
+						}
+						options.method = 'POST';
+						options.url = `${baseUrl}/purchase-invoice`;
+						options.body = body;
+						console.log(body);
 					} else if (operation === 'createVoucher') {
 						const branchId = this.getNodeParameter('branch_id', i) as string;
 						const voucherType = this.getNodeParameter('voucher_type', i) as string;
@@ -1103,12 +1223,42 @@ export async function execute(this: IExecuteFunctions) {
 						options.url = `${baseUrl}/vouchers`;
 						options.body = body;
 						console.log(body);
+					} else if(operation === 'listPurchaseInvoices') {
+						const pageSize = this.getNodeParameter('page_size', i) as number;
+						const filters = this.getNodeParameter('filters', i) as IDataObject;
+
+						if(filters.from_date) {
+							const dateFrom = new Date(filters.from_date as string);
+							filters.from_date = dateFrom.toISOString().split('T')[0];
+						}
+
+						if(filters.to_date) {
+							const dateTo = new Date(filters.to_date as string);
+							filters.to_date = dateTo.toISOString().split('T')[0];
+						}
+						options.method = 'GET';
+						options.url = `${baseUrl}/purchase-invoice?size=${pageSize ?? 5}&start_from=0&date_from=${filters.from_date ?? ''}&date_to=${filters.to_date ?? ''}&order_by=${filters.order_by ?? ''}&order_column=${filters.order_column ?? ''}&payment_status=${filters.payment_status ?? ''}&search=${filters.search ?? ''}`;
+						console.log(options.url);
 					} else if(operation === 'listVouchers') {
 						const voucherType = this.getNodeParameter('voucher_type', i) as string;
 						const pageSize = this.getNodeParameter('page_size', i) as number;
 						const filters = this.getNodeParameter('filters', i) as IDataObject;
+						if(filters.from_date) {
+							const dateFrom = new Date(filters.from_date as string);
+							filters.from_date = dateFrom.toISOString().split('T')[0];
+						}
+
+						if(filters.to_date) {
+							const dateTo = new Date(filters.to_date as string);
+							filters.to_date = dateTo.toISOString().split('T')[0];
+						}
 						options.method = 'GET';
-						options.url = `${baseUrl}/vouchers?&voucher_type=${voucherType ?? ''}&size=${pageSize ?? 5}&start_from=0&from_date=${filters.from_date ?? ''}&to_date=${filters.to_date ?? ''}&order_by=${filters.order_by ?? ''}&order_column=${filters.order_column ?? ''}`;
+						options.url = `${baseUrl}/vouchers?&voucher_type=${voucherType ?? ''}&size=${pageSize ?? 5}&start_from=0&from_date=${filters.date_from ?? ''}&to_date=${filters.date_to ?? ''}&order_by=${filters.order_by ?? ''}&order_column=${filters.order_column ?? ''}`;
+						console.log(options.url);
+					} else if(operation === 'viewPurchaseInvoice') {
+						const purchaseInvoiceId = this.getNodeParameter('id', i) as string;
+						options.method = 'GET';
+						options.url = `${baseUrl}/purchase-invoice/${purchaseInvoiceId}`;
 						console.log(options.url);
 					} else if(operation === 'viewVoucher') {
 						const voucherId = this.getNodeParameter('id', i) as string;
