@@ -79,6 +79,14 @@ The LEDGERS node supports the following operations:
 - **View Receipt** - Retrieve specific receipt details
 - **List Receipts** - List all receipts with filtering and pagination
 
+### **Purchase**
+- **Create Purchase Invoice** - Generate supplier invoices with detailed item management
+- **View Purchase Invoice** - Retrieve specific purchase invoice details
+- **List Purchase Invoices** - List all purchase invoices with filtering and pagination
+- **Create Voucher** - Generate expense, payment, and salary vouchers
+- **View Voucher** - Retrieve specific voucher details
+- **List Vouchers** - List all vouchers with filtering and pagination
+
 ---
 
 ## 🔧 Operation Details
@@ -106,6 +114,20 @@ The LEDGERS node supports the following operations:
 - **Payment Methods**: Flexible payment method selection with custom input fallback
 - **Reconciliation**: Support for invoice reconciliation in receipts
 - **Validation**: Rate validation (non-negative), date range completeness
+
+### **Purchase Operations**
+- **Purchase Invoice Management**: Create supplier invoices with comprehensive item details
+- **Voucher System**: Three types of vouchers with specialized functionality:
+  - **Expense Vouchers**: Single or multiple expense head management with tax calculations
+  - **Payment Vouchers**: Supplier payment tracking with invoice reconciliation
+  - **Salary Vouchers**: Employee salary processing with detailed breakdowns
+- **Advanced Item Management**: Purchase items with specialized supply options and export details
+- **Address Management**: Separate billing and shipping address handling
+- **Tax Integration**: Multiple tax types and specialized supply configurations
+- **Currency Support**: Multi-currency handling for international purchases
+- **Date Filtering**: Comprehensive date range filtering for all list operations
+- **Payment Status Tracking**: Monitor payment status across all purchase documents
+- **Reconciliation Features**: Match payments with purchase invoices automatically
 
 ## 💼 Uses of Sales Operations
 
@@ -138,6 +160,36 @@ The Sales module in LEDGERS node is designed for comprehensive revenue managemen
 - **Financial Reporting**: Extract sales data for accounting and reporting systems
 - **Customer Communication**: Trigger email notifications for invoices and receipts
 
+## 💼 Uses of Purchase Operations
+
+The Purchase module in LEDGERS node is designed for comprehensive procurement management and supplier transaction handling:
+
+### **Purchase Invoice Management**
+- **Supplier Billing**: Create and manage supplier invoices with detailed item tracking
+- **Multi-item Purchasing**: Handle complex purchases with multiple products/services
+- **Tax Management**: Automatic tax calculations with various tax types and rates
+- **Supplier Integration**: Link purchase invoices directly to supplier contact records
+- **Export/Import Handling**: Specialized support for international trade documentation
+
+### **Voucher Management System**
+- **Expense Vouchers**: Record business expenses with single or multiple expense heads
+- **Payment Vouchers**: Track supplier payments with automatic invoice reconciliation
+- **Salary Vouchers**: Process employee salaries with detailed breakdown (PF, ESI, TDS, etc.)
+- **Multi-currency Support**: Handle vouchers in different currencies for international operations
+
+### **Advanced Purchase Features**
+- **Specialized Supply Types**: Handle different supply categories with appropriate tax treatment
+- **Address Management**: Separate billing and shipping addresses for complex procurement
+- **Reconciliation System**: Automatically match payments with outstanding purchase invoices
+- **Date Range Filtering**: Advanced filtering for better procurement tracking and reporting
+
+### **Business Workflow Examples**
+- **Procurement Automation**: Auto-create purchase invoices from supplier orders
+- **Expense Management**: Systematically record and categorize business expenses
+- **Payroll Processing**: Automate salary payments with detailed tax and deduction calculations
+- **Supplier Payment Tracking**: Monitor payment status and reconcile supplier accounts
+- **Financial Compliance**: Maintain proper documentation for tax and audit requirements
+
 ---
 
 ## 🔐 Credentials
@@ -155,12 +207,10 @@ To authenticate with the LEDGERS API, you must provide the following:
 
 ## 🚀 Upcoming Release
 
-### **Purchase Operations**
+### **Enhanced Purchase Operations**
 - **Create Purchase Order**: Generate purchase orders for suppliers
-- **View Purchase Order**: Retrieve specific purchase order details
+- **View Purchase Order**: Retrieve specific purchase order details  
 - **List Purchase Orders**: List all purchase orders with filtering
-- **Purchase Invoice Management**: Handle supplier invoices and payments
-- **Supplier Management**: Enhanced supplier contact operations
 - **Inventory Integration**: Link purchases with catalog items
 
 ### **UAE LEDGERS Support**
@@ -184,6 +234,11 @@ To authenticate with the LEDGERS API, you must provide the following:
 | Receipt Operations  | ✅ Implemented |
 | Payment Method Fallback| ✅ Implemented |
 | Invoice Reconciliation| ✅ Implemented |
+| Purchase Operations | ✅ Implemented |
+| Voucher Management  | ✅ Implemented |
+| Multi-Currency Support| ✅ Implemented |
+| Specialized Supply Types| ✅ Implemented |
+| Export Documentation| ✅ Implemented |
 
 ---
 
@@ -222,6 +277,36 @@ To authenticate with the LEDGERS API, you must provide the following:
 3. Set page number and page size
 4. Add filters (date range, reconcile status, contact ID)
 
+### Create a Purchase Invoice
+1. Select **Purchase** as resource
+2. Choose **Create Purchase Invoice** operation
+3. Provide purchase number, dates, and supplier contact details
+4. Add items with required fields (name, rate, quantity, tax details)
+5. Set billing and shipping addresses
+6. Configure additional fields for specialized supplies or export details
+
+### Create an Expense Voucher
+1. Select **Purchase** as resource
+2. Choose **Create Voucher** operation
+3. Select **Expense Voucher** as voucher type
+4. Choose between single expense or multiple expenses
+5. Provide expense details, amounts, and tax information
+6. Set branch ID and payment details
+
+### Create a Salary Voucher
+1. Select **Purchase** as resource
+2. Choose **Create Voucher** operation
+3. Select **Salary Voucher** as voucher type
+4. Provide employee details and salary month (MM-YYYY format)
+5. Add salary amount and detailed breakdown (PF, ESI, TDS, etc.)
+6. Configure additional salary details as needed
+
+### List Purchase Invoices with Filters
+1. Select **Purchase** as resource
+2. Choose **List Purchase Invoices** operation
+3. Set page size and filters (date range, payment status)
+4. Configure ordering options (order by, order column)
+
 ### Create a Catalog Item
 1. Select **Catalog** as resource
 2. Choose **Create Catalog** operation
@@ -245,6 +330,8 @@ To authenticate with the LEDGERS API, you must provide the following:
 - Invoice/Quote items require name, ID, variant ID, rate, quantity, item type, HSN/SAC code, taxable amount, GST rate, and price type
 - Receipt operations require contact details, amount, payment method, and expense type (COA ID)
 - Catalog operations require name, price, type, and item type
+- Purchase invoice operations require purchase number, dates, contact details, business branch ID, and item details
+- Voucher operations require voucher type, branch ID, payment date, and type-specific fields (expense head, contact ID, or employee details)
 
 ### Payment Method Handling
 - Payment methods are loaded from the LEDGERS API when available
@@ -258,6 +345,16 @@ To authenticate with the LEDGERS API, you must provide the following:
 - **Transaction Tracking**: Optional transaction number field for payment reference
 - **Multiple Address Types**: Support for both billing and shipping addresses
 - **Notification Support**: Option to send receipt notifications
+
+### Purchase Operations Features
+- **Voucher Type Validation**: Different validation rules apply based on voucher type (Expense, Payment, Salary)
+- **Multiple Expense Handling**: Expense vouchers support both single and multiple expense head entries
+- **Salary Month Format**: Salary vouchers require MM-YYYY format for salary month field
+- **Reconciliation Support**: Payment vouchers can reconcile against existing purchase invoices
+- **Specialized Supply Types**: Purchase invoices support different supply categories with appropriate tax handling
+- **Export Documentation**: Support for export bill numbers, dates, and port codes for international trade
+- **Currency Validation**: Multi-currency support with proper currency code validation
+- **Address Synchronization**: Option to use billing address for shipping when addresses are the same
 
 ---
 
@@ -292,6 +389,7 @@ You can enable this in the node's settings under the **"Continue On Fail"** opti
 | 0.0.5   | No code changes. Logo File Updated with Better Resolution                        |
 | 0.0.6   | No code changes. Final Logo File Updated with Better Resolution                  |
 | 0.0.7   | Sales Operations like Invoice, Quotes and Receipt Release with enhanced features |
+| 0.0.8   | Purchase Operations Release with Purchase Invoices, Vouchers, and advanced features |
 
 ---
 

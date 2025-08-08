@@ -46,11 +46,13 @@ export class Ledgers implements INodeType {
 					{ name: 'Contact Operation', value: 'contact' },
 					{ name: 'Catalog Operation', value: 'catalog' },
 					{ name: 'Sales Operation', value: 'sales' },
+					{ name: 'Purchase Operation', value: 'purchase' },
 				],
 				default: 'contact',
 			},
-			// Sales and Catalog operations (always visible)
+			// Sales, Purchase, and Catalog operations (always visible)
 			...descriptions.salesOperations,
+			...descriptions.purchaseOperations,
 			...descriptions.catalogOperations,
 			// Only India Contact Operations
 			...descriptions.contactOperations,
@@ -415,6 +417,82 @@ export class Ledgers implements INodeType {
 						returnData.push({
 							name: 'Cash',
 							value: 1,
+						});
+					}
+
+					// If no payment methods found, return empty array to allow custom input
+					if (returnData.length === 0) {
+						return [];
+					}
+
+					return returnData;
+				} catch (error) {
+					return [];
+				}
+			},
+			async getPaymentMethodsPurchase(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+				// const continueOnFail = this.getNode().continueOnFail;
+				try {
+					const credentials = await this.getCredentials('ledgersApi');
+					const { xApiKey, email, password } = credentials;
+
+					// Authenticate to get api_token
+					const loginOptions: IRequestOptions = {
+						method: 'POST',
+						url: 'https://in-api.ledgers.cloud/login',
+						headers: {
+							'Content-Type': 'application/json',
+							'x-api-key': xApiKey,
+						},
+						body: { email, password },
+						json: true,
+					};
+
+					const loginResponse = await this.helpers.request(loginOptions);
+					if (loginResponse.status !== 200 || !loginResponse.api_token) {
+						// Return empty array to allow custom input when authentication fails
+						return [];
+					}
+
+					const apiToken = loginResponse.api_token;
+
+					const options: IRequestOptions = {
+						method: 'GET',
+						url: 'https://in-api.ledgers.cloud/v3/settings/paymentsmode',
+						headers: {
+							'Content-Type': 'application/json',
+							'x-api-key': xApiKey,
+							'api-token': apiToken,
+						},
+						json: true,
+					};
+
+					const response = await this.helpers.request(options);
+
+					if (!response.data || !Array.isArray(response.data)) {
+						// Return empty array to allow custom input when no data
+						return [];
+					}
+
+					const returnData: INodePropertyOptions[] = [];
+
+					// Find the payment_methods object in the data array
+					const paymentMethodsData = response.data.find((item: any) => item.type === 'payment_methods');
+
+					if (paymentMethodsData && paymentMethodsData.settings && Array.isArray(paymentMethodsData.settings)) {
+						for (const setting of paymentMethodsData.settings) {
+							if (setting.id && setting.value) {
+								returnData.push({
+									name: setting.value ?? 'Cash', // Display the payment method name
+									value: JSON.stringify({ id: String(setting.id ?? 1), name: `${setting.value ?? 'Cash'}` })   // Use the ID as the value
+								});
+							}
+						}
+					}
+					else{
+						returnData.push({
+							name: 'Cash',
+							value: JSON.stringify({ id: String(1), name: 'Cash' }),
 						});
 					}
 

@@ -26,15 +26,15 @@ export async function execute(this: IExecuteFunctions) {
 	const baseUrl = isIndia ? `${apiUrl}/v3` : apiUrl;
 
 	// Validate operation-country match
-	const indiaOps = ['contact', 'createContact', 'updateContact', 'addAddress', 'updateAddress', 'getContact', 'getAllContacts', 'catalog', 'createCatalog', 'updateCatalog', 'getCatalog', 'getAllCatalogs', 'sales', 'createInvoice', 'createQuote', 'viewInvoice', 'viewQuote', 'listInvoices', 'listQuotes'];
+	const indiaOps = ['contact', 'createContact', 'updateContact', 'addAddress', 'updateAddress', 'getContact', 'getAllContacts', 'catalog', 'createCatalog', 'updateCatalog', 'getCatalog', 'getAllCatalogs', 'sales', 'createInvoice', 'createQuote', 'viewInvoice', 'viewQuote', 'listInvoices', 'listQuotes', 'createReceipt', 'viewReceipt', 'listReceipts', 'purchase', 'createPurchaseInvoice', 'listPurchaseInvoices', 'viewPurchaseInvoice', 'createPurchaseOrder', 'listPurchaseOrders', 'viewPurchaseOrder', 'createVoucher', 'listVouchers', 'viewVoucher'];
 
 	for (let i = 0; i < items.length; i++) {
 		const operation = this.getNodeParameter('operation', i);
 		const resource = this.getNodeParameter('resource', i);
-		if (!indiaOps.includes(operation) && resource !== 'catalog' && resource !== 'sales' && resource !== 'contact') {
+		if (!indiaOps.includes(operation) && resource !== 'catalog' && resource !== 'sales' && resource !== 'contact' && resource !== 'purchase') {
 			throw new ApplicationError('This operation/resource is only available for India API URL. Please update your credentials.');
 		}
-		// Catalog and Sales always allowed
+		// Catalog, Sales, and Purchase always allowed
 	}
 
 	// Step 1: Authenticate and get api_token once for all items
@@ -942,6 +942,357 @@ export async function execute(this: IExecuteFunctions) {
 						const receiptId = this.getNodeParameter('receiptId', i) as string;
 						options.method = 'GET';
 						options.url = `${baseUrl}/receipt/${receiptId}`;
+					} else if(operation === 'createPurchaseInvoice') {
+						const purchaseNumber = this.getNodeParameter('purchase_number', i) as string;
+						const purchaseOrderId = this.getNodeParameter('purchase_order_id', i) as string;
+						const dueDateRaw = this.getNodeParameter('due_date', i) as string;
+						const purchaseDateRaw = this.getNodeParameter('pur_inv_date', i) as string;
+						const purchaseDate = new Date(purchaseDateRaw as string);
+						const purchaseDateString = purchaseDate.toISOString().split('T')[0];
+						const dueDate = new Date(dueDateRaw as string);
+						const dueDateString = dueDate.toISOString().split('T')[0];
+						const taxType = this.getNodeParameter('tax_id1_type', i) as string;
+						const contactId = this.getNodeParameter('contact_id', i) as string;
+						const businessBranchId = this.getNodeParameter('business_branch_id', i) as string;
+						const sellerTaxId = this.getNodeParameter('seller_tax_id', i) as string;
+						const notes = this.getNodeParameter('notes', i) as string;
+						const billingAddress = this.getNodeParameter('billing_address', i) as IDataObject;
+						const items = this.getNodeParameter('items.item', i, []) as IDataObject[];
+						const sameAddress = this.getNodeParameter('same_address', i) as boolean;
+						const currency = this.getNodeParameter('currency', i) as string;
+						const additionalFields = this.getNodeParameter('additionalFields', i, {}) as IDataObject;
+						const specialized_supply = this.getNodeParameter('specialized_supply', i) as string;
+						const body: IDataObject = {
+							purchase_number: purchaseNumber,
+							purchase_order_id: purchaseOrderId,
+							due_date: dueDateString,
+							pur_inv_date: purchaseDateString,
+							tax_id1_type: taxType,
+							contact_id: contactId,
+							business_branch_id: businessBranchId,
+							notes: notes,
+							seller_tax_id: sellerTaxId,
+							status: 1,
+							type: 1,
+							data_source: 2,
+							currency: currency,
+						}
+						if(taxType === '1' || taxType === '2') {
+							const pos = this.getNodeParameter('pos', i) as string;
+							const supplierState = this.getNodeParameter('supplier_state', i) as string;
+							body.business_info = {
+								pos: pos,
+							}
+							body.seller_info = {
+								supplier_state: supplierState,
+							}
+						}
+						body.billing_details = {
+							"bill_addr1": billingAddress.bill_addr1,
+							"bill_addr2": billingAddress.bill_addr2,
+							"bill_city": billingAddress.bill_city,
+							"bill_company": billingAddress.bill_company_name,
+							"bill_country": billingAddress.bill_country,
+							"bill_pincode": billingAddress.bill_pincode,
+							"bill_state": billingAddress.bill_state,
+						}
+						if(sameAddress) {
+							(body.billing_details as any).bill_ship_address_same = 1;
+							body.shipping_details = {
+								"ship_addr1": billingAddress.bill_addr1,
+								"ship_addr2": billingAddress.bill_addr2,
+								"ship_city": billingAddress.bill_city,
+								"ship_company": billingAddress.bill_company_name,
+								"ship_country": billingAddress.bill_country,
+								"ship_pincode": billingAddress.bill_pincode,
+								"ship_state": billingAddress.bill_state,
+							}
+						} else {
+							const shippingAddress = this.getNodeParameter('shipping_address', i) as IDataObject;
+							body.shipping_details = {
+								"ship_addr1": shippingAddress.ship_addr1,
+								"ship_addr2": shippingAddress.ship_addr2,
+								"ship_city": shippingAddress.ship_city,
+								"ship_company": shippingAddress.ship_company_name,
+								"ship_country": shippingAddress.ship_country,
+								"ship_pincode": shippingAddress.ship_pincode,
+								"ship_state": shippingAddress.ship_state,
+							}
+						}
+						body.items = [];
+						for(let j = 0; j < items.length; j++) {
+							const item = items[j];
+							const parsed = JSON.parse(item.coa_id as string);
+							var expense_id = parsed.id;
+							var expense_type = parsed.name;
+							(body.items as any[]).push({
+								"item_description": item.item_description ?? '',
+								"item_code": item.item_code ?? '',
+								"item_type": item.item_type ?? '',
+								"pid": item.pid,
+								"item_name": item.item_name ?? '',
+								"quantity": item.quantity ?? '',
+								"price_type": item.price_type ?? '',
+								"rate": parseFloat(item.rate as string) ?? '',
+								"cess_type": item.cess_type ?? '',
+								"cess_per": item.cess_per ?? '',
+								"taxable_amt": item.taxable_amount ?? '',
+								"gst_rate": parseInt(item.gst_rate as string) ?? 5,
+								"non_taxable_amt": parseInt(item.non_taxable_amount as string) ?? 0,
+								"discount": item.item_discount ?? '',
+								"vid":item.vid,
+								"expense_id": expense_id,
+								"expense_type": expense_type,
+							})
+						}
+						if(additionalFields.bill_number) {
+							body.bill_number = additionalFields.bill_number;
+						}
+						if(additionalFields.currency_info) {
+							const currencyInfo = additionalFields.currency_info as IDataObject;
+							body.currency_info = {
+								currency_rate: parseFloat(currencyInfo.currency_rate as string) ?? 0,
+								currency_default_rate: parseFloat(currencyInfo.currency_default_rate as string) ?? 0,
+								converted_amount: parseFloat(currencyInfo.converted_amount as string) ?? 0,
+								from: currencyInfo.from as string,
+								to: currencyInfo.to as string,
+							}
+						}
+						if(additionalFields.reverse_charge) {
+							body.reverse_charge = additionalFields.reverse_charge;
+						}
+						if(additionalFields.tax_credit_type) {
+							body.tax_credit_type = additionalFields.tax_credit_type;
+						}
+						if(additionalFields.terms_conditions) {
+							body.terms_conditions = additionalFields.terms_conditions;
+						}
+						if(specialized_supply) {
+							if(specialized_supply === '1') {
+								const export_bill_no = this.getNodeParameter('export_bill_no', i) as string;
+								const export_bill_date = this.getNodeParameter('export_bill_date', i) as string;
+								const export_port_code = this.getNodeParameter('export_port_code', i) as string;
+
+								// Validate mandatory export details
+								if (!export_bill_no || export_bill_no.trim() === '') {
+									throw new ApplicationError('Export Bill Number is required when Specialized Supply is Import', { level: 'warning' });
+								}
+								if (!export_bill_date || export_bill_date.trim() === '') {
+									throw new ApplicationError('Export Bill Date is required when Specialized Supply is Import', { level: 'warning' });
+								}
+								if (!export_port_code || export_port_code.trim() === '') {
+									throw new ApplicationError('Export Port Code is required when Specialized Supply is Import', { level: 'warning' });
+								}
+
+								body.spl_supply = 1;
+								body.export_details = {
+									export_bill_no: export_bill_no,
+									export_bill_date: export_bill_date,
+									export_port_code: export_port_code,
+								}
+							}
+							else{
+								body.spl_supply = parseInt(specialized_supply as string);
+							}
+						}
+						options.method = 'POST';
+						options.url = `${baseUrl}/purchase-invoice`;
+						options.body = body;
+					} else if (operation === 'createVoucher') {
+						const branchId = this.getNodeParameter('branch_id', i) as string;
+						const voucherType = this.getNodeParameter('voucher_type', i) as string;
+						const paymentDateRaw = this.getNodeParameter('payment_date', i) as string;
+						const currency = this.getNodeParameter('currency', i) as string;
+						const paymentMode = this.getNodeParameter('payment_mode', i) as string;
+						const additionalFields = this.getNodeParameter('additionalFields', i, {}) as IDataObject;
+						const paymentDate = new Date(paymentDateRaw as string);
+						const paymentDateString = paymentDate.toISOString().split('T')[0];
+						var payment_mode = JSON.parse(paymentMode as string);
+						const body: IDataObject = {
+							branch_id: branchId,
+							voucher_type: voucherType,
+							payment_date: paymentDateString,
+							currency: currency,
+							payment_mode: payment_mode.name,
+						};
+						if(voucherType === '1') {
+							const expenseType = this.getNodeParameter('expense_type', i) as string;
+							if(expenseType === 'single') {
+								const expenseHeadRaw = this.getNodeParameter('expense_head', i) as string;
+								const amount = this.getNodeParameter('amount', i) as string;
+								const taxRate = this.getNodeParameter('tax_rate', i) as string;
+								let expenseHead;
+								if (typeof expenseHeadRaw === 'string' && expenseHeadRaw.startsWith('{')) {
+									try {
+										const parsed = JSON.parse(expenseHeadRaw);
+										expenseHead = parsed.id;
+									} catch {
+										expenseHead = expenseHeadRaw;
+									}
+								} else if (typeof expenseHeadRaw === 'object' && expenseHeadRaw !== null) {
+									expenseHead = (expenseHeadRaw as any).id;
+								} else {
+									expenseHead = expenseHeadRaw;
+								}
+								body.expense_head = parseInt(expenseHead);
+								body.amount = parseFloat(amount as string);
+								body.tax_rate = parseInt(taxRate as string) ?? 5;
+							} else if(expenseType === 'multiple') {
+								const multipleAccounts = this.getNodeParameter('multiple_accounts.expense_head', i, []) as IDataObject[];
+								body.multiple_expense = [];
+								for(let j = 0; j < multipleAccounts.length; j++) {
+									const account = multipleAccounts[j];
+									let expenseHead;
+									if (typeof account.expense_head === 'string' && account.expense_head.startsWith('{')) {
+										try {
+											const parsed = JSON.parse(account.expense_head);
+											expenseHead = parsed.id;
+										} catch {
+											expenseHead = account.expense_head;
+										}
+									} else if (typeof account.expense_head === 'object' && account.expense_head !== null) {
+										expenseHead = (account.expense_head as any).id;
+									} else {
+										expenseHead = account.expense_head;
+									}
+									(body.multiple_expense as any[]).push({
+										expense_id: expenseHead,
+										amount: parseFloat(account.amount as string),
+										tax: parseInt(account.tax as string) ?? 5,
+									});
+								}
+							}
+							if(additionalFields.contact_id) {
+								body.contact_id = additionalFields.contact_id;
+							}
+							if(additionalFields.payment_status) {
+								body.payment_status = additionalFields.payment_status;
+							}
+							if(additionalFields.reverse_charge) {
+								body.reverse_charge = additionalFields.reverse_charge;
+							}
+							if(additionalFields.tax_credit_type) {
+								body.tax_credit_type = additionalFields.tax_credit_type;
+							}
+						} else if(voucherType === '2') {
+							const amount = this.getNodeParameter('amount', i) as string;
+							const contactId = this.getNodeParameter('contact_id', i) as string;
+							body.amount = parseFloat(amount as string);
+							body.contact_id = contactId;
+							const additionalFields_type2 = this.getNodeParameter('additionalFields', i, {}) as IDataObject;
+							if(additionalFields_type2.reconcile_details) {
+								const reconcileDetails = this.getNodeParameter('additionalFields.reconcile_details.reconcile', i, []) as IDataObject[];
+								body.reconcile_details = [];
+								for(let j = 0; j < reconcileDetails.length; j++){
+									const reconcile = reconcileDetails[j];
+									(body.reconcile_details as any[]).push({
+										purchase_id: parseInt(reconcile.purchase_invoice_id as string),
+										amount: parseFloat(reconcile.amount as string),
+									});
+								}
+							}
+						} else if(voucherType === '3') {
+							const employeeID = this.getNodeParameter('employee_id', i) as string;
+							const accountName = this.getNodeParameter('account_name', i) as string;
+							const salary_month = this.getNodeParameter('salary_month', i) as string;
+							const amount = this.getNodeParameter('amount', i) as string;
+							const salary_details = this.getNodeParameter('salary_details', i, {}) as IDataObject;
+							let expenseHead;
+							if (typeof accountName === 'string' && accountName.startsWith('{')) {
+								try {
+									const parsed = JSON.parse(accountName);
+									expenseHead = parsed.id;
+								} catch {
+									expenseHead = accountName;
+								}
+							} else if (typeof accountName === 'object' && accountName !== null) {
+								expenseHead = (accountName as any).id;
+							} else {
+								expenseHead = accountName;
+							}
+							body.contact_id = employeeID;
+							body.expense_head = parseInt(expenseHead);
+							body.amount = parseFloat(amount as string);
+							body.salary_month = salary_month;
+
+							// Only include salary details fields that have data
+							const salaryDetailsPayload: any = {};
+							if (salary_details.employer_esi && salary_details.employer_esi !== '') {
+								salaryDetailsPayload.er_esi = parseFloat(salary_details.employer_esi as string);
+							}
+							if (salary_details.employer_pf && salary_details.employer_pf !== '') {
+								salaryDetailsPayload.er_pf = parseFloat(salary_details.employer_pf as string);
+							}
+							if (salary_details.esi && salary_details.esi !== '') {
+								salaryDetailsPayload.esi = parseFloat(salary_details.esi as string);
+							}
+							if (salary_details.tds && salary_details.tds !== '') {
+								salaryDetailsPayload.tds = parseFloat(salary_details.tds as string);
+							}
+							if (salary_details.pt && salary_details.pt !== '') {
+								salaryDetailsPayload.p_tax = parseFloat(salary_details.pt as string);
+							}
+							if (salary_details.pf && salary_details.pf !== '') {
+								salaryDetailsPayload.pf = parseFloat(salary_details.pf as string);
+							}
+							if (salary_details.welfare && salary_details.welfare !== '') {
+								salaryDetailsPayload.welfare = parseFloat(salary_details.welfare as string);
+							}
+
+							// Only add salary_details to body if there are any fields with data
+							if (Object.keys(salaryDetailsPayload).length > 0) {
+								body.salary_details = salaryDetailsPayload;
+							}
+						}
+						options.method = 'POST';
+						options.url = `${baseUrl}/vouchers`;
+						options.body = body;
+					} else if(operation === 'listPurchaseInvoices') {
+						const pageSize = this.getNodeParameter('page_size', i) as number;
+						const filters = this.getNodeParameter('filters', i) as IDataObject;
+						// Validate date range - both from and to dates must be provided if either is selected
+						if ((filters.from_date && !filters.to_date) || (!filters.from_date && filters.to_date)) {
+							throw new ApplicationError('Both Date From and Date To must be provided for date range filtering', { level: 'warning' });
+						}
+						if(filters.from_date) {
+							const dateFrom = new Date(filters.from_date as string);
+							filters.from_date = dateFrom.toISOString().split('T')[0];
+						}
+
+						if(filters.to_date) {
+							const dateTo = new Date(filters.to_date as string);
+							filters.to_date = dateTo.toISOString().split('T')[0];
+						}
+						options.method = 'GET';
+						options.url = `${baseUrl}/purchase-invoice?size=${pageSize ?? 5}&start_from=0&date_from=${filters.from_date ?? ''}&date_to=${filters.to_date ?? ''}&order_by=${filters.order_by ?? ''}&order_column=${filters.order_column ?? ''}&payment_status=${filters.payment_status ?? ''}&search=${filters.search ?? ''}`;
+					} else if(operation === 'listVouchers') {
+						const voucherType = this.getNodeParameter('voucher_type', i) as string;
+						const pageSize = this.getNodeParameter('page_size', i) as number;
+						const filters = this.getNodeParameter('filters', i) as IDataObject;
+						// Validate date range - both from and to dates must be provided if either is selected
+						if ((filters.from_date && !filters.to_date) || (!filters.from_date && filters.to_date)) {
+							throw new ApplicationError('Both Date From and Date To must be provided for date range filtering', { level: 'warning' });
+						}
+
+						if(filters.from_date) {
+							const dateFrom = new Date(filters.from_date as string);
+							filters.from_date = dateFrom.toISOString().split('T')[0];
+						}
+
+						if(filters.to_date) {
+							const dateTo = new Date(filters.to_date as string);
+							filters.to_date = dateTo.toISOString().split('T')[0];
+						}
+						options.method = 'GET';
+						options.url = `${baseUrl}/vouchers?&voucher_type=${voucherType ?? ''}&size=${pageSize ?? 5}&start_from=0&from_date=${filters.date_from ?? ''}&to_date=${filters.date_to ?? ''}&order_by=${filters.order_by ?? ''}&order_column=${filters.order_column ?? ''}`;
+					} else if(operation === 'viewPurchaseInvoice') {
+						const purchaseInvoiceId = this.getNodeParameter('id', i) as string;
+						options.method = 'GET';
+						options.url = `${baseUrl}/purchase-invoice/${purchaseInvoiceId}`;
+					} else if(operation === 'viewVoucher') {
+						const voucherId = this.getNodeParameter('id', i) as string;
+						options.method = 'GET';
+						options.url = `${baseUrl}/vouchers/${voucherId}`;
 					}
 					const result = await this.helpers.request(options);
 					returnData.push({ json: result });

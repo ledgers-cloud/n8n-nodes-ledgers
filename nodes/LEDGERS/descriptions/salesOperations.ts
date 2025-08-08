@@ -2453,7 +2453,7 @@ export const SalesOperations: INodeProperties[] = [
 	},
   // Pagination for list operations
   {
-    displayName: 'Page Size',
+    displayName: 'Limit',
     name: 'page_size',
     required: true,
     displayOptions: {
