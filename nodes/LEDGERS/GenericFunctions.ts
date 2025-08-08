@@ -960,7 +960,8 @@ export async function execute(this: IExecuteFunctions) {
 						const items = this.getNodeParameter('items.item', i, []) as IDataObject[];
 						const sameAddress = this.getNodeParameter('same_address', i) as boolean;
 						const currency = this.getNodeParameter('currency', i) as string;
-						// const additionalFields = this.getNodeParameter('additionalFields', i, {}) as IDataObject;
+						const additionalFields = this.getNodeParameter('additionalFields', i, {}) as IDataObject;
+						const specialized_supply = this.getNodeParameter('specialized_supply', i) as string;
 						const body: IDataObject = {
 							purchase_number: purchaseNumber,
 							purchase_order_id: purchaseOrderId,
@@ -976,41 +977,14 @@ export async function execute(this: IExecuteFunctions) {
 							data_source: 2,
 							currency: currency,
 						}
-						// Fetch branch data if seller_branch_id is provided
-						if (businessBranchId && businessBranchId.trim() !== '') {
-							try {
-								// Fetch branch data directly
-								const branchOptions: IRequestOptions = {
-									method: 'GET',
-									url: `${baseUrl}/business/branch/${businessBranchId}`,
-									headers: {
-										'Content-Type': 'application/json',
-										'x-api-key': xApiKey,
-										'api-token': apiToken,
-									},
-									json: true,
-								};
-
-								const branchResponse = await this.helpers.request(branchOptions);
-								if (branchResponse.status === 200 && branchResponse.data && Array.isArray(branchResponse.data) && branchResponse.data.length > 0) {
-									const branchData = branchResponse.data[0];
-									// Add seller_info with branch data
-									body.business_info = {
-										name: branchData.branch_name || '',
-										tax_no: branchData.gstin || '',
-										id: branchData.branch_id || '',
-										mobile: branchData.phone || '',
-										email: branchData.email || '',
-										addr1: branchData.address?.line1 || '',
-										addr2: branchData.address?.line2 || '',
-										city: branchData.address?.city || '',
-										state: branchData.address?.state || '',
-										country: branchData.address?.country || '',
-										pincode: branchData.address?.pincode || '',
-										pos: branchData.address?.state
-									};
-								}
-							} catch (error) {
+						if(taxType === '1' || taxType === '2') {
+							const pos = this.getNodeParameter('pos', i) as string;
+							const supplierState = this.getNodeParameter('supplier_state', i) as string;
+							body.business_info = {
+								pos: pos,
+							}
+							body.seller_info = {
+								supplier_state: supplierState,
 							}
 						}
 						body.billing_details = {
@@ -1070,6 +1044,56 @@ export async function execute(this: IExecuteFunctions) {
 								"expense_id": expense_id,
 								"expense_type": expense_type,
 							})
+						}
+						if(additionalFields.bill_number) {
+							body.bill_number = additionalFields.bill_number;
+						}
+						if(additionalFields.currency_info) {
+							const currencyInfo = additionalFields.currency_info as IDataObject;
+							body.currency_info = {
+								currency_rate: parseFloat(currencyInfo.currency_rate as string) ?? 0,
+								currency_default_rate: parseFloat(currencyInfo.currency_default_rate as string) ?? 0,
+								converted_amount: parseFloat(currencyInfo.converted_amount as string) ?? 0,
+								from: currencyInfo.from as string,
+								to: currencyInfo.to as string,
+							}
+						}
+						if(additionalFields.reverse_charge) {
+							body.reverse_charge = additionalFields.reverse_charge;
+						}
+						if(additionalFields.tax_credit_type) {
+							body.tax_credit_type = additionalFields.tax_credit_type;
+						}
+						if(additionalFields.terms_conditions) {
+							body.terms_conditions = additionalFields.terms_conditions;
+						}
+						if(specialized_supply) {
+							if(specialized_supply === '1') {
+								const export_bill_no = this.getNodeParameter('export_bill_no', i) as string;
+								const export_bill_date = this.getNodeParameter('export_bill_date', i) as string;
+								const export_port_code = this.getNodeParameter('export_port_code', i) as string;
+
+								// Validate mandatory export details
+								if (!export_bill_no || export_bill_no.trim() === '') {
+									throw new ApplicationError('Export Bill Number is required when Specialized Supply is Import', { level: 'warning' });
+								}
+								if (!export_bill_date || export_bill_date.trim() === '') {
+									throw new ApplicationError('Export Bill Date is required when Specialized Supply is Import', { level: 'warning' });
+								}
+								if (!export_port_code || export_port_code.trim() === '') {
+									throw new ApplicationError('Export Port Code is required when Specialized Supply is Import', { level: 'warning' });
+								}
+
+								body.spl_supply = 1;
+								body.export_details = {
+									export_bill_no: export_bill_no,
+									export_bill_date: export_bill_date,
+									export_port_code: export_port_code,
+								}
+							}
+							else{
+								body.spl_supply = parseInt(specialized_supply as string);
+							}
 						}
 						options.method = 'POST';
 						options.url = `${baseUrl}/purchase-invoice`;
