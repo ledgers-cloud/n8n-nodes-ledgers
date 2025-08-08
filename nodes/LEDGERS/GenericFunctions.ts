@@ -959,6 +959,7 @@ export async function execute(this: IExecuteFunctions) {
 						const billingAddress = this.getNodeParameter('billing_address', i) as IDataObject;
 						const items = this.getNodeParameter('items.item', i, []) as IDataObject[];
 						const sameAddress = this.getNodeParameter('same_address', i) as boolean;
+						const currency = this.getNodeParameter('currency', i) as string;
 						// const additionalFields = this.getNodeParameter('additionalFields', i, {}) as IDataObject;
 						const body: IDataObject = {
 							purchase_number: purchaseNumber,
@@ -973,6 +974,7 @@ export async function execute(this: IExecuteFunctions) {
 							status: 1,
 							type: 1,
 							data_source: 2,
+							currency: currency,
 						}
 						// Fetch branch data if seller_branch_id is provided
 						if (businessBranchId && businessBranchId.trim() !== '') {
@@ -1057,12 +1059,12 @@ export async function execute(this: IExecuteFunctions) {
 								"item_name": item.item_name ?? '',
 								"quantity": item.quantity ?? '',
 								"price_type": item.price_type ?? '',
-								"rate": item.rate ?? '',
+								"rate": parseFloat(item.rate as string) ?? '',
 								"cess_type": item.cess_type ?? '',
 								"cess_per": item.cess_per ?? '',
 								"taxable_amt": item.taxable_amount ?? '',
-								"gst_rate": item.gst_rate ?? '',
-								"non_taxable_amt": item.non_taxable_amount ?? '',
+								"gst_rate": parseInt(item.gst_rate as string) ?? 5,
+								"non_taxable_amt": parseInt(item.non_taxable_amount as string) ?? 0,
 								"discount": item.item_discount ?? '',
 								"vid":item.vid,
 								"expense_id": expense_id,
@@ -1072,7 +1074,6 @@ export async function execute(this: IExecuteFunctions) {
 						options.method = 'POST';
 						options.url = `${baseUrl}/purchase-invoice`;
 						options.body = body;
-						console.log(body);
 					} else if (operation === 'createVoucher') {
 						const branchId = this.getNodeParameter('branch_id', i) as string;
 						const voucherType = this.getNodeParameter('voucher_type', i) as string;
@@ -1110,8 +1111,8 @@ export async function execute(this: IExecuteFunctions) {
 									expenseHead = expenseHeadRaw;
 								}
 								body.expense_head = parseInt(expenseHead);
-								body.amount = amount;
-								body.tax_rate = taxRate;
+								body.amount = parseFloat(amount as string);
+								body.tax_rate = parseInt(taxRate as string) ?? 5;
 							} else if(expenseType === 'multiple') {
 								const multipleAccounts = this.getNodeParameter('multiple_accounts.expense_head', i, []) as IDataObject[];
 								body.multiple_expense = [];
@@ -1132,8 +1133,8 @@ export async function execute(this: IExecuteFunctions) {
 									}
 									(body.multiple_expense as any[]).push({
 										expense_id: expenseHead,
-										amount: account.amount,
-										tax_rate: account.tax,
+										amount: parseFloat(account.amount as string),
+										tax: parseInt(account.tax as string) ?? 5,
 									});
 								}
 							}
@@ -1152,7 +1153,7 @@ export async function execute(this: IExecuteFunctions) {
 						} else if(voucherType === '2') {
 							const amount = this.getNodeParameter('amount', i) as string;
 							const contactId = this.getNodeParameter('contact_id', i) as string;
-							body.amount = amount;
+							body.amount = parseFloat(amount as string);
 							body.contact_id = contactId;
 							const additionalFields_type2 = this.getNodeParameter('additionalFields', i, {}) as IDataObject;
 							if(additionalFields_type2.reconcile_details) {
@@ -1161,8 +1162,8 @@ export async function execute(this: IExecuteFunctions) {
 								for(let j = 0; j < reconcileDetails.length; j++){
 									const reconcile = reconcileDetails[j];
 									(body.reconcile_details as any[]).push({
-										purchase_invoice_id: reconcile.purchase_invoice_id,
-										amount: reconcile.amount,
+										purchase_id: parseInt(reconcile.purchase_invoice_id as string),
+										amount: parseFloat(reconcile.amount as string),
 									});
 								}
 							}
@@ -1187,31 +1188,31 @@ export async function execute(this: IExecuteFunctions) {
 							}
 							body.contact_id = employeeID;
 							body.expense_head = parseInt(expenseHead);
-							body.amount = amount;
+							body.amount = parseFloat(amount as string);
 							body.salary_month = salary_month;
 
 							// Only include salary details fields that have data
 							const salaryDetailsPayload: any = {};
 							if (salary_details.employer_esi && salary_details.employer_esi !== '') {
-								salaryDetailsPayload.er_esi = salary_details.employer_esi;
+								salaryDetailsPayload.er_esi = parseFloat(salary_details.employer_esi as string);
 							}
 							if (salary_details.employer_pf && salary_details.employer_pf !== '') {
-								salaryDetailsPayload.er_pf = salary_details.employer_pf;
+								salaryDetailsPayload.er_pf = parseFloat(salary_details.employer_pf as string);
 							}
 							if (salary_details.esi && salary_details.esi !== '') {
-								salaryDetailsPayload.esi = salary_details.esi;
+								salaryDetailsPayload.esi = parseFloat(salary_details.esi as string);
 							}
 							if (salary_details.tds && salary_details.tds !== '') {
-								salaryDetailsPayload.tds = salary_details.tds;
+								salaryDetailsPayload.tds = parseFloat(salary_details.tds as string);
 							}
 							if (salary_details.pt && salary_details.pt !== '') {
-								salaryDetailsPayload.p_tax = salary_details.pt;
+								salaryDetailsPayload.p_tax = parseFloat(salary_details.pt as string);
 							}
 							if (salary_details.pf && salary_details.pf !== '') {
-								salaryDetailsPayload.pf = salary_details.pf;
+								salaryDetailsPayload.pf = parseFloat(salary_details.pf as string);
 							}
 							if (salary_details.welfare && salary_details.welfare !== '') {
-								salaryDetailsPayload.welfare = salary_details.welfare;
+								salaryDetailsPayload.welfare = parseFloat(salary_details.welfare as string);
 							}
 
 							// Only add salary_details to body if there are any fields with data
@@ -1222,11 +1223,13 @@ export async function execute(this: IExecuteFunctions) {
 						options.method = 'POST';
 						options.url = `${baseUrl}/vouchers`;
 						options.body = body;
-						console.log(body);
 					} else if(operation === 'listPurchaseInvoices') {
 						const pageSize = this.getNodeParameter('page_size', i) as number;
 						const filters = this.getNodeParameter('filters', i) as IDataObject;
-
+						// Validate date range - both from and to dates must be provided if either is selected
+						if ((filters.from_date && !filters.to_date) || (!filters.from_date && filters.to_date)) {
+							throw new ApplicationError('Both Date From and Date To must be provided for date range filtering', { level: 'warning' });
+						}
 						if(filters.from_date) {
 							const dateFrom = new Date(filters.from_date as string);
 							filters.from_date = dateFrom.toISOString().split('T')[0];
@@ -1238,11 +1241,15 @@ export async function execute(this: IExecuteFunctions) {
 						}
 						options.method = 'GET';
 						options.url = `${baseUrl}/purchase-invoice?size=${pageSize ?? 5}&start_from=0&date_from=${filters.from_date ?? ''}&date_to=${filters.to_date ?? ''}&order_by=${filters.order_by ?? ''}&order_column=${filters.order_column ?? ''}&payment_status=${filters.payment_status ?? ''}&search=${filters.search ?? ''}`;
-						console.log(options.url);
 					} else if(operation === 'listVouchers') {
 						const voucherType = this.getNodeParameter('voucher_type', i) as string;
 						const pageSize = this.getNodeParameter('page_size', i) as number;
 						const filters = this.getNodeParameter('filters', i) as IDataObject;
+						// Validate date range - both from and to dates must be provided if either is selected
+						if ((filters.from_date && !filters.to_date) || (!filters.from_date && filters.to_date)) {
+							throw new ApplicationError('Both Date From and Date To must be provided for date range filtering', { level: 'warning' });
+						}
+
 						if(filters.from_date) {
 							const dateFrom = new Date(filters.from_date as string);
 							filters.from_date = dateFrom.toISOString().split('T')[0];
@@ -1254,17 +1261,14 @@ export async function execute(this: IExecuteFunctions) {
 						}
 						options.method = 'GET';
 						options.url = `${baseUrl}/vouchers?&voucher_type=${voucherType ?? ''}&size=${pageSize ?? 5}&start_from=0&from_date=${filters.date_from ?? ''}&to_date=${filters.date_to ?? ''}&order_by=${filters.order_by ?? ''}&order_column=${filters.order_column ?? ''}`;
-						console.log(options.url);
 					} else if(operation === 'viewPurchaseInvoice') {
 						const purchaseInvoiceId = this.getNodeParameter('id', i) as string;
 						options.method = 'GET';
 						options.url = `${baseUrl}/purchase-invoice/${purchaseInvoiceId}`;
-						console.log(options.url);
 					} else if(operation === 'viewVoucher') {
 						const voucherId = this.getNodeParameter('id', i) as string;
 						options.method = 'GET';
 						options.url = `${baseUrl}/vouchers/${voucherId}`;
-						console.log(options.url);
 					}
 					const result = await this.helpers.request(options);
 					returnData.push({ json: result });
