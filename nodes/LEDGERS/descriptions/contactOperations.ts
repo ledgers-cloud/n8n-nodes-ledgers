@@ -781,7 +781,20 @@ export const contactOperations: INodeProperties[] = [
 				default: '',
 				placeholder: '',
 			},
-
+			{
+				displayName: 'Opening Customer Receivable',
+				name: 'opening_receivable',
+				type: 'string',
+				default: '',
+				placeholder: 'Enter Opening Customer Receivable',
+			},
+			{
+				displayName: 'Opening Supplier Payable',
+				name: 'opening_payable',
+				type: 'string',
+				default: '',
+				placeholder: 'Enter Opening Supplier Payable',
+			},
 			{
 				displayName: 'Status',
 				name: 'status',

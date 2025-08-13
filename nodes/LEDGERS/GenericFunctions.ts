@@ -26,15 +26,15 @@ export async function execute(this: IExecuteFunctions) {
 	const baseUrl = isIndia ? `${apiUrl}/v3` : apiUrl;
 
 	// Validate operation-country match
-	const indiaOps = ['contact', 'createContact', 'updateContact', 'addAddress', 'updateAddress', 'getContact', 'getAllContacts', 'catalog', 'createCatalog', 'updateCatalog', 'getCatalog', 'getAllCatalogs', 'sales', 'createInvoice', 'createQuote', 'viewInvoice', 'viewQuote', 'listInvoices', 'listQuotes', 'createReceipt', 'viewReceipt', 'listReceipts', 'purchase', 'createPurchaseInvoice', 'listPurchaseInvoices', 'viewPurchaseInvoice', 'createPurchaseOrder', 'listPurchaseOrders', 'viewPurchaseOrder', 'createVoucher', 'listVouchers', 'viewVoucher'];
+	const indiaOps = ['contact', 'createContact', 'updateContact', 'addAddress', 'updateAddress', 'getContact', 'getAllContacts', 'catalog', 'createCatalog', 'updateCatalog', 'getCatalog', 'getAllCatalogs', 'sales', 'createInvoice', 'createQuote', 'viewInvoice', 'viewQuote', 'listInvoices', 'listQuotes', 'createReceipt', 'viewReceipt', 'listReceipts', 'purchase', 'createPurchaseInvoice', 'listPurchaseInvoices', 'viewPurchaseInvoice', 'createPurchaseOrder', 'listPurchaseOrders', 'viewPurchaseOrder', 'createVoucher', 'listVouchers', 'viewVoucher', 'hrms', 'getAllEmployees', 'addEmployee', 'updateEmployee', 'getEmployee', 'getEmployeeData', 'updateAttendance'];
 
 	for (let i = 0; i < items.length; i++) {
 		const operation = this.getNodeParameter('operation', i);
 		const resource = this.getNodeParameter('resource', i);
-		if (!indiaOps.includes(operation) && resource !== 'catalog' && resource !== 'sales' && resource !== 'contact' && resource !== 'purchase') {
+		if (!indiaOps.includes(operation) && resource !== 'catalog' && resource !== 'sales' && resource !== 'contact' && resource !== 'purchase' && resource !== 'hrms') {
 			throw new ApplicationError('This operation/resource is only available for India API URL. Please update your credentials.');
 		}
-		// Catalog, Sales, and Purchase always allowed
+		// Catalog, Sales, Purchase, and HRMS always allowed
 	}
 
 	// Step 1: Authenticate and get api_token once for all items
@@ -1293,6 +1293,318 @@ export async function execute(this: IExecuteFunctions) {
 						const voucherId = this.getNodeParameter('id', i) as string;
 						options.method = 'GET';
 						options.url = `${baseUrl}/vouchers/${voucherId}`;
+
+					// ========== HRMS OPERATIONS ==========
+					} else if (operation === 'getAllEmployees') {
+						const filters = this.getNodeParameter('filters', i, {}) as IDataObject;
+						const pageSize = this.getNodeParameter('perpage', i, 10) as number;
+
+						const payload = {
+							pagination: {
+								perpage: pageSize,
+								page: 1,
+							},
+							sort: {
+								field: filters.sortField ?? '',
+								sort: filters.sort ?? 'DESC'
+							}
+						} as any;
+
+						if (filters.query && filters.query !== '') {
+							payload.pagination.query = filters.query;
+						}
+						if (filters.status !== undefined && filters.status !== '') {
+							payload.status = filters.status;
+						}
+						if (filters.attendance_status !== undefined && filters.attendance_status !== '') {
+							payload.attendance_status = filters.attendance_status;
+						}
+
+						options.method = 'GET';
+						options.url = `${baseUrl}/hr/employee?param=${btoa(JSON.stringify(payload))}`;
+						console.log(options.url);
+					} else if (operation === 'addEmployee') {
+						const title = this.getNodeParameter('title', i) as string;
+						const name = this.getNodeParameter('name', i) as string;
+						const branch = this.getNodeParameter('branch', i) as string;
+						const dateOfJoin = this.getNodeParameter('dateOfJoin', i) as string;
+						const personalMobile = this.getNodeParameter('personalMobile', i) as string;
+						const officeEmail = this.getNodeParameter('officeEmail', i) as string;
+						const employeeStatus = this.getNodeParameter('employeeStatus', i) as string;
+						const dateOfBirth = this.getNodeParameter('dateOfBirth', i) as string;
+						const gender = this.getNodeParameter('gender', i) as string;
+						const additionalFields = this.getNodeParameter('additionalFields', i, {}) as IDataObject;
+						console.log(additionalFields);
+						// Validate required fields
+						if (!name || name.trim() === '') {
+							throw new ApplicationError('Name is required', { level: 'warning' });
+						}
+						if (!branch || branch.trim() === '') {
+							throw new ApplicationError('Branch is required', { level: 'warning' });
+						}
+						if (!dateOfJoin || dateOfJoin.trim() === '') {
+							throw new ApplicationError('Date of Join is required', { level: 'warning' });
+						}
+						if (!personalMobile || personalMobile.trim() === '') {
+							throw new ApplicationError('Personal Mobile is required', { level: 'warning' });
+						}
+						if (!officeEmail || officeEmail.trim() === '') {
+							throw new ApplicationError('Office Email is required', { level: 'warning' });
+						}
+
+						// Build the body with correct API field names
+						const body: IDataObject = {
+							employee_status: employeeStatus,
+							gender: gender,
+							name: name,
+							branch: parseInt(branch),
+							doj: new Date(dateOfJoin).toISOString().split('T')[0],
+							personal_mobile: parseInt(personalMobile),
+							office_email: officeEmail,
+							dob: new Date(dateOfBirth).toISOString().split('T')[0],
+						};
+
+						// Add title if provided
+						if (title) {
+							body.title = title;
+						}
+
+						// Handle additional fields with correct API field names
+						if (additionalFields.employeeId) {
+							body.employee_id = additionalFields.employeeId;
+						}
+						if (additionalFields.designation) {
+							body.designation = additionalFields.designation;
+						}
+						if (additionalFields.department) {
+							body.department = additionalFields.department;
+						}
+						if (additionalFields.personalEmail) {
+							body.personal_email = additionalFields.personalEmail;
+						}
+						if (additionalFields.pan) {
+							body.pan = additionalFields.pan;
+						}
+						if (additionalFields.officeMobile) {
+							body.office_mobile = parseInt(additionalFields.officeMobile as string);
+						}
+						if (additionalFields.reportingTo) {
+							body.reporting_to = additionalFields.reportingTo;
+						}
+						if (additionalFields.fatherName) {
+							body.father_name = additionalFields.fatherName;
+						}
+						if (additionalFields.employmentType) {
+							body.employment_type = additionalFields.employmentType;
+						}
+						if (additionalFields.bloodGroup) {
+							body.blood_group = additionalFields.bloodGroup;
+						}
+						if (additionalFields.maritalStatus) {
+							body.marital_status = additionalFields.maritalStatus;
+						}
+						if (additionalFields.emergencyContact) {
+							body.emergency_contact = parseInt(additionalFields.emergencyContact as string);
+						}
+						if (additionalFields.aadhar) {
+							body.aadhar = parseInt(additionalFields.aadhar as string);
+						}
+						if (additionalFields.religion) {
+							body.religion = additionalFields.religion;
+						}
+						if (additionalFields.employeeAccountName) {
+							body.employee_account_name = additionalFields.employeeAccountName;
+						}
+						if (additionalFields.employeeAccountNumber) {
+							body.employee_account_number = parseInt(additionalFields.employeeAccountNumber as string);
+						}
+						if (additionalFields.employeeBankBranch) {
+							body.employee_bank_branch = additionalFields.employeeBankBranch;
+						}
+						if (additionalFields.employeeBankName) {
+							body.employee_bank_name = additionalFields.employeeBankName;
+						}
+						if (additionalFields.employeeIfscCode) {
+							body.employee_ifsc_code = additionalFields.employeeIfscCode;
+						}
+						if (additionalFields.employeeAccountType) {
+							body.employee_account_type = additionalFields.employeeAccountType;
+						}
+						if (additionalFields.uanNumber) {
+							body.uan_number = parseInt(additionalFields.uanNumber as string);
+						}
+						if (additionalFields.esiNumber) {
+							body.esi_number = parseInt(additionalFields.esiNumber as string);
+						}
+						if (additionalFields.bid) {
+							body.bid = additionalFields.bid;
+						}
+						if (additionalFields.shift) {
+							body.shift = additionalFields.shift;
+						}
+
+						// Handle address fields - convert from fixedCollection to arrays
+						if (additionalFields.presentAddress && (additionalFields.presentAddress as any).address && Array.isArray((additionalFields.presentAddress as any).address)) {
+							body.present_address = (additionalFields.presentAddress as any).address.map((addr: any) => ({
+								city: addr.city,
+								state: addr.state,
+								country: addr.country,
+								pincode: addr.pincode,
+								address_line1: addr.addressLine1,
+								address_line2: addr.addressLine2,
+							}));
+						}
+						if (additionalFields.permanentAddress && (additionalFields.permanentAddress as any).address && Array.isArray((additionalFields.permanentAddress as any).address)) {
+							body.permanent_address = (additionalFields.permanentAddress as any).address.map((addr: any) => ({
+								city: addr.city,
+								state: addr.state,
+								country: addr.country,
+								pincode: addr.pincode,
+								address_line1: addr.addressLine1,
+								address_line2: addr.addressLine2,
+							}));
+						}
+
+						options.method = 'POST';
+						options.url = `${baseUrl}/hr/employee`;
+						options.body = body;
+						console.log(body);
+					} else if (operation === 'updateEmployee') {
+						const gid = this.getNodeParameter('gid', i) as string;
+						const updateFields = this.getNodeParameter('updateFields', i, {}) as IDataObject;
+
+						if (!gid || gid.trim() === '') {
+							throw new ApplicationError('GID is required', { level: 'warning' });
+						}
+
+						// Check if status is being changed from active to inactive (requires exit fields)
+						if (updateFields.employeeStatus && updateFields.employeeStatus !== 1) {
+							if (!updateFields.dateOfExit || updateFields.dateOfExit === '') {
+								throw new ApplicationError('Date of Exit is required when changing employee status from active', { level: 'warning' });
+							}
+							if (!updateFields.exitDescription || updateFields.exitDescription === '') {
+								throw new ApplicationError('Exit Description is required when changing employee status from active', { level: 'warning' });
+							}
+						}
+
+						const body: IDataObject = {
+							gid: gid,
+						};
+
+						// Check if at least one field is provided for update (other than gid)
+						if (!updateFields || Object.keys(updateFields).length === 0) {
+							throw new ApplicationError('At least one field must be provided for update', { level: 'warning' });
+						}
+
+						// Handle update fields with proper API field mapping
+						for (const [key, value] of Object.entries(updateFields)) {
+							if (value !== undefined && value !== null) {
+								// Date fields
+								if (key === 'dateOfJoin') {
+									const dateOfJoin = new Date(value as string);
+									body.doj = dateOfJoin.toISOString().split('T')[0];
+								} else if (key === 'dateOfBirth') {
+									const dateOfBirth = new Date(value as string);
+									body.dob = dateOfBirth.toISOString().split('T')[0];
+								} else if (key === 'dateOfExit') {
+									const dateOfExit = new Date(value as string);
+									body.date_of_exit = dateOfExit.toISOString().split('T')[0];
+								}
+								// Mobile number fields (convert to integer)
+								else if (key === 'personalMobile') {
+									body.personal_mobile = parseInt(value as string);
+								} else if (key === 'officeMobile') {
+									body.office_mobile = parseInt(value as string);
+								} else if (key === 'emergencyContact') {
+									body.emergency_contact = parseInt(value as string);
+								}
+								// Other field mappings
+								else if (key === 'officeEmail') {
+									body.office_email = value;
+								} else if (key === 'personalEmail') {
+									body.personal_email = value;
+								} else if (key === 'employeeStatus') {
+									body.employee_status = value;
+								} else if (key === 'employeeId') {
+									body.employee_id = value;
+								} else if (key === 'fatherName') {
+									body.father_name = value;
+								} else if (key === 'employmentType') {
+									body.employment_type = value;
+								} else if (key === 'bloodGroup') {
+									body.blood_group = value;
+								} else if (key === 'maritalStatus') {
+									body.marital_status = value;
+								} else if (key === 'reportingTo') {
+									body.reporting_to = value;
+								} else if (key === 'employeeAccountName') {
+									body.employee_account_name = value;
+								} else if (key === 'employeeAccountNumber') {
+									body.employee_account_number = parseInt(value as string);
+								} else if (key === 'employeeBankBranch') {
+									body.employee_bank_branch = value;
+								} else if (key === 'employeeBankName') {
+									body.employee_bank_name = value;
+								} else if (key === 'employeeIfscCode') {
+									body.employee_ifsc_code = value;
+								} else if (key === 'employeeAccountType') {
+									body.employee_account_type = value;
+								} else if (key === 'uanNumber') {
+									body.uan_number = parseInt(value as string);
+								} else if (key === 'esiNumber') {
+									body.esi_number = parseInt(value as string);
+								} else if (key === 'aadhar') {
+									body.aadhar = parseInt(value as string);
+								}
+								// Address fields - convert from fixedCollection to arrays
+								else if (key === 'presentAddress' && value && (value as any).address && Array.isArray((value as any).address)) {
+									body.present_address = (value as any).address.map((addr: any) => ({
+										city: addr.city,
+										state: addr.state,
+										country: addr.country,
+										pincode: addr.pincode,
+										address_line1: addr.addressLine1,
+										address_line2: addr.addressLine2,
+									}));
+								} else if (key === 'permanentAddress' && value && (value as any).address && Array.isArray((value as any).address)) {
+									body.permanent_address = (value as any).address.map((addr: any) => ({
+										city: addr.city,
+										state: addr.state,
+										country: addr.country,
+										pincode: addr.pincode,
+										address_line1: addr.addressLine1,
+										address_line2: addr.addressLine2,
+									}));
+								}
+								// Branch field (convert to integer)
+								else if (key === 'branch') {
+									body.branch = parseInt(value as string);
+								}
+								// Exit description field
+								else if (key === 'exitDescription') {
+									body.exit_description = value;
+								}
+								// Default case for other fields
+								else {
+									body[key] = value;
+								}
+							}
+						}
+
+						options.method = 'PUT';
+						options.url = `${baseUrl}/hr/employee`;
+						options.body = body;
+						console.log(body);
+					} else if (operation === 'getEmployee') {
+						const gid = this.getNodeParameter('gid', i) as string;
+
+						if (!gid || gid.trim() === '') {
+							throw new ApplicationError('GID is required', { level: 'warning' });
+						}
+
+						options.method = 'GET';
+						options.url = `${baseUrl}/hr/employee/${gid}`;
+						console.log(options.url);
 					}
 					const result = await this.helpers.request(options);
 					returnData.push({ json: result });

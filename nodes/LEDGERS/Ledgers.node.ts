@@ -43,10 +43,11 @@ export class Ledgers implements INodeType {
 				type: 'options',
 				noDataExpression: true,
 				options: [
-					{ name: 'Contact Operation', value: 'contact' },
 					{ name: 'Catalog Operation', value: 'catalog' },
-					{ name: 'Sales Operation', value: 'sales' },
+					{ name: 'Contact Operation', value: 'contact' },
+					{ name: 'HRMS Operation', value: 'hrms' },
 					{ name: 'Purchase Operation', value: 'purchase' },
+					{ name: 'Sales Operation', value: 'sales' },
 				],
 				default: 'contact',
 			},
@@ -56,6 +57,8 @@ export class Ledgers implements INodeType {
 			...descriptions.catalogOperations,
 			// Only India Contact Operations
 			...descriptions.contactOperations,
+			// HRMS Operations
+			...descriptions.hrmsOperations,
 		],
 	};
 
