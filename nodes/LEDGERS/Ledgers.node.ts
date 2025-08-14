@@ -43,10 +43,11 @@ export class Ledgers implements INodeType {
 				type: 'options',
 				noDataExpression: true,
 				options: [
-					{ name: 'Contact Operation', value: 'contact' },
 					{ name: 'Catalog Operation', value: 'catalog' },
-					{ name: 'Sales Operation', value: 'sales' },
+					{ name: 'Contact Operation', value: 'contact' },
+					{ name: 'HRMS Operation', value: 'hrms' },
 					{ name: 'Purchase Operation', value: 'purchase' },
+					{ name: 'Sales Operation', value: 'sales' },
 				],
 				default: 'contact',
 			},
@@ -56,6 +57,8 @@ export class Ledgers implements INodeType {
 			...descriptions.catalogOperations,
 			// Only India Contact Operations
 			...descriptions.contactOperations,
+			// HRMS Operations
+			...descriptions.hrmsOperations,
 		],
 	};
 
@@ -504,6 +507,101 @@ export class Ledgers implements INodeType {
 					return returnData;
 				} catch (error) {
 					return [];
+				}
+			},
+			async getBranches(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+				const continueOnFail = this.getNode().continueOnFail;
+				try {
+					const credentials = await this.getCredentials('ledgersApi');
+					const { xApiKey, email, password, apiUrl } = credentials;
+
+					const loginOptions: IRequestOptions = {
+						method: 'POST',
+						url: `${apiUrl}/login`,
+						headers: { 'Content-Type': 'application/json', 'x-api-key': xApiKey },
+						body: { email, password },
+						json: true,
+					};
+
+					const loginResponse = await this.helpers.request(loginOptions);
+					if (loginResponse.status !== 200 || !loginResponse.api_token) {
+						throw new ApplicationError('Authentication failed. Check your credentials.', { level: 'warning' });
+					}
+
+					const apiToken = loginResponse.api_token;
+					const isIndia = String(apiUrl).includes('in-api.ledgers.cloud');
+					const baseUrl = isIndia ? `${apiUrl}/v3` : apiUrl;
+
+					const payload = { pagination: { perpage: 1000, page: 1 }, status: 1, sort: { field: "created_on", sort: "DESC" }, key: "branch" };
+					const options: IRequestOptions = {
+						method: 'GET',
+						url: `${baseUrl}/hr/employee?param=${btoa(JSON.stringify(payload))}`,
+						headers: { 'Content-Type': 'application/json', 'x-api-key': xApiKey, 'api-token': apiToken },
+						json: true,
+					};
+
+									const response = await this.helpers.request(options);
+				if (!response.data) return [];
+
+				// Handle object format: {"1":"Main Branch","2":"Secondary Branch","3":"Third Branch"}
+				const returnData: INodePropertyOptions[] = [];
+				if (typeof response.data === 'object' && !Array.isArray(response.data)) {
+					for (const [branchId, branchName] of Object.entries(response.data)) {
+						returnData.push({
+							name: branchName as string,
+							value: branchId,
+						});
+					}
+				}
+					return returnData;
+				} catch (error) {
+					if (continueOnFail) return [];
+					throw error;
+				}
+			},
+			async getEmployee(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+				const continueOnFail = this.getNode().continueOnFail;
+				try {
+					const credentials = await this.getCredentials('ledgersApi');
+					const { xApiKey, email, password, apiUrl } = credentials;
+
+					const loginOptions: IRequestOptions = {
+						method: 'POST',
+						url: `${apiUrl}/login`,
+						headers: { 'Content-Type': 'application/json', 'x-api-key': xApiKey },
+						body: { email, password },
+						json: true,
+					};
+
+					const loginResponse = await this.helpers.request(loginOptions);
+					if (loginResponse.status !== 200 || !loginResponse.api_token) {
+						throw new ApplicationError('Authentication failed. Check your credentials.', { level: 'warning' });
+					}
+
+					const apiToken = loginResponse.api_token;
+					const isIndia = String(apiUrl).includes('in-api.ledgers.cloud');
+					const baseUrl = isIndia ? `${apiUrl}/v3` : apiUrl;
+
+					const payload = { pagination: { perpage: 1000, page: 1 }, status: 1, sort: { field: "created_on", sort: "DESC" }, key: "reporting_to" };
+					const options: IRequestOptions = {
+						method: 'GET',
+						url: `${baseUrl}/hr/employee?param=${btoa(JSON.stringify(payload))}`,
+						headers: { 'Content-Type': 'application/json', 'x-api-key': xApiKey, 'api-token': apiToken },
+						json: true,
+					};
+
+					const response = await this.helpers.request(options);
+					if (!response.data || !Array.isArray(response.data)) return [];
+
+					// Handle array format with employee objects
+					const returnData: INodePropertyOptions[] = response.data.map((employee: any) => ({
+						name: employee.name || `Employee ${employee.employee_id || employee.gid}`,
+						value: employee.gid || employee.employee_id,
+					}));
+					return returnData;
+				} catch (error) {
+					if (continueOnFail) return [];
+					throw error;
 				}
 			},
 		},
