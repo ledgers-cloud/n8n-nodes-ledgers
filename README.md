@@ -69,10 +69,10 @@ The LEDGERS node supports the following operations:
 - **Get All Catalogs** - List all catalogs with pagination and search
 
 ### **Sales**
-- **Create Invoice** - Generate new invoices with contact and item details
+- **Create Invoice** - Generate new invoices with comprehensive validation and contact/item details
 - **View Invoice** - Retrieve specific invoice details
 - **List Invoices** - List all invoices with filtering and pagination
-- **Create Quote** - Generate new quotes/estimates with contact and item details
+- **Create Quote** - Generate new quotes/estimates with validation and contact/item details
 - **View Quote** - Retrieve specific quote details
 - **List Quotes** - List all quotes with filtering and pagination
 - **Create Receipt** - Generate payment receipts with flexible payment method support
@@ -80,12 +80,18 @@ The LEDGERS node supports the following operations:
 - **List Receipts** - List all receipts with filtering and pagination
 
 ### **Purchase**
-- **Create Purchase Invoice** - Generate supplier invoices with detailed item management
+- **Create Purchase Invoice** - Generate supplier invoices with comprehensive validation and detailed item management
 - **View Purchase Invoice** - Retrieve specific purchase invoice details
 - **List Purchase Invoices** - List all purchase invoices with filtering and pagination
 - **Create Voucher** - Generate expense, payment, and salary vouchers
 - **View Voucher** - Retrieve specific voucher details
 - **List Vouchers** - List all vouchers with filtering and pagination
+
+### **HRMS (Human Resource Management)**
+- **Get All Employees** - List all employees with pagination, search, and filtering options
+- **Add Employee** - Create new employee records with comprehensive details
+- **Update Employee** - Update existing employee information including status changes
+- **Get Employee** - Retrieve specific employee details by GID
 
 ---
 
@@ -105,29 +111,43 @@ The LEDGERS node supports the following operations:
 - **Cess Support**: Flat and percentage-based cess
 
 ### **Sales Operations**
-- **Invoice Creation**: Full invoice generation with contact and item details
-- **Quote Generation**: Estimate creation with validity periods
+- **Invoice Creation**: Full invoice generation with comprehensive validation and contact/item details
+- **Quote Generation**: Estimate creation with validity periods and date picker support
 - **Receipt Management**: Payment receipt creation with flexible payment methods
-- **Item Management**: Multiple items with rates, quantities, and tax calculations
-- **Date Filtering**: Date range filtering for listing operations
+- **Item Management**: Multiple items with strict numeric validation (rates, quantities, tax calculations)
+- **Date Filtering**: Date range filtering for listing operations with validation
 - **Payment Status**: Track payment status (Paid, Not Paid, Part Paid, Deleted)
 - **Payment Methods**: Flexible payment method selection with custom input fallback
 - **Reconciliation**: Support for invoice reconciliation in receipts
-- **Validation**: Rate validation (non-negative), date range completeness
+- **GST Rate Dropdown**: Standardized GST rate selection with predefined options
+- **Advanced Validation**: Integer validation for PID (>0), Variant ID (>0), rates (≥0), and taxable amounts (≥0)
+- **Business Logic Validation**: Taxable amount cannot exceed rate, non-taxable amount cannot exceed rate
 
 ### **Purchase Operations**
-- **Purchase Invoice Management**: Create supplier invoices with comprehensive item details
+- **Purchase Invoice Management**: Create supplier invoices with comprehensive validation and item details
 - **Voucher System**: Three types of vouchers with specialized functionality:
   - **Expense Vouchers**: Single or multiple expense head management with tax calculations
   - **Payment Vouchers**: Supplier payment tracking with invoice reconciliation
   - **Salary Vouchers**: Employee salary processing with detailed breakdowns
-- **Advanced Item Management**: Purchase items with specialized supply options and export details
+- **Advanced Item Management**: Purchase items with strict numeric validation and specialized supply options
 - **Address Management**: Separate billing and shipping address handling
 - **Tax Integration**: Multiple tax types and specialized supply configurations
 - **Currency Support**: Multi-currency handling for international purchases
 - **Date Filtering**: Comprehensive date range filtering for all list operations
 - **Payment Status Tracking**: Monitor payment status across all purchase documents
 - **Reconciliation Features**: Match payments with purchase invoices automatically
+- **Enhanced Validation**: Integer validation for PID (>0), VID (>0), rates (≥0), and taxable amounts (≥0)
+- **Business Logic Validation**: Same validation rules as Sales operations for consistency
+
+### **HRMS Operations**
+- **Employee Management**: Complete employee lifecycle management from hiring to exit
+- **Comprehensive Data Handling**: Personal, professional, and financial information management
+- **Address Management**: Present and permanent address handling with detailed fields
+- **Bank Details**: Employee banking information for salary processing
+- **Statutory Compliance**: PAN, Aadhar, UAN, ESI number management
+- **Search and Filter**: Advanced employee search with multiple criteria
+- **Status Management**: Active/inactive employee status with exit date tracking
+- **Validation**: Required field validation for employee creation and updates
 
 ## 💼 Uses of Sales Operations
 
@@ -230,7 +250,7 @@ To authenticate with the LEDGERS API, you must provide the following:
 | Auto Token Handling | ✅ Implemented |
 | Continue On Fail    | ✅ Supported   |
 | Date Range Validation| ✅ Implemented |
-| Negative Rate Validation| ✅ Implemented |
+| Advanced Numeric Validation| ✅ Implemented |
 | Receipt Operations  | ✅ Implemented |
 | Payment Method Fallback| ✅ Implemented |
 | Invoice Reconciliation| ✅ Implemented |
@@ -239,6 +259,7 @@ To authenticate with the LEDGERS API, you must provide the following:
 | Multi-Currency Support| ✅ Implemented |
 | Specialized Supply Types| ✅ Implemented |
 | Export Documentation| ✅ Implemented |
+| HRMS Operations     | ✅ Implemented |
 
 ---
 
@@ -321,17 +342,23 @@ To authenticate with the LEDGERS API, you must provide the following:
 - When using date range filters in List Invoices, List Quotes, or List Receipts, **both Date From and Date To must be provided**
 - If only one date is provided, the operation will fail with a validation error
 
-### Rate Validation
-- Item rates cannot be negative
-- Non-taxable amount cannot be greater than the rate
+### Advanced Numeric Validation (Sales & Purchase Operations)
+- **PID (Item ID)**: Must be an integer greater than 0 (not zero or negative)
+- **Variant ID**: Must be an integer greater than 0 (not zero or negative)
+- **Rate**: Must be an integer >= 0 and not empty
+- **Taxable Per Item/Amount**: Must be an integer >= 0 and not empty
+- **Non-Taxable Per Item/Amount**: Must be an integer >= 0 and not empty
+- **Business Logic**: Taxable amount cannot exceed the rate
+- **Business Logic**: Non-taxable amount cannot exceed the rate
+- **Contact Validation**: Contact Name and Contact ID are required for Invoice, Quote, and Purchase Invoice operations
 
 ### Required Fields
-- Contact operations require valid contact details
-- Invoice/Quote items require name, ID, variant ID, rate, quantity, item type, HSN/SAC code, taxable amount, GST rate, and price type
-- Receipt operations require contact details, amount, payment method, and expense type (COA ID)
-- Catalog operations require name, price, type, and item type
-- Purchase invoice operations require purchase number, dates, contact details, business branch ID, and item details
-- Voucher operations require voucher type, branch ID, payment date, and type-specific fields (expense head, contact ID, or employee details)
+- **Sales Operations**: Invoice/Quote items require name, ID, variant ID, rate, quantity, item type, HSN/SAC code, taxable amount, GST rate
+- **Purchase Operations**: Purchase invoice items require item_name, item_code, pid, vid, rate, quantity, item_type, taxable_amount, non_taxable_amount, gst_rate
+- **Receipt Operations**: Contact details, amount, payment method, and expense type (COA ID)
+- **Catalog Operations**: Name, price, type, and item type
+- **Voucher Operations**: Voucher type, branch ID, payment date, and type-specific fields
+- **HRMS Operations**: Name, branch, date of join, personal mobile, office email, date of birth, gender are required for adding employees
 
 ### Payment Method Handling
 - Payment methods are loaded from the LEDGERS API when available
@@ -390,6 +417,7 @@ You can enable this in the node's settings under the **"Continue On Fail"** opti
 | 0.0.6   | No code changes. Final Logo File Updated with Better Resolution                  |
 | 0.0.7   | Sales Operations like Invoice, Quotes and Receipt Release with enhanced features |
 | 0.0.8   | Purchase Operations Release with Purchase Invoices, Vouchers, and advanced features |
+| 0.0.9   | HRMS operations and Enhanced Validations for Sales and Purchase Operations |
 
 ---
 

@@ -595,41 +595,70 @@ export async function execute(this: IExecuteFunctions) {
 						for (let j = 0; j < items.length; j++) {
 							const item = items[j];
 							if (!item.name || item.name === '') {
-								throw new ApplicationError(`Item Name is required for item`, { level: 'warning' });
-							}
-							if (!item.pid || item.pid === '' || item.pid === 0) {
-								throw new ApplicationError(`Item ID is required for item`, { level: 'warning' });
+								throw new ApplicationError(`Item Name is required for item ${j + 1}`, { level: 'warning' });
 							}
 							if (!item.item_code || item.item_code === '') {
-								throw new ApplicationError(`SAC/HSN Code is required for item`, { level: 'warning' });
+								throw new ApplicationError(`SAC/HSN Code is required for item ${j + 1}`, { level: 'warning' });
 							}
-							if (!item.variant_id || item.variant_id === '' || item.variant_id === 0) {
-								throw new ApplicationError(`Variant ID is required for item`, { level: 'warning' });
+
+							// Validate numeric fields - must be integers >= 0 and not empty
+							if (item.pid === '' || item.pid === null || item.pid === undefined) {
+								throw new ApplicationError(`Item ID (PID) is required for item ${j + 1}`, { level: 'warning' });
 							}
-							if(!item.rate || item.rate === '' || item.rate === 0) {
-								throw new ApplicationError(`Rate is required for item`, { level: 'warning' });
+							const pidValue = Number(item.pid);
+							if (!Number.isInteger(pidValue) || pidValue <= 0) {
+								throw new ApplicationError(`Item ID (PID) must be an integer > 0 for item ${j + 1}`, { level: 'warning' });
 							}
-							if(typeof item.rate === 'number' && item.rate < 0) {
-								throw new ApplicationError(`Rate cannot be negative for item`, { level: 'warning' });
+
+							if (item.variant_id === '' || item.variant_id === null || item.variant_id === undefined) {
+								throw new ApplicationError(`Variant ID is required for item ${j + 1}`, { level: 'warning' });
 							}
+							const variantIdValue = Number(item.variant_id);
+							if (!Number.isInteger(variantIdValue) || variantIdValue <= 0) {
+								throw new ApplicationError(`Variant ID must be an integer > 0 for item ${j + 1}`, { level: 'warning' });
+							}
+
+							if (item.rate === '' || item.rate === null || item.rate === undefined) {
+								throw new ApplicationError(`Rate is required for item ${j + 1}`, { level: 'warning' });
+							}
+							const rateValue = Number(item.rate);
+							if (!Number.isInteger(rateValue) || rateValue < 0) {
+								throw new ApplicationError(`Rate must be an integer >= 0 for item ${j + 1}`, { level: 'warning' });
+							}
+
+							if (item.non_taxable_per_item === '' || item.non_taxable_per_item === null || item.non_taxable_per_item === undefined) {
+								throw new ApplicationError(`Non Taxable Per Item is required for item ${j + 1}`, { level: 'warning' });
+							}
+							const nonTaxableValue = Number(item.non_taxable_per_item);
+							if (!Number.isInteger(nonTaxableValue) || nonTaxableValue < 0) {
+								throw new ApplicationError(`Non Taxable Per Item must be an integer >= 0 for item ${j + 1}`, { level: 'warning' });
+							}
+
+							if (item.taxable_per_item === '' || item.taxable_per_item === null || item.taxable_per_item === undefined) {
+								throw new ApplicationError(`Taxable Per Item is required for item ${j + 1}`, { level: 'warning' });
+							}
+							const taxableValue = Number(item.taxable_per_item);
+							if (!Number.isInteger(taxableValue) || taxableValue < 0) {
+								throw new ApplicationError(`Taxable Per Item must be an integer >= 0 for item ${j + 1}`, { level: 'warning' });
+							}
+
+							// Validate that taxable_per_item is equal to or less than rate
+							if (taxableValue > rateValue) {
+								throw new ApplicationError(`Taxable Per Item cannot be greater than Rate for item ${j + 1}`, { level: 'warning' });
+							}
+
 							if(!item.quantity || item.quantity === '' || item.quantity === 0) {
-								throw new ApplicationError(`Quantity is required for item`, { level: 'warning' });
+								throw new ApplicationError(`Quantity is required for item ${j + 1}`, { level: 'warning' });
 							}
 							if(!item.item_type || item.item_type === '') {
-								throw new ApplicationError(`Item Type is required for item`, { level: 'warning' });
-							}
-							if(!item.item_code || item.item_code === '') {
-								throw new ApplicationError(`Item Code is required for item`, { level: 'warning' });
-							}
-							if(!item.taxable_per_item || item.taxable_per_item === '' || item.taxable_per_item === 0) {
-								throw new ApplicationError(`Taxable Per Item is required for item`, { level: 'warning' });
+								throw new ApplicationError(`Item Type is required for item ${j + 1}`, { level: 'warning' });
 							}
 							if(!item.gst_rate || item.gst_rate === '') {
-								throw new ApplicationError(`GST Rate is required for item`, { level: 'warning' });
+								throw new ApplicationError(`GST Rate is required for item ${j + 1}`, { level: 'warning' });
 							}
-							if(item.rate && item.non_taxable_per_item) {
-								if(item.rate < item.non_taxable_per_item) {
-									throw new ApplicationError(`Non-Taxable value cannot be greater than Rate for item`, { level: 'warning' });
+							if(rateValue && nonTaxableValue) {
+								if(rateValue < nonTaxableValue) {
+									throw new ApplicationError(`Non-Taxable value cannot be greater than Rate for item ${j + 1}`, { level: 'warning' });
 								}
 							}
 						}
@@ -702,41 +731,70 @@ export async function execute(this: IExecuteFunctions) {
 						for (let j = 0; j < items.length; j++) {
 							const item = items[j];
 							if (!item.name || item.name === '') {
-								throw new ApplicationError(`Item Name is required for item`, { level: 'warning' });
-							}
-							if (!item.pid || item.pid === '' || item.pid === 0) {
-								throw new ApplicationError(`Item ID is required for item`, { level: 'warning' });
+								throw new ApplicationError(`Item Name is required for item ${j + 1}`, { level: 'warning' });
 							}
 							if (!item.item_code || item.item_code === '') {
-								throw new ApplicationError(`SAC/HSN Code is required for item`, { level: 'warning' });
+								throw new ApplicationError(`SAC/HSN Code is required for item ${j + 1}`, { level: 'warning' });
 							}
-							if (!item.variant_id || item.variant_id === '' || item.variant_id === 0) {
-								throw new ApplicationError(`Variant ID is required for item`, { level: 'warning' });
+
+							// Validate numeric fields - must be integers >= 0 and not empty
+							if (item.pid === '' || item.pid === null || item.pid === undefined) {
+								throw new ApplicationError(`Item ID (PID) is required for item ${j + 1}`, { level: 'warning' });
 							}
-							if(!item.rate || item.rate === '' || item.rate === 0) {
-								throw new ApplicationError(`Rate is required for item`, { level: 'warning' });
+							const pidValue = Number(item.pid);
+							if (!Number.isInteger(pidValue) || pidValue <= 0) {
+								throw new ApplicationError(`Item ID (PID) must be an integer > 0 for item ${j + 1}`, { level: 'warning' });
 							}
-							if(typeof item.rate === 'number' && item.rate < 0) {
-								throw new ApplicationError(`Rate cannot be negative for item`, { level: 'warning' });
+
+							if (item.variant_id === '' || item.variant_id === null || item.variant_id === undefined) {
+								throw new ApplicationError(`Variant ID is required for item ${j + 1}`, { level: 'warning' });
 							}
+							const variantIdValue = Number(item.variant_id);
+							if (!Number.isInteger(variantIdValue) || variantIdValue <= 0) {
+								throw new ApplicationError(`Variant ID must be an integer > 0 for item ${j + 1}`, { level: 'warning' });
+							}
+
+							if (item.rate === '' || item.rate === null || item.rate === undefined) {
+								throw new ApplicationError(`Rate is required for item ${j + 1}`, { level: 'warning' });
+							}
+							const rateValue = Number(item.rate);
+							if (!Number.isInteger(rateValue) || rateValue < 0) {
+								throw new ApplicationError(`Rate must be an integer >= 0 for item ${j + 1}`, { level: 'warning' });
+							}
+
+							if (item.non_taxable_per_item === '' || item.non_taxable_per_item === null || item.non_taxable_per_item === undefined) {
+								throw new ApplicationError(`Non Taxable Per Item is required for item ${j + 1}`, { level: 'warning' });
+							}
+							const nonTaxableValue = Number(item.non_taxable_per_item);
+							if (!Number.isInteger(nonTaxableValue) || nonTaxableValue < 0) {
+								throw new ApplicationError(`Non Taxable Per Item must be an integer >= 0 for item ${j + 1}`, { level: 'warning' });
+							}
+
+							if (item.taxable_per_item === '' || item.taxable_per_item === null || item.taxable_per_item === undefined) {
+								throw new ApplicationError(`Taxable Per Item is required for item ${j + 1}`, { level: 'warning' });
+							}
+							const taxableValue = Number(item.taxable_per_item);
+							if (!Number.isInteger(taxableValue) || taxableValue < 0) {
+								throw new ApplicationError(`Taxable Per Item must be an integer >= 0 for item ${j + 1}`, { level: 'warning' });
+							}
+
+							// Validate that taxable_per_item is equal to or less than rate
+							if (taxableValue > rateValue) {
+								throw new ApplicationError(`Taxable Per Item cannot be greater than Rate for item ${j + 1}`, { level: 'warning' });
+							}
+
 							if(!item.quantity || item.quantity === '' || item.quantity === 0) {
-								throw new ApplicationError(`Quantity is required for item`, { level: 'warning' });
+								throw new ApplicationError(`Quantity is required for item ${j + 1}`, { level: 'warning' });
 							}
 							if(!item.item_type || item.item_type === '') {
-								throw new ApplicationError(`Item Type is required for item`, { level: 'warning' });
-							}
-							if(!item.item_code || item.item_code === '') {
-								throw new ApplicationError(`Item Code is required for item`, { level: 'warning' });
-							}
-							if(!item.taxable_per_item || item.taxable_per_item === '' || item.taxable_per_item === 0) {
-								throw new ApplicationError(`Taxable Per Item is required for item`, { level: 'warning' });
+								throw new ApplicationError(`Item Type is required for item ${j + 1}`, { level: 'warning' });
 							}
 							if(!item.gst_rate || item.gst_rate === '') {
-								throw new ApplicationError(`GST Rate is required for item`, { level: 'warning' });
+								throw new ApplicationError(`GST Rate is required for item ${j + 1}`, { level: 'warning' });
 							}
-							if(item.rate && item.non_taxable_per_item) {
-								if(item.rate < item.non_taxable_per_item) {
-									throw new ApplicationError(`Non-Taxable value cannot be greater than Rate for item`, { level: 'warning' });
+							if(rateValue && nonTaxableValue) {
+								if(rateValue < nonTaxableValue) {
+									throw new ApplicationError(`Non-Taxable value cannot be greater than Rate for item ${j + 1}`, { level: 'warning' });
 								}
 							}
 						}
@@ -962,6 +1020,12 @@ export async function execute(this: IExecuteFunctions) {
 						const currency = this.getNodeParameter('currency', i) as string;
 						const additionalFields = this.getNodeParameter('additionalFields', i, {}) as IDataObject;
 						const specialized_supply = this.getNodeParameter('specialized_supply', i) as string;
+
+						// Validate required contact fields
+						if (!contactId || contactId === '') {
+							throw new ApplicationError('Contact ID is required for creating purchase invoice', { level: 'warning' });
+						}
+
 						const body: IDataObject = {
 							purchase_number: purchaseNumber,
 							purchase_order_id: purchaseOrderId,
@@ -1019,6 +1083,82 @@ export async function execute(this: IExecuteFunctions) {
 								"ship_state": shippingAddress.ship_state,
 							}
 						}
+						// Validate required item fields
+						if (!items || items.length === 0) {
+							throw new ApplicationError('At least one item is required for creating purchase invoice', { level: 'warning' });
+						}
+
+						for (let j = 0; j < items.length; j++) {
+							const item = items[j];
+							if (!item.item_name || item.item_name === '') {
+								throw new ApplicationError(`Item Name is required for item ${j + 1}`, { level: 'warning' });
+							}
+							if (!item.item_code || item.item_code === '') {
+								throw new ApplicationError(`SAC/HSN Code is required for item ${j + 1}`, { level: 'warning' });
+							}
+
+							// Validate numeric fields - must be integers and not empty
+							if (item.pid === '' || item.pid === null || item.pid === undefined) {
+								throw new ApplicationError(`Item ID (PID) is required for item ${j + 1}`, { level: 'warning' });
+							}
+							const pidValue = Number(item.pid);
+							if (!Number.isInteger(pidValue) || pidValue <= 0) {
+								throw new ApplicationError(`Item ID (PID) must be an integer > 0 for item ${j + 1}`, { level: 'warning' });
+							}
+
+							if (item.vid === '' || item.vid === null || item.vid === undefined) {
+								throw new ApplicationError(`Variant ID is required for item ${j + 1}`, { level: 'warning' });
+							}
+							const variantIdValue = Number(item.vid);
+							if (!Number.isInteger(variantIdValue) || variantIdValue <= 0) {
+								throw new ApplicationError(`Variant ID must be an integer > 0 for item ${j + 1}`, { level: 'warning' });
+							}
+
+							if (item.rate === '' || item.rate === null || item.rate === undefined) {
+								throw new ApplicationError(`Rate is required for item ${j + 1}`, { level: 'warning' });
+							}
+							const rateValue = Number(item.rate);
+							if (!Number.isInteger(rateValue) || rateValue < 0) {
+								throw new ApplicationError(`Rate must be an integer >= 0 for item ${j + 1}`, { level: 'warning' });
+							}
+
+							if (item.non_taxable_amount === '' || item.non_taxable_amount === null || item.non_taxable_amount === undefined) {
+								throw new ApplicationError(`Non Taxable Amount is required for item ${j + 1}`, { level: 'warning' });
+							}
+							const nonTaxableValue = Number(item.non_taxable_amount);
+							if (!Number.isInteger(nonTaxableValue) || nonTaxableValue < 0) {
+								throw new ApplicationError(`Non Taxable Amount must be an integer >= 0 for item ${j + 1}`, { level: 'warning' });
+							}
+
+							if (item.taxable_amount === '' || item.taxable_amount === null || item.taxable_amount === undefined) {
+								throw new ApplicationError(`Taxable Amount is required for item ${j + 1}`, { level: 'warning' });
+							}
+							const taxableValue = Number(item.taxable_amount);
+							if (!Number.isInteger(taxableValue) || taxableValue < 0) {
+								throw new ApplicationError(`Taxable Amount must be an integer >= 0 for item ${j + 1}`, { level: 'warning' });
+							}
+
+							// Validate that taxable_amount is equal to or less than rate
+							if (taxableValue > rateValue) {
+								throw new ApplicationError(`Taxable Amount cannot be greater than Rate for item ${j + 1}`, { level: 'warning' });
+							}
+
+							if(!item.quantity || item.quantity === '' || item.quantity === 0) {
+								throw new ApplicationError(`Quantity is required for item ${j + 1}`, { level: 'warning' });
+							}
+							if(!item.item_type || item.item_type === '') {
+								throw new ApplicationError(`Item Type is required for item ${j + 1}`, { level: 'warning' });
+							}
+							if(!item.gst_rate || item.gst_rate === '') {
+								throw new ApplicationError(`GST Rate is required for item ${j + 1}`, { level: 'warning' });
+							}
+							if(rateValue && nonTaxableValue) {
+								if(rateValue < nonTaxableValue) {
+									throw new ApplicationError(`Non-Taxable Amount cannot be greater than Rate for item ${j + 1}`, { level: 'warning' });
+								}
+							}
+						}
+
 						body.items = [];
 						for(let j = 0; j < items.length; j++) {
 							const item = items[j];
@@ -1322,7 +1462,6 @@ export async function execute(this: IExecuteFunctions) {
 
 						options.method = 'GET';
 						options.url = `${baseUrl}/hr/employee?param=${btoa(JSON.stringify(payload))}`;
-						console.log(options.url);
 					} else if (operation === 'addEmployee') {
 						const title = this.getNodeParameter('title', i) as string;
 						const name = this.getNodeParameter('name', i) as string;
@@ -1333,13 +1472,13 @@ export async function execute(this: IExecuteFunctions) {
 						const employeeStatus = this.getNodeParameter('employeeStatus', i) as string;
 						const dateOfBirth = this.getNodeParameter('dateOfBirth', i) as string;
 						const gender = this.getNodeParameter('gender', i) as string;
+						const employeeId = this.getNodeParameter('employeeId', i) as string;
 						const additionalFields = this.getNodeParameter('additionalFields', i, {}) as IDataObject;
-						console.log(additionalFields);
 						// Validate required fields
 						if (!name || name.trim() === '') {
 							throw new ApplicationError('Name is required', { level: 'warning' });
 						}
-						if (!branch || branch.trim() === '') {
+						if (!branch) {
 							throw new ApplicationError('Branch is required', { level: 'warning' });
 						}
 						if (!dateOfJoin || dateOfJoin.trim() === '') {
@@ -1350,6 +1489,9 @@ export async function execute(this: IExecuteFunctions) {
 						}
 						if (!officeEmail || officeEmail.trim() === '') {
 							throw new ApplicationError('Office Email is required', { level: 'warning' });
+						}
+						if (!employeeId || employeeId.trim() === '') {
+							throw new ApplicationError('Employee ID is required', { level: 'warning' });
 						}
 
 						// Build the body with correct API field names
@@ -1362,6 +1504,7 @@ export async function execute(this: IExecuteFunctions) {
 							personal_mobile: parseInt(personalMobile),
 							office_email: officeEmail,
 							dob: new Date(dateOfBirth).toISOString().split('T')[0],
+							employee_id: employeeId,
 						};
 
 						// Add title if provided
@@ -1370,9 +1513,6 @@ export async function execute(this: IExecuteFunctions) {
 						}
 
 						// Handle additional fields with correct API field names
-						if (additionalFields.employeeId) {
-							body.employee_id = additionalFields.employeeId;
-						}
 						if (additionalFields.designation) {
 							body.designation = additionalFields.designation;
 						}
@@ -1440,6 +1580,11 @@ export async function execute(this: IExecuteFunctions) {
 							body.bid = additionalFields.bid;
 						}
 						if (additionalFields.shift) {
+							// Validate shift timing format: HH:MM:SS-HH:MM:SS
+							const shiftPattern = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]-([0-1]?[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$/;
+							if (!shiftPattern.test(additionalFields.shift as string)) {
+								throw new ApplicationError('Shift timing must be in format HH:MM:SS-HH:MM:SS (e.g., 09:00:00-18:00:00)', { level: 'warning' });
+							}
 							body.shift = additionalFields.shift;
 						}
 
@@ -1468,7 +1613,6 @@ export async function execute(this: IExecuteFunctions) {
 						options.method = 'POST';
 						options.url = `${baseUrl}/hr/employee`;
 						options.body = body;
-						console.log(body);
 					} else if (operation === 'updateEmployee') {
 						const gid = this.getNodeParameter('gid', i) as string;
 						const updateFields = this.getNodeParameter('updateFields', i, {}) as IDataObject;
@@ -1584,6 +1728,15 @@ export async function execute(this: IExecuteFunctions) {
 								else if (key === 'exitDescription') {
 									body.exit_description = value;
 								}
+								// Shift timing validation
+								else if (key === 'shift') {
+									// Validate shift timing format: HH:MM:SS-HH:MM:SS
+									const shiftPattern = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]-([0-1]?[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$/;
+									if (!shiftPattern.test(value as string)) {
+										throw new ApplicationError('Shift timing must be in format HH:MM:SS-HH:MM:SS (e.g., 09:00:00-18:00:00)', { level: 'warning' });
+									}
+									body[key] = value;
+								}
 								// Default case for other fields
 								else {
 									body[key] = value;
@@ -1594,7 +1747,6 @@ export async function execute(this: IExecuteFunctions) {
 						options.method = 'PUT';
 						options.url = `${baseUrl}/hr/employee`;
 						options.body = body;
-						console.log(body);
 					} else if (operation === 'getEmployee') {
 						const gid = this.getNodeParameter('gid', i) as string;
 
@@ -1604,7 +1756,6 @@ export async function execute(this: IExecuteFunctions) {
 
 						options.method = 'GET';
 						options.url = `${baseUrl}/hr/employee/${gid}`;
-						console.log(options.url);
 					}
 					const result = await this.helpers.request(options);
 					returnData.push({ json: result });

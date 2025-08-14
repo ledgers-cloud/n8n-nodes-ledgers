@@ -99,18 +99,21 @@ export const hrmsOperations: INodeProperties[] = [
 
 	// Branch (required for add employee)
 	{
-		displayName: 'Branch',
+		displayName: 'Branch Name or ID',
 		name: 'branch',
-		type: 'string',
+		type: 'options',
 		required: true,
 		default: '',
+		typeOptions: {
+			loadOptionsMethod: 'getBranches',
+		},
 		displayOptions: {
 			show: {
 				resource: ['hrms'],
 				operation: ['addEmployee']
 			},
 		},
-		description: 'Branch where the employee works',
+		description: 'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
 	},
 
 	// Date of Join (required for add employee)
@@ -219,6 +222,22 @@ export const hrmsOperations: INodeProperties[] = [
 			},
 		},
 		description: 'Gender of the employee',
+	},
+
+	// Employee ID (required for add employee)
+	{
+		displayName: 'Employee ID',
+		name: 'employeeId',
+		type: 'string',
+		required: true,
+		default: '',
+		displayOptions: {
+			show: {
+				resource: ['hrms'],
+				operation: ['addEmployee']
+			},
+		},
+		description: 'Unique employee ID',
 	},
 
 	// Additional fields for adding employee
@@ -354,13 +373,7 @@ export const hrmsOperations: INodeProperties[] = [
 				default: '',
 				description: "Father's name",
 			},
-			{
-				displayName: 'ID of the Employee',
-				name: 'employeeId',
-				type: 'string',
-				default: '',
-				description: 'Unique employee ID',
-			},
+
 			{
 				displayName: 'Marital Status',
 				name: 'maritalStatus',
@@ -525,19 +538,22 @@ export const hrmsOperations: INodeProperties[] = [
 				description: 'Religion of the employee',
 			},
 			{
-				displayName: 'Reporting To',
+				displayName: 'Reporting Name or ID',
 				name: 'reportingTo',
-				type: 'string',
+				type: 'options',
 				default: '',
-				description: 'Manager or supervisor the employee reports to',
+				typeOptions: {
+					loadOptionsMethod: 'getEmployee',
+				},
+				description: 'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
 			},
 			{
 				displayName: 'Shift Timing',
 				name: 'shift',
 				type: 'string',
 				default: '',
-				placeholder: '09:00 - 18:00',
-				description: 'Shift timing for the employee(in 24 hour format)',
+				placeholder: '09:00:00-18:00:00',
+				description: 'Shift timing for the employee in format HH:MM:SS-HH:MM:SS',
 			},
 			{
 				displayName: 'UAN Number',
@@ -588,11 +604,14 @@ export const hrmsOperations: INodeProperties[] = [
 				description: 'Blood group of the employee',
 			},
 			{
-				displayName: 'Branch',
+				displayName: 'Branch Name or ID',
 				name: 'branch',
-				type: 'string',
+				type: 'options',
 				default: '',
-				description: 'Branch where the employee works',
+				typeOptions: {
+					loadOptionsMethod: 'getBranches',
+				},
+				description: 'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
 			},
 			{
 				displayName: 'Date of Birth',
@@ -926,19 +945,22 @@ export const hrmsOperations: INodeProperties[] = [
 				description: 'Religion of the employee',
 			},
 			{
-				displayName: 'Reporting To',
+				displayName: 'Reporting Name or ID',
 				name: 'reportingTo',
-				type: 'string',
+				type: 'options',
 				default: '',
-				description: 'Manager or supervisor the employee reports to',
+				typeOptions: {
+					loadOptionsMethod: 'getEmployee',
+				},
+				description: 'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
 			},
 			{
 				displayName: 'Shift Timing',
 				name: 'shift',
 				type: 'string',
 				default: '',
-				placeholder: '09:00 - 18:00',
-				description: 'Shift timing for the employee(in 24 hour format)',
+				placeholder: '09:00:00-18:00:00',
+				description: 'Shift timing for the employee in format HH:MM:SS-HH:MM:SS',
 			},
 			{
 				displayName: 'UAN Number',
