@@ -430,7 +430,7 @@ You can enable this in the node's settings under the **"Continue On Fail"** opti
 | 0.0.7   | Sales Operations like Invoice, Quotes and Receipt Release with enhanced features |
 | 0.0.8   | Purchase Operations Release with Purchase Invoices, Vouchers, and advanced features |
 | 0.0.9   | HRMS operations and Enhanced Validations for Sales and Purchase Operations |
-| 0.0.10  | Banking Operation to Retrieve account statements and Opening Balance in Create and Update Contact |
+| 0.0.10  | Banking Operation to Retrieve connected banking account statements in LEDGERS and Opening Balance in Create and Update Contact |
 
 ---
 
