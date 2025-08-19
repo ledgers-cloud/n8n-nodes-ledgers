@@ -93,6 +93,9 @@ The LEDGERS node supports the following operations:
 - **Update Employee** - Update existing employee information including status changes
 - **Get Employee** - Retrieve specific employee details by GID
 
+### **Banking**
+- **Get Bank Statement** - Retrieve account statements for selected bank accounts with date range filtering
+
 ---
 
 ## 🔧 Operation Details
@@ -148,6 +151,15 @@ The LEDGERS node supports the following operations:
 - **Search and Filter**: Advanced employee search with multiple criteria
 - **Status Management**: Active/inactive employee status with exit date tracking
 - **Validation**: Required field validation for employee creation and updates
+
+### **Banking Operations**
+- **Account Selection**: Dynamic dropdown populated with active bank accounts and linked accounts
+- **Statement Retrieval**: Fetch account statements for specific date ranges
+- **Security Features**: Masked account numbers and secure data handling
+- **Date Range Filtering**: Flexible date selection for statement periods
+- **Error Handling**: Clear error messages for missing accounts or configuration issues
+- **Multi-Account Support**: Handle multiple linked accounts per URN
+- **Validation**: Required field validation for account selection and date ranges
 
 ## 💼 Uses of Sales Operations
 
@@ -418,6 +430,7 @@ You can enable this in the node's settings under the **"Continue On Fail"** opti
 | 0.0.7   | Sales Operations like Invoice, Quotes and Receipt Release with enhanced features |
 | 0.0.8   | Purchase Operations Release with Purchase Invoices, Vouchers, and advanced features |
 | 0.0.9   | HRMS operations and Enhanced Validations for Sales and Purchase Operations |
+| 0.0.10  | Banking Operation to Retrieve account statements |
 
 ---
 
