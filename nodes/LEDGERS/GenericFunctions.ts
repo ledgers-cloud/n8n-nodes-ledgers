@@ -26,15 +26,15 @@ export async function execute(this: IExecuteFunctions) {
 	const baseUrl = isIndia ? `${apiUrl}/v3` : apiUrl;
 
 	// Validate operation-country match
-	const indiaOps = ['contact', 'createContact', 'updateContact', 'addAddress', 'updateAddress', 'getContact', 'getAllContacts', 'catalog', 'createCatalog', 'updateCatalog', 'getCatalog', 'getAllCatalogs', 'sales', 'createInvoice', 'createQuote', 'viewInvoice', 'viewQuote', 'listInvoices', 'listQuotes', 'createReceipt', 'viewReceipt', 'listReceipts', 'purchase', 'createPurchaseInvoice', 'listPurchaseInvoices', 'viewPurchaseInvoice', 'createPurchaseOrder', 'listPurchaseOrders', 'viewPurchaseOrder', 'createVoucher', 'listVouchers', 'viewVoucher', 'hrms', 'getAllEmployees', 'addEmployee', 'updateEmployee', 'getEmployee', 'getEmployeeData', 'updateAttendance'];
+	const indiaOps = ['contact', 'createContact', 'updateContact', 'addAddress', 'updateAddress', 'getContact', 'getAllContacts', 'catalog', 'createCatalog', 'updateCatalog', 'getCatalog', 'getAllCatalogs', 'sales', 'createInvoice', 'createQuote', 'viewInvoice', 'viewQuote', 'listInvoices', 'listQuotes', 'createReceipt', 'viewReceipt', 'listReceipts', 'purchase', 'createPurchaseInvoice', 'listPurchaseInvoices', 'viewPurchaseInvoice', 'createPurchaseOrder', 'listPurchaseOrders', 'viewPurchaseOrder', 'createVoucher', 'listVouchers', 'viewVoucher', 'hrms', 'getAllEmployees', 'addEmployee', 'updateEmployee', 'getEmployee', 'getEmployeeData', 'updateAttendance', 'banking', 'getBankDetails'];
 
 	for (let i = 0; i < items.length; i++) {
 		const operation = this.getNodeParameter('operation', i);
 		const resource = this.getNodeParameter('resource', i);
-		if (!indiaOps.includes(operation) && resource !== 'catalog' && resource !== 'sales' && resource !== 'contact' && resource !== 'purchase' && resource !== 'hrms') {
+		if (!indiaOps.includes(operation) && resource !== 'catalog' && resource !== 'sales' && resource !== 'contact' && resource !== 'purchase' && resource !== 'hrms' && resource !== 'banking') {
 			throw new ApplicationError('This operation/resource is only available for India API URL. Please update your credentials.');
 		}
-		// Catalog, Sales, Purchase, and HRMS always allowed
+		// Catalog, Sales, Purchase, HRMS, and Banking always allowed
 	}
 
 	// Step 1: Authenticate and get api_token once for all items
@@ -1756,6 +1756,45 @@ export async function execute(this: IExecuteFunctions) {
 
 						options.method = 'GET';
 						options.url = `${baseUrl}/hr/employee/${gid}`;
+					} else if (operation === 'getBankDetails') {
+						// Get parameters from client
+						const selectedAccount = this.getNodeParameter('selectedAccount', i) as string;
+						const fromDateRaw = this.getNodeParameter('fromDate', i) as string;
+						const toDateRaw = this.getNodeParameter('toDate', i) as string;
+
+						// Check if account is selected
+						if (!selectedAccount || selectedAccount === '') {
+							throw new ApplicationError('Please select a bank account', { level: 'warning' });
+						}
+
+						// Parse selected account (format: "URN|AccountNumber")
+						const [urn, accountNumber] = selectedAccount.split('|');
+						if (!urn || !accountNumber) {
+							throw new ApplicationError('Invalid account selection. Please select a valid bank account', { level: 'warning' });
+						}
+
+						// Format dates to DD-MM-YYYY format
+						const formatDate = (dateStr: string): string => {
+							const date = new Date(dateStr);
+							const day = String(date.getDate()).padStart(2, '0');
+							const month = String(date.getMonth() + 1).padStart(2, '0');
+							const year = date.getFullYear();
+							return `${day}-${month}-${year}`;
+						};
+
+						const fromDate = formatDate(fromDateRaw);
+						const toDate = formatDate(toDateRaw);
+
+						// Set up the request options like other operations
+						options.method = 'POST';
+						options.url = `${baseUrl}/banking/icici`;
+						options.body = {
+							operation: 'account-statement-sync',
+							urn: urn,
+							account: accountNumber,
+							fromDate: fromDate,
+							toDate: toDate
+						};
 					}
 					const result = await this.helpers.request(options);
 					returnData.push({ json: result });

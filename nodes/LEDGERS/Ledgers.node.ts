@@ -43,6 +43,7 @@ export class Ledgers implements INodeType {
 				type: 'options',
 				noDataExpression: true,
 				options: [
+					{ name: 'Banking Operation', value: 'banking' },
 					{ name: 'Catalog Operation', value: 'catalog' },
 					{ name: 'Contact Operation', value: 'contact' },
 					{ name: 'HRMS Operation', value: 'hrms' },
@@ -59,6 +60,7 @@ export class Ledgers implements INodeType {
 			...descriptions.contactOperations,
 			// HRMS Operations
 			...descriptions.hrmsOperations,
+			...descriptions.bankingOperations,
 		],
 	};
 
@@ -599,6 +601,100 @@ export class Ledgers implements INodeType {
 						value: employee.gid || employee.employee_id,
 					}));
 					return returnData;
+				} catch (error) {
+					if (continueOnFail) return [];
+					throw error;
+				}
+			},
+
+			async getBankAccounts(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+				const continueOnFail = this.getNode().continueOnFail;
+				try {
+					const credentials = await this.getCredentials('ledgersApi');
+					const { xApiKey, email, password, apiUrl } = credentials;
+					const baseUrl = String(apiUrl).includes('in-api.ledgers.cloud') ? `${apiUrl}/v3` : apiUrl;
+
+					// Authenticate to get api_token
+					const loginOptions: IRequestOptions = {
+						method: 'POST',
+						url: `${apiUrl}/login`,
+						headers: {
+							'Content-Type': 'application/json',
+							'x-api-key': xApiKey,
+						},
+						body: { email, password },
+						json: true,
+					};
+
+					const loginResponse = await this.helpers.request(loginOptions);
+
+					if (loginResponse.status !== 200 || !loginResponse.api_token) {
+						const errorMsg = loginResponse.errorMessage || 'Authentication failed. Check your credentials.';
+						throw new ApplicationError(`Failed to login. ${errorMsg}`, {
+							level: 'warning',
+						});
+					}
+
+					const apiToken = loginResponse.api_token;
+
+					// Fetch bank accounts
+					const bankOptions: IRequestOptions = {
+						method: 'POST',
+						url: `${baseUrl}/banking/icici`,
+						headers: {
+							'Content-Type': 'application/json',
+							'x-api-key': xApiKey,
+							'api-token': apiToken,
+						},
+						body: JSON.stringify({ operation: 'get-urn-list' }),
+						json: true,
+					};
+
+					const bankResponse = await this.helpers.request(bankOptions);
+
+					if (Array.isArray(bankResponse)) {
+						const activeAccounts = bankResponse.filter((account: any) => account.status === 1);
+
+						if (activeAccounts.length === 0) {
+							return [
+								{
+									name: 'No Active Bank Accounts Found',
+									value: '',
+								},
+							];
+						}
+
+						const accountOptions: INodePropertyOptions[] = [];
+
+						for (const account of activeAccounts) {
+							if (account.linked_account && Array.isArray(account.linked_account) && account.linked_account.length > 0) {
+								for (const linkedAccount of account.linked_account) {
+									accountOptions.push({
+										name: linkedAccount.acct_name || `Account ${linkedAccount.acct_number}`,
+										value: `${account.urn}|${linkedAccount.acct_number}`,
+									});
+								}
+							}
+						}
+
+						if (accountOptions.length === 0) {
+							return [
+								{
+									name: 'No Linked Accounts Found',
+									value: '',
+								},
+							];
+						}
+
+						return accountOptions;
+					}
+
+					return [
+						{
+							name: 'Unable To Fetch Bank Accounts',
+							value: '',
+						},
+					];
 				} catch (error) {
 					if (continueOnFail) return [];
 					throw error;

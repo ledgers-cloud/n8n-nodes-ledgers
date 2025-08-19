@@ -7,11 +7,56 @@ export const bankingOperations: INodeProperties[] = [
 		name: 'operation',
 		type: 'options',
 		options: [
-			{ name: 'Get Bank Details', value: 'getBankDetails', action: 'Get bank details' },
+			{ name: 'Get Bank Statement', value: 'getBankStatement', action: 'Get bank statement' },
 		],
-		default: 'getBankDetails',
+		default: 'getBankStatement',
 		displayOptions: {
 			show: { resource: ['banking'] },
 		},
+	},
+		{
+		displayName: 'Bank Account Name or ID',
+		name: 'selectedAccount',
+		type: 'options',
+		default: '',
+		required: true,
+		typeOptions: {
+			loadOptionsMethod: 'getBankAccounts',
+		},
+		displayOptions: {
+			show: {
+				resource: ['banking'],
+				operation: ['getBankStatement']
+			},
+		},
+		description: 'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
+	},
+	{
+		displayName: 'From Date',
+		name: 'fromDate',
+		type: 'dateTime',
+		default: '',
+		required: true,
+		displayOptions: {
+			show: {
+				resource: ['banking'],
+				operation: ['getBankStatement']
+			},
+		},
+		description: 'Start date for account statement (DD-MM-YYYY format)',
+	},
+	{
+		displayName: 'To Date',
+		name: 'toDate',
+		type: 'dateTime',
+		default: '',
+		required: true,
+		displayOptions: {
+			show: {
+				resource: ['banking'],
+				operation: ['getBankStatement']
+			},
+		},
+		description: 'End date for account statement (DD-MM-YYYY format)',
 	},
 ];
