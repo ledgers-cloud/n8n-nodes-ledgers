@@ -26,15 +26,15 @@ export async function execute(this: IExecuteFunctions) {
 	const baseUrl = isIndia ? `${apiUrl}/v3` : apiUrl;
 
 	// Validate operation-country match
-	const indiaOps = ['contact', 'createContact', 'updateContact', 'addAddress', 'updateAddress', 'getContact', 'getAllContacts', 'catalog', 'createCatalog', 'updateCatalog', 'getCatalog', 'getAllCatalogs', 'sales', 'createInvoice', 'createQuote', 'viewInvoice', 'viewQuote', 'listInvoices', 'listQuotes', 'createReceipt', 'viewReceipt', 'listReceipts', 'purchase', 'createPurchaseInvoice', 'listPurchaseInvoices', 'viewPurchaseInvoice', 'createPurchaseOrder', 'listPurchaseOrders', 'viewPurchaseOrder', 'createVoucher', 'listVouchers', 'viewVoucher', 'hrms', 'getAllEmployees', 'addEmployee', 'updateEmployee', 'getEmployee', 'getEmployeeData', 'updateAttendance'];
+	const indiaOps = ['contact', 'createContact', 'updateContact', 'addAddress', 'updateAddress', 'getContact', 'getAllContacts', 'catalog', 'createCatalog', 'updateCatalog', 'getCatalog', 'getAllCatalogs', 'sales', 'createInvoice', 'createQuote', 'viewInvoice', 'viewQuote', 'listInvoices', 'listQuotes', 'createReceipt', 'viewReceipt', 'listReceipts', 'purchase', 'createPurchaseInvoice', 'listPurchaseInvoices', 'viewPurchaseInvoice', 'createPurchaseOrder', 'listPurchaseOrders', 'viewPurchaseOrder', 'createVoucher', 'listVouchers', 'viewVoucher', 'hrms', 'getAllEmployees', 'addEmployee', 'updateEmployee', 'getEmployee', 'getEmployeeData', 'updateAttendance', 'banking', 'getBankDetails'];
 
 	for (let i = 0; i < items.length; i++) {
 		const operation = this.getNodeParameter('operation', i);
 		const resource = this.getNodeParameter('resource', i);
-		if (!indiaOps.includes(operation) && resource !== 'catalog' && resource !== 'sales' && resource !== 'contact' && resource !== 'purchase' && resource !== 'hrms') {
+		if (!indiaOps.includes(operation) && resource !== 'catalog' && resource !== 'sales' && resource !== 'contact' && resource !== 'purchase' && resource !== 'hrms' && resource !== 'banking') {
 			throw new ApplicationError('This operation/resource is only available for India API URL. Please update your credentials.');
 		}
-		// Catalog, Sales, Purchase, and HRMS always allowed
+		// Catalog, Sales, Purchase, HRMS, and Banking always allowed
 	}
 
 	// Step 1: Authenticate and get api_token once for all items
@@ -150,9 +150,35 @@ export async function execute(this: IExecuteFunctions) {
 							};
 						}
 
-						// Remove address fields from additionalFields to avoid duplication
+						// Process opening balance fields
+						let openingReceivable = 0;
+						let openingReceivableAsOnDate = '';
+						let openingPayable = 0;
+						let openingPayableAsOnDate = '';
+
+						// Process Opening Customer Receivable
+						if (additionalFields.opening_customer_receivable_group) {
+							const customerReceivableData = additionalFields.opening_customer_receivable_group.customer_receivable;
+							if (customerReceivableData && customerReceivableData.amount !== undefined && customerReceivableData.amount !== null) {
+								openingReceivable = parseInt(customerReceivableData.amount.toString()) || 0;
+								openingReceivableAsOnDate = customerReceivableData.fiscal_year || '';
+							}
+						}
+
+						// Process Opening Supplier Payable
+						if (additionalFields.opening_supplier_payable_group) {
+							const supplierPayableData = additionalFields.opening_supplier_payable_group.supplier_payable;
+							if (supplierPayableData && supplierPayableData.amount !== undefined && supplierPayableData.amount !== null) {
+								openingPayable = parseInt(supplierPayableData.amount.toString()) || 0;
+								openingPayableAsOnDate = supplierPayableData.fiscal_year || '';
+							}
+						}
+
+						// Remove address fields and opening balance groups from additionalFields to avoid duplication
 						delete additionalFields.billing_address;
 						delete additionalFields.shipping_address;
+						delete additionalFields.opening_customer_receivable_group;
+						delete additionalFields.opening_supplier_payable_group;
 
 						options.method = 'POST';
 						options.url = `${baseUrl}/contact`;
@@ -161,15 +187,47 @@ export async function execute(this: IExecuteFunctions) {
 							...additionalFields,
 							...(Object.keys(billingAddress).length ? { billing_address: [billingAddress] } : {}),
 							...(Object.keys(shippingAddress).length ? { shipping_address: [shippingAddress] } : {}),
+							opening_receivable: openingReceivable.toString(),
+							opening_receivable_as_ondate: openingReceivableAsOnDate,
+							opening_payable: openingPayable.toString(),
+							opening_payable_as_ondate: openingPayableAsOnDate,
 						};
 					} else if (operation === 'updateContact') {
 						const contactId = this.getNodeParameter('contactId', i);
 						const updateFields = this.getNodeParameter('contactAdditionalFields', i) as Record<
 							string,
-							string
+							any
 						>;
 
 						const body: Record<string, any> = { contact_id: contactId };
+
+						// Process opening balance fields for update
+						let openingReceivable = 0;
+						let openingReceivableAsOnDate = '';
+						let openingPayable = 0;
+						let openingPayableAsOnDate = '';
+
+						// Process Opening Customer Receivable
+						if (updateFields.opening_customer_receivable_group) {
+							const customerReceivableData = updateFields.opening_customer_receivable_group.customer_receivable;
+							if (customerReceivableData && customerReceivableData.amount !== undefined && customerReceivableData.amount !== null) {
+								openingReceivable = parseInt(customerReceivableData.amount.toString()) || 0;
+								openingReceivableAsOnDate = customerReceivableData.fiscal_year || '';
+							}
+						}
+
+						// Process Opening Supplier Payable
+						if (updateFields.opening_supplier_payable_group) {
+							const supplierPayableData = updateFields.opening_supplier_payable_group.supplier_payable;
+							if (supplierPayableData && supplierPayableData.amount !== undefined && supplierPayableData.amount !== null) {
+								openingPayable = parseInt(supplierPayableData.amount.toString()) || 0;
+								openingPayableAsOnDate = supplierPayableData.fiscal_year || '';
+							}
+						}
+
+						// Remove opening balance groups from updateFields to avoid duplication
+						delete updateFields.opening_customer_receivable_group;
+						delete updateFields.opening_supplier_payable_group;
 
 						for (const [key, value] of Object.entries(updateFields)) {
 							if (value !== undefined && value !== null) {
@@ -182,6 +240,16 @@ export async function execute(this: IExecuteFunctions) {
 									body[key] = value;
 								}
 							}
+						}
+
+						// Add opening balance fields to body
+						if (openingReceivable !== 0 || openingReceivableAsOnDate !== '') {
+							body.opening_receivable = openingReceivable.toString();
+							body.opening_receivable_as_ondate = openingReceivableAsOnDate;
+						}
+						if (openingPayable !== 0 || openingPayableAsOnDate !== '') {
+							body.opening_payable = openingPayable.toString();
+							body.opening_payable_as_ondate = openingPayableAsOnDate;
 						}
 
 						options.method = 'PUT';
@@ -1756,6 +1824,45 @@ export async function execute(this: IExecuteFunctions) {
 
 						options.method = 'GET';
 						options.url = `${baseUrl}/hr/employee/${gid}`;
+					} else if (operation === 'getBankDetails') {
+						// Get parameters from client
+						const selectedAccount = this.getNodeParameter('selectedAccount', i) as string;
+						const fromDateRaw = this.getNodeParameter('fromDate', i) as string;
+						const toDateRaw = this.getNodeParameter('toDate', i) as string;
+
+						// Check if account is selected
+						if (!selectedAccount || selectedAccount === '') {
+							throw new ApplicationError('Please select a bank account', { level: 'warning' });
+						}
+
+						// Parse selected account (format: "URN|AccountNumber")
+						const [urn, accountNumber] = selectedAccount.split('|');
+						if (!urn || !accountNumber) {
+							throw new ApplicationError('Invalid account selection. Please select a valid bank account', { level: 'warning' });
+						}
+
+						// Format dates to DD-MM-YYYY format
+						const formatDate = (dateStr: string): string => {
+							const date = new Date(dateStr);
+							const day = String(date.getDate()).padStart(2, '0');
+							const month = String(date.getMonth() + 1).padStart(2, '0');
+							const year = date.getFullYear();
+							return `${day}-${month}-${year}`;
+						};
+
+						const fromDate = formatDate(fromDateRaw);
+						const toDate = formatDate(toDateRaw);
+
+						// Set up the request options like other operations
+						options.method = 'POST';
+						options.url = `${baseUrl}/banking/icici`;
+						options.body = {
+							operation: 'account-statement-sync',
+							urn: urn,
+							account: accountNumber,
+							fromDate: fromDate,
+							toDate: toDate
+						};
 					}
 					const result = await this.helpers.request(options);
 					returnData.push({ json: result });
