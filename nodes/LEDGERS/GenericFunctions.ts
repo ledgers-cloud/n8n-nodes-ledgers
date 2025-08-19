@@ -150,9 +150,35 @@ export async function execute(this: IExecuteFunctions) {
 							};
 						}
 
-						// Remove address fields from additionalFields to avoid duplication
+						// Process opening balance fields
+						let openingReceivable = 0;
+						let openingReceivableAsOnDate = '';
+						let openingPayable = 0;
+						let openingPayableAsOnDate = '';
+
+						// Process Opening Customer Receivable
+						if (additionalFields.opening_customer_receivable_group) {
+							const customerReceivableData = additionalFields.opening_customer_receivable_group.customer_receivable;
+							if (customerReceivableData) {
+								openingReceivable = customerReceivableData.amount || 0;
+								openingReceivableAsOnDate = customerReceivableData.fiscal_year || '';
+							}
+						}
+
+						// Process Opening Supplier Payable
+						if (additionalFields.opening_supplier_payable_group) {
+							const supplierPayableData = additionalFields.opening_supplier_payable_group.supplier_payable;
+							if (supplierPayableData) {
+								openingPayable = supplierPayableData.amount || 0;
+								openingPayableAsOnDate = supplierPayableData.fiscal_year || '';
+							}
+						}
+
+						// Remove address fields and opening balance groups from additionalFields to avoid duplication
 						delete additionalFields.billing_address;
 						delete additionalFields.shipping_address;
+						delete additionalFields.opening_customer_receivable_group;
+						delete additionalFields.opening_supplier_payable_group;
 
 						options.method = 'POST';
 						options.url = `${baseUrl}/contact`;
@@ -161,15 +187,47 @@ export async function execute(this: IExecuteFunctions) {
 							...additionalFields,
 							...(Object.keys(billingAddress).length ? { billing_address: [billingAddress] } : {}),
 							...(Object.keys(shippingAddress).length ? { shipping_address: [shippingAddress] } : {}),
+							opening_receivable: openingReceivable,
+							opening_receivable_as_ondate: openingReceivableAsOnDate,
+							opening_payable: openingPayable,
+							opening_payable_as_ondate: openingPayableAsOnDate,
 						};
 					} else if (operation === 'updateContact') {
 						const contactId = this.getNodeParameter('contactId', i);
 						const updateFields = this.getNodeParameter('contactAdditionalFields', i) as Record<
 							string,
-							string
+							any
 						>;
 
 						const body: Record<string, any> = { contact_id: contactId };
+
+						// Process opening balance fields for update
+						let openingReceivable = 0;
+						let openingReceivableAsOnDate = '';
+						let openingPayable = 0;
+						let openingPayableAsOnDate = '';
+
+						// Process Opening Customer Receivable
+						if (updateFields.opening_customer_receivable_group) {
+							const customerReceivableData = updateFields.opening_customer_receivable_group.customer_receivable;
+							if (customerReceivableData) {
+								openingReceivable = customerReceivableData.amount || 0;
+								openingReceivableAsOnDate = customerReceivableData.fiscal_year || '';
+							}
+						}
+
+						// Process Opening Supplier Payable
+						if (updateFields.opening_supplier_payable_group) {
+							const supplierPayableData = updateFields.opening_supplier_payable_group.supplier_payable;
+							if (supplierPayableData) {
+								openingPayable = supplierPayableData.amount || 0;
+								openingPayableAsOnDate = supplierPayableData.fiscal_year || '';
+							}
+						}
+
+						// Remove opening balance groups from updateFields to avoid duplication
+						delete updateFields.opening_customer_receivable_group;
+						delete updateFields.opening_supplier_payable_group;
 
 						for (const [key, value] of Object.entries(updateFields)) {
 							if (value !== undefined && value !== null) {
@@ -182,6 +240,16 @@ export async function execute(this: IExecuteFunctions) {
 									body[key] = value;
 								}
 							}
+						}
+
+						// Add opening balance fields to body
+						if (openingReceivable !== 0 || openingReceivableAsOnDate !== '') {
+							body.opening_receivable = openingReceivable;
+							body.opening_receivable_as_ondate = openingReceivableAsOnDate;
+						}
+						if (openingPayable !== 0 || openingPayableAsOnDate !== '') {
+							body.opening_payable = openingPayable;
+							body.opening_payable_as_ondate = openingPayableAsOnDate;
 						}
 
 						options.method = 'PUT';

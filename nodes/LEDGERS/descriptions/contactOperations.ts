@@ -773,6 +773,90 @@ export const contactOperations: INodeProperties[] = [
 			},
 			{ displayName: 'Mobile', name: 'mobile', type: 'string', default: '', placeholder: '' },
 			{ displayName: 'GSTIN', name: 'gstin', type: 'string', default: '', placeholder: '' },
+			{
+				displayName: 'Opening Customer Receivable',
+				name: 'opening_customer_receivable_group',
+				type: 'fixedCollection',
+				typeOptions: {
+					multipleValues: false,
+				},
+				default: {},
+				options: [
+					{
+						displayName: 'Customer Receivable',
+						name: 'customer_receivable',
+						values: [
+							{
+								displayName: 'Amount',
+								name: 'amount',
+								type: 'number',
+								default: 0,
+								placeholder: '200',
+								description: 'Enter the opening customer receivable amount',
+							},
+							{
+								displayName: 'Financial Year',
+								name: 'fiscal_year',
+								type: 'options',
+								options: [
+									{ name: 'FY-2018-2019', value: '2018-04-01' },
+									{ name: 'FY-2019-2020', value: '2019-04-01' },
+									{ name: 'FY-2020-2021', value: '2020-04-01' },
+									{ name: 'FY-2021-2022', value: '2021-04-01' },
+									{ name: 'FY-2022-2023', value: '2022-04-01' },
+									{ name: 'FY-2023-2024', value: '2023-04-01' },
+									{ name: 'FY-2024-2025', value: '2024-04-01' },
+									{ name: 'FY-2025-2026', value: '2025-04-01' },
+								],
+								default: '2025-04-01',
+								description: 'Select the financial year',
+							},
+						],
+					},
+				],
+			},
+			{
+				displayName: 'Opening Supplier Payable',
+				name: 'opening_supplier_payable_group',
+				type: 'fixedCollection',
+				typeOptions: {
+					multipleValues: false,
+				},
+				default: {},
+				options: [
+					{
+						displayName: 'Supplier Payable',
+						name: 'supplier_payable',
+						values: [
+							{
+								displayName: 'Amount',
+								name: 'amount',
+								type: 'number',
+								default: 0,
+								placeholder: '200',
+								description: 'Enter the opening supplier payable amount',
+							},
+							{
+								displayName: 'Financial Year',
+								name: 'fiscal_year',
+								type: 'options',
+								options: [
+									{ name: 'FY-2018-2019', value: '2018-04-01' },
+									{ name: 'FY-2019-2020', value: '2019-04-01' },
+									{ name: 'FY-2020-2021', value: '2020-04-01' },
+									{ name: 'FY-2021-2022', value: '2021-04-01' },
+									{ name: 'FY-2022-2023', value: '2022-04-01' },
+									{ name: 'FY-2023-2024', value: '2023-04-01' },
+									{ name: 'FY-2024-2025', value: '2024-04-01' },
+									{ name: 'FY-2025-2026', value: '2025-04-01' },
+								],
+								default: '2025-04-01',
+								description: 'Select the financial year',
+							},
+						],
+					},
+				],
+			},
 			{ displayName: 'PAN', name: 'pan', type: 'string', default: '', placeholder: '' },
 			{
 				displayName: 'Business Name',
@@ -924,6 +1008,90 @@ export const contactOperations: INodeProperties[] = [
 				type: 'string',
 				default: '',
 				placeholder: '',
+			},
+			{
+				displayName: 'Opening Customer Receivable',
+				name: 'opening_customer_receivable_group',
+				type: 'fixedCollection',
+				typeOptions: {
+					multipleValues: false,
+				},
+				default: {},
+				options: [
+					{
+						displayName: 'Customer Receivable',
+						name: 'customer_receivable',
+						values: [
+							{
+								displayName: 'Amount',
+								name: 'amount',
+								type: 'number',
+								default: 0,
+								placeholder: '200',
+								description: 'Enter the opening customer receivable amount',
+							},
+							{
+								displayName: 'Financial Year',
+								name: 'fiscal_year',
+								type: 'options',
+								options: [
+									{ name: 'FY-2018-2019', value: '2018-04-01' },
+									{ name: 'FY-2019-2020', value: '2019-04-01' },
+									{ name: 'FY-2020-2021', value: '2020-04-01' },
+									{ name: 'FY-2021-2022', value: '2021-04-01' },
+									{ name: 'FY-2022-2023', value: '2022-04-01' },
+									{ name: 'FY-2023-2024', value: '2023-04-01' },
+									{ name: 'FY-2024-2025', value: '2024-04-01' },
+									{ name: 'FY-2025-2026', value: '2025-04-01' },
+								],
+								default: '2025-04-01',
+								description: 'Select the financial year',
+							},
+						],
+					},
+				],
+			},
+			{
+				displayName: 'Opening Supplier Payable',
+				name: 'opening_supplier_payable_group',
+				type: 'fixedCollection',
+				typeOptions: {
+					multipleValues: false,
+				},
+				default: {},
+				options: [
+					{
+						displayName: 'Supplier Payable',
+						name: 'supplier_payable',
+						values: [
+							{
+								displayName: 'Amount',
+								name: 'amount',
+								type: 'number',
+								default: 0,
+								placeholder: '200',
+								description: 'Enter the opening supplier payable amount',
+							},
+							{
+								displayName: 'Financial Year',
+								name: 'fiscal_year',
+								type: 'options',
+								options: [
+									{ name: 'FY-2018-2019', value: '2018-04-01' },
+									{ name: 'FY-2019-2020', value: '2019-04-01' },
+									{ name: 'FY-2020-2021', value: '2020-04-01' },
+									{ name: 'FY-2021-2022', value: '2021-04-01' },
+									{ name: 'FY-2022-2023', value: '2022-04-01' },
+									{ name: 'FY-2023-2024', value: '2023-04-01' },
+									{ name: 'FY-2024-2025', value: '2024-04-01' },
+									{ name: 'FY-2025-2026', value: '2025-04-01' },
+								],
+								default: '2025-04-01',
+								description: 'Select the financial year',
+							},
+						],
+					},
+				],
 			},
 			{
 				displayName: 'Status',
