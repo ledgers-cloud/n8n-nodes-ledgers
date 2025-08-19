@@ -159,8 +159,8 @@ export async function execute(this: IExecuteFunctions) {
 						// Process Opening Customer Receivable
 						if (additionalFields.opening_customer_receivable_group) {
 							const customerReceivableData = additionalFields.opening_customer_receivable_group.customer_receivable;
-							if (customerReceivableData) {
-								openingReceivable = customerReceivableData.amount || 0;
+							if (customerReceivableData && customerReceivableData.amount !== undefined && customerReceivableData.amount !== null) {
+								openingReceivable = parseInt(customerReceivableData.amount.toString()) || 0;
 								openingReceivableAsOnDate = customerReceivableData.fiscal_year || '';
 							}
 						}
@@ -168,8 +168,8 @@ export async function execute(this: IExecuteFunctions) {
 						// Process Opening Supplier Payable
 						if (additionalFields.opening_supplier_payable_group) {
 							const supplierPayableData = additionalFields.opening_supplier_payable_group.supplier_payable;
-							if (supplierPayableData) {
-								openingPayable = supplierPayableData.amount || 0;
+							if (supplierPayableData && supplierPayableData.amount !== undefined && supplierPayableData.amount !== null) {
+								openingPayable = parseInt(supplierPayableData.amount.toString()) || 0;
 								openingPayableAsOnDate = supplierPayableData.fiscal_year || '';
 							}
 						}
@@ -187,9 +187,9 @@ export async function execute(this: IExecuteFunctions) {
 							...additionalFields,
 							...(Object.keys(billingAddress).length ? { billing_address: [billingAddress] } : {}),
 							...(Object.keys(shippingAddress).length ? { shipping_address: [shippingAddress] } : {}),
-							opening_receivable: openingReceivable,
+							opening_receivable: openingReceivable.toString(),
 							opening_receivable_as_ondate: openingReceivableAsOnDate,
-							opening_payable: openingPayable,
+							opening_payable: openingPayable.toString(),
 							opening_payable_as_ondate: openingPayableAsOnDate,
 						};
 					} else if (operation === 'updateContact') {
@@ -210,8 +210,8 @@ export async function execute(this: IExecuteFunctions) {
 						// Process Opening Customer Receivable
 						if (updateFields.opening_customer_receivable_group) {
 							const customerReceivableData = updateFields.opening_customer_receivable_group.customer_receivable;
-							if (customerReceivableData) {
-								openingReceivable = customerReceivableData.amount || 0;
+							if (customerReceivableData && customerReceivableData.amount !== undefined && customerReceivableData.amount !== null) {
+								openingReceivable = parseInt(customerReceivableData.amount.toString()) || 0;
 								openingReceivableAsOnDate = customerReceivableData.fiscal_year || '';
 							}
 						}
@@ -219,8 +219,8 @@ export async function execute(this: IExecuteFunctions) {
 						// Process Opening Supplier Payable
 						if (updateFields.opening_supplier_payable_group) {
 							const supplierPayableData = updateFields.opening_supplier_payable_group.supplier_payable;
-							if (supplierPayableData) {
-								openingPayable = supplierPayableData.amount || 0;
+							if (supplierPayableData && supplierPayableData.amount !== undefined && supplierPayableData.amount !== null) {
+								openingPayable = parseInt(supplierPayableData.amount.toString()) || 0;
 								openingPayableAsOnDate = supplierPayableData.fiscal_year || '';
 							}
 						}
@@ -244,11 +244,11 @@ export async function execute(this: IExecuteFunctions) {
 
 						// Add opening balance fields to body
 						if (openingReceivable !== 0 || openingReceivableAsOnDate !== '') {
-							body.opening_receivable = openingReceivable;
+							body.opening_receivable = openingReceivable.toString();
 							body.opening_receivable_as_ondate = openingReceivableAsOnDate;
 						}
 						if (openingPayable !== 0 || openingPayableAsOnDate !== '') {
-							body.opening_payable = openingPayable;
+							body.opening_payable = openingPayable.toString();
 							body.opening_payable_as_ondate = openingPayableAsOnDate;
 						}
 

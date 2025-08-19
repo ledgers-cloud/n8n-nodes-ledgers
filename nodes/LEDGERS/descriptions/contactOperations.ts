@@ -789,9 +789,8 @@ export const contactOperations: INodeProperties[] = [
 							{
 								displayName: 'Amount',
 								name: 'amount',
-								type: 'number',
-								default: 0,
-								placeholder: '200',
+								type: 'string',
+								default: '',
 								description: 'Enter the opening customer receivable amount',
 							},
 							{
@@ -831,9 +830,8 @@ export const contactOperations: INodeProperties[] = [
 							{
 								displayName: 'Amount',
 								name: 'amount',
-								type: 'number',
-								default: 0,
-								placeholder: '200',
+								type: 'string',
+								default: '',
 								description: 'Enter the opening supplier payable amount',
 							},
 							{
@@ -1025,9 +1023,8 @@ export const contactOperations: INodeProperties[] = [
 							{
 								displayName: 'Amount',
 								name: 'amount',
-								type: 'number',
-								default: 0,
-								placeholder: '200',
+								type: 'string',
+								default: '',
 								description: 'Enter the opening customer receivable amount',
 							},
 							{
@@ -1067,9 +1064,8 @@ export const contactOperations: INodeProperties[] = [
 							{
 								displayName: 'Amount',
 								name: 'amount',
-								type: 'number',
-								default: 0,
-								placeholder: '200',
+								type: 'string',
+								default: '',
 								description: 'Enter the opening supplier payable amount',
 							},
 							{
