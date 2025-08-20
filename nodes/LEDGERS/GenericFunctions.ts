@@ -10,6 +10,41 @@ const dialCodeToCountryCode: Record<string, string> = {
 	'+971': 'ae',
 };
 
+/**
+ * Generate fiscal year options and get current fiscal year in a single function
+ * @param startYear - The starting year for fiscal years (default: 2018)
+ * @returns Object containing options array and current fiscal year default
+ */
+export function getFiscalYearData(startYear: number = 2018): { options: Array<{ name: string; value: string }>; default: string } {
+	const options: Array<{ name: string; value: string }> = [];
+
+	// Calculate current fiscal year
+	const currentYear = new Date().getFullYear();
+	const currentMonth = new Date().getMonth() + 1; // getMonth() returns 0-11
+
+	// If current month is January-March, current FY started last year
+	// If current month is April-December, current FY started this year
+	const currentFiscalYear = currentMonth < 4 ? currentYear - 1 : currentYear;
+
+	// Generate years from startYear up to current fiscal year
+	for (let year = startYear; year <= currentFiscalYear; year++) {
+		const nextYear = year + 1;
+		const fiscalYearStart = `${year}-04-01`;
+
+		options.push({
+			name: `FY-${year}-${nextYear}`,
+			value: fiscalYearStart,
+		});
+	}
+
+	const currentFiscalYearStart = `${currentFiscalYear}-04-01`;
+
+	return {
+		options,
+		default: currentFiscalYearStart
+	};
+}
+
 export async function execute(this: IExecuteFunctions) {
 	const items = this.getInputData();
 	const returnData: INodeExecutionData[] = [];
@@ -160,7 +195,11 @@ export async function execute(this: IExecuteFunctions) {
 						if (additionalFields.opening_customer_receivable_group) {
 							const customerReceivableData = additionalFields.opening_customer_receivable_group.customer_receivable;
 							if (customerReceivableData && customerReceivableData.amount !== undefined && customerReceivableData.amount !== null) {
-								openingReceivable = parseInt(customerReceivableData.amount.toString()) || 0;
+								const amountStr = customerReceivableData.amount.toString().trim();
+								if (amountStr === '' || isNaN(Number(amountStr))) {
+									throw new ApplicationError('Opening Customer Receivable amount must be a valid numeric value', { level: 'warning' });
+								}
+								openingReceivable = parseInt(amountStr) || 0;
 								openingReceivableAsOnDate = customerReceivableData.fiscal_year || '';
 							}
 						}
@@ -169,7 +208,11 @@ export async function execute(this: IExecuteFunctions) {
 						if (additionalFields.opening_supplier_payable_group) {
 							const supplierPayableData = additionalFields.opening_supplier_payable_group.supplier_payable;
 							if (supplierPayableData && supplierPayableData.amount !== undefined && supplierPayableData.amount !== null) {
-								openingPayable = parseInt(supplierPayableData.amount.toString()) || 0;
+								const amountStr = supplierPayableData.amount.toString().trim();
+								if (amountStr === '' || isNaN(Number(amountStr))) {
+									throw new ApplicationError('Opening Supplier Payable amount must be a valid numeric value', { level: 'warning' });
+								}
+								openingPayable = parseInt(amountStr) || 0;
 								openingPayableAsOnDate = supplierPayableData.fiscal_year || '';
 							}
 						}
@@ -211,7 +254,11 @@ export async function execute(this: IExecuteFunctions) {
 						if (updateFields.opening_customer_receivable_group) {
 							const customerReceivableData = updateFields.opening_customer_receivable_group.customer_receivable;
 							if (customerReceivableData && customerReceivableData.amount !== undefined && customerReceivableData.amount !== null) {
-								openingReceivable = parseInt(customerReceivableData.amount.toString()) || 0;
+								const amountStr = customerReceivableData.amount.toString().trim();
+								if (amountStr === '' || isNaN(Number(amountStr))) {
+									throw new ApplicationError('Opening Customer Receivable amount must be a valid numeric value', { level: 'warning' });
+								}
+								openingReceivable = parseInt(amountStr) || 0;
 								openingReceivableAsOnDate = customerReceivableData.fiscal_year || '';
 							}
 						}
@@ -220,7 +267,11 @@ export async function execute(this: IExecuteFunctions) {
 						if (updateFields.opening_supplier_payable_group) {
 							const supplierPayableData = updateFields.opening_supplier_payable_group.supplier_payable;
 							if (supplierPayableData && supplierPayableData.amount !== undefined && supplierPayableData.amount !== null) {
-								openingPayable = parseInt(supplierPayableData.amount.toString()) || 0;
+								const amountStr = supplierPayableData.amount.toString().trim();
+								if (amountStr === '' || isNaN(Number(amountStr))) {
+									throw new ApplicationError('Opening Supplier Payable amount must be a valid numeric value', { level: 'warning' });
+								}
+								openingPayable = parseInt(amountStr) || 0;
 								openingPayableAsOnDate = supplierPayableData.fiscal_year || '';
 							}
 						}
