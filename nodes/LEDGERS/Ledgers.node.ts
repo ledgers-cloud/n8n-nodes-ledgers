@@ -13,6 +13,22 @@ import {
 import * as descriptions from './descriptions';
 import { execute } from './GenericFunctions';
 
+// Helper function to add displayOptions for India-only operations
+const addIndiaOnlyDisplayOptions = (operations: any[]) => {
+	return operations.map(operation => ({
+		...operation,
+		displayOptions: {
+			...operation.displayOptions,
+			show: {
+				...operation.displayOptions?.show,
+				'$credentials.apiUrl': [
+					{ _cnd: { contains: 'in-api.ledgers.cloud' } }
+				]
+			}
+		}
+	}));
+};
+
 export class Ledgers implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'LEDGERS',
@@ -35,8 +51,6 @@ export class Ledgers implements INodeType {
 			},
 		],
 		properties: [
-			// Remove Country parameter
-			// Resource dropdown: show all resources, add (India) or (UAE) to displayName for clarity
 			{
 				displayName: 'Resource',
 				name: 'resource',
@@ -53,14 +67,15 @@ export class Ledgers implements INodeType {
 				default: 'contact',
 			},
 			// Sales, Purchase, and Catalog operations (always visible)
-			...descriptions.salesOperations,
-			...descriptions.purchaseOperations,
+			...addIndiaOnlyDisplayOptions(descriptions.salesOperations),
+			...addIndiaOnlyDisplayOptions(descriptions.purchaseOperations),
 			...descriptions.catalogOperations,
-			// Only India Contact Operations
+			// Contact Operations (available for both India and UAE)
 			...descriptions.contactOperations,
-			// HRMS Operations
-			...descriptions.hrmsOperations,
-			...descriptions.bankingOperations,
+			// HRMS Operations (India only)
+			...addIndiaOnlyDisplayOptions(descriptions.hrmsOperations),
+			// Banking Operations (India only)
+			...addIndiaOnlyDisplayOptions(descriptions.bankingOperations),
 		],
 	};
 
@@ -166,7 +181,7 @@ export class Ledgers implements INodeType {
 					// Authenticate to get api_token
 					const loginOptions: IRequestOptions = {
 						method: 'POST',
-						url: 'https://in-api.ledgers.cloud/login',
+						url: '${$credentials.apiUrl}/login',
 						headers: {
 							'Content-Type': 'application/json',
 							'x-api-key': xApiKey,
@@ -191,7 +206,7 @@ export class Ledgers implements INodeType {
 
 					const options: IRequestOptions = {
 						method: 'GET',
-						url: `https://in-api.ledgers.cloud/v3/catalog/${catalogId}`,
+						url: '${$credentials.apiUrl}/v3/catalog/' + catalogId,
 						headers: {
 							'Content-Type': 'application/json',
 							'x-api-key': xApiKey,
@@ -227,7 +242,7 @@ export class Ledgers implements INodeType {
 					// Authenticate to get api_token
 					const loginOptions: IRequestOptions = {
 						method: 'POST',
-						url: 'https://in-api.ledgers.cloud/login',
+						url: '${$credentials.apiUrl}/login',
 						headers: {
 							'Content-Type': 'application/json',
 							'x-api-key': xApiKey,
@@ -248,7 +263,7 @@ export class Ledgers implements INodeType {
 
 					const options: IRequestOptions = {
 						method: 'GET',
-						url: 'https://in-api.ledgers.cloud/v3/coa',
+						url: '${$credentials.apiUrl}'+(String(credentials.apiUrl).includes('in-api.ledgers.cloud') ? '/v3/coa' : '/coa'),
 						headers: {
 							'Content-Type': 'application/json',
 							'x-api-key': xApiKey,
@@ -295,7 +310,7 @@ export class Ledgers implements INodeType {
 
 					const loginOptions: IRequestOptions = {
 						method: 'POST',
-						url: 'https://in-api.ledgers.cloud/login',
+						url: '${$credentials.apiUrl}/login',
 						headers: { 'Content-Type': 'application/json', 'x-api-key': xApiKey },
 						body: { email, password },
 						json: true,
@@ -309,7 +324,7 @@ export class Ledgers implements INodeType {
 
 					const getContactOptions: IRequestOptions = {
 						method: 'GET',
-						url: `https://in-api.ledgers.cloud/v3/contact/${contactId}`,
+						url: '${$credentials.apiUrl}'+(String(credentials.apiUrl).includes('in-api.ledgers.cloud') ? '/v3/contact/' : '/contact/') + contactId,
 						headers: { 'Content-Type': 'application/json', 'x-api-key': xApiKey, 'api-token': apiToken },
 						json: true,
 					};
@@ -368,7 +383,7 @@ export class Ledgers implements INodeType {
 					// Authenticate to get api_token
 					const loginOptions: IRequestOptions = {
 						method: 'POST',
-						url: 'https://in-api.ledgers.cloud/login',
+						url: '${$credentials.apiUrl}/login',
 						headers: {
 							'Content-Type': 'application/json',
 							'x-api-key': xApiKey,
@@ -444,7 +459,7 @@ export class Ledgers implements INodeType {
 					// Authenticate to get api_token
 					const loginOptions: IRequestOptions = {
 						method: 'POST',
-						url: 'https://in-api.ledgers.cloud/login',
+						url: '${$credentials.apiUrl}/login',
 						headers: {
 							'Content-Type': 'application/json',
 							'x-api-key': xApiKey,
@@ -519,7 +534,7 @@ export class Ledgers implements INodeType {
 
 					const loginOptions: IRequestOptions = {
 						method: 'POST',
-						url: `${apiUrl}/login`,
+						url: `https://in-api.ledgers.cloud/login`,
 						headers: { 'Content-Type': 'application/json', 'x-api-key': xApiKey },
 						body: { email, password },
 						json: true,
@@ -569,7 +584,7 @@ export class Ledgers implements INodeType {
 
 					const loginOptions: IRequestOptions = {
 						method: 'POST',
-						url: `${apiUrl}/login`,
+						url: `https://in-api.ledgers.cloud/login`,
 						headers: { 'Content-Type': 'application/json', 'x-api-key': xApiKey },
 						body: { email, password },
 						json: true,
@@ -617,7 +632,7 @@ export class Ledgers implements INodeType {
 					// Authenticate to get api_token
 					const loginOptions: IRequestOptions = {
 						method: 'POST',
-						url: `${apiUrl}/login`,
+						url: `https://in-api.ledgers.cloud/login`,
 						headers: {
 							'Content-Type': 'application/json',
 							'x-api-key': xApiKey,

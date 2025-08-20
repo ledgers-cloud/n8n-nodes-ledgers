@@ -136,53 +136,51 @@ export async function execute(this: IExecuteFunctions) {
 
 						additionalFields.mobile_country_code = selectedDialCode;
 
-						// Auto-fill PAN from GSTIN if GSTIN is provided and PAN is not already set
-						if (additionalFields.gstin && !additionalFields.pan) {
-							const gstin = additionalFields.gstin.toString().trim();
-							// GSTIN format: 2-digit state code + 10-digit PAN + 1-digit entity + 1-digit checksum + 1-alphabet
-							// PAN is characters 3-12 (index 2-11) of GSTIN
-							if (gstin.length === 15) {
-								const extractedPAN = gstin.substring(2, 12);
-								// Validate PAN format (5 letters + 4 digits + 1 letter)
-								const panPattern = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
-								if (panPattern.test(extractedPAN)) {
-									additionalFields.pan = extractedPAN;
-								}
+
+
+						// Helper function to transform address data based on region
+						const transformAddress = (address: any, type: 'billing' | 'shipping') => {
+							const prefix = type === 'billing' ? 'billing_' : 'shipping_';
+
+							if (isIndia) {
+								return {
+									[`${prefix}address1`]: address[`${prefix}address1`] ?? '',
+									[`${prefix}address2`]: address[`${prefix}address2`] ?? '',
+									location: address[`${prefix}city`] ?? '',
+									state: address[`${prefix}state`] ?? '',
+									country: address[`${prefix}country`] ?? '',
+									email: address[`${prefix}email`] ?? '',
+									gstin: address[`${prefix}tax`] ?? '',
+									mobile: address[`${prefix}mobile`] ?? '',
+									pincode: address[`${prefix}postalcode`] ?? '',
+								};
+							} else {
+								return {
+									[`${prefix}address1`]: address[`${prefix}address1`] ?? '',
+									[`${prefix}address2`]: address[`${prefix}address2`] ?? '',
+									po_box: address[`${prefix}postalcode`] ?? '',
+									[type === 'billing' ? 'emirates' : 'emirate']: address[`${prefix}state`] ?? '',
+									location: address[`${prefix}city`] ?? '',
+									country: address[`${prefix}country`] ?? '',
+									trn_number: address[`${prefix}tax`] ?? '',
+								};
 							}
-						}
+						};
 
-						// Extract billing address from fixedCollection
-						let billingAddress: any = {};
+						// Extract billing addresses
+						let billingAddresses: any[] = [];
 						if (additionalFields.billing_address) {
-							const b = additionalFields.billing_address;
-							billingAddress = {
-								billing_address1: b.billing_address1 ?? '',
-								billing_address2: b.billing_address2 ?? '',
-								location: b.billing_city ?? '',
-								state: b.billing_state ?? '',
-								country: b.billing_country ?? '',
-								email: b.billing_email ?? '',
-								gstin: b.billing_gstin ?? '',
-								mobile: b.billing_mobile ?? '',
-								pincode: b.billing_pincode ?? '',
-							};
+							const billingData = additionalFields.billing_address;
+							const addresses = Array.isArray(billingData.address) ? billingData.address : [billingData.address || billingData];
+							billingAddresses = addresses.map((address: any) => transformAddress(address, 'billing'));
 						}
 
-						// Extract shipping address from fixedCollection
-						let shippingAddress: any = {};
+						// Extract shipping addresses
+						let shippingAddresses: any[] = [];
 						if (additionalFields.shipping_address) {
-							const s = additionalFields.shipping_address;
-							shippingAddress = {
-								shipping_address1: s.shipping_address1 ?? '',
-								shipping_address2: s.shipping_address2 ?? '',
-								location: s.shipping_city ?? '',
-								state: s.shipping_state ?? '',
-								country: s.shipping_country ?? '',
-								email: s.shipping_email ?? '',
-								gstin: s.shipping_gstin ?? '',
-								mobile: s.shipping_mobile ?? '',
-								pincode: s.shipping_pincode ?? '',
-							};
+							const shippingData = additionalFields.shipping_address;
+							const addresses = Array.isArray(shippingData.address) ? shippingData.address : [shippingData.address || shippingData];
+							shippingAddresses = addresses.map((address: any) => transformAddress(address, 'shipping'));
 						}
 
 						// Process opening balance fields
@@ -225,16 +223,38 @@ export async function execute(this: IExecuteFunctions) {
 
 						options.method = 'POST';
 						options.url = `${baseUrl}/contact`;
-						options.body = {
+						// Build the API body based on the region
+						const baseBody = {
 							contact_name: contactName,
-							...additionalFields,
-							...(Object.keys(billingAddress).length ? { billing_address: [billingAddress] } : {}),
-							...(Object.keys(shippingAddress).length ? { shipping_address: [shippingAddress] } : {}),
-							opening_receivable: openingReceivable.toString(),
-							opening_receivable_as_ondate: openingReceivableAsOnDate,
-							opening_payable: openingPayable.toString(),
-							opening_payable_as_ondate: openingPayableAsOnDate,
+							...(billingAddresses.length > 0 ? { billing_address: billingAddresses } : {}),
+							...(shippingAddresses.length > 0 ? { shipping_address: shippingAddresses } : {}),
 						};
+
+						if (isIndia) {
+							// India API structure
+							options.body = {
+								...baseBody,
+								...additionalFields,
+								opening_receivable: openingReceivable.toString(),
+								opening_receivable_as_ondate: openingReceivableAsOnDate,
+								opening_payable: openingPayable.toString(),
+								opening_payable_as_ondate: openingPayableAsOnDate,
+							};
+						} else {
+							// UAE API structure - map tax to trn_number
+							const uaeFields = { ...additionalFields };
+							if (uaeFields.tax) {
+								uaeFields.trn_number = uaeFields.tax;
+								delete uaeFields.tax;
+							}
+
+							options.body = {
+								...baseBody,
+								...uaeFields,
+								opening_receivable: openingReceivable,
+								opening_payable: openingPayable.toString(),
+							};
+						}
 					} else if (operation === 'updateContact') {
 						const contactId = this.getNodeParameter('contactId', i);
 						const updateFields = this.getNodeParameter('contactAdditionalFields', i) as Record<
@@ -280,27 +300,45 @@ export async function execute(this: IExecuteFunctions) {
 						delete updateFields.opening_customer_receivable_group;
 						delete updateFields.opening_supplier_payable_group;
 
-						for (const [key, value] of Object.entries(updateFields)) {
-							if (value !== undefined && value !== null) {
-								if (key === 'mobile' && value !== '') {
-									const selectedDialCode = updateFields.mobile_country_code || '+91';
-									const isoCode = dialCodeToCountryCode[selectedDialCode] || 'in';
-									body[key] = `${value}|${isoCode}`;
-									body.mobile_country_code = selectedDialCode;
-								} else {
-									body[key] = value;
-								}
+						// Helper function to process field mapping
+						const processField = (key: string, value: any) => {
+							if (key === 'mobile' && value !== '') {
+								const selectedDialCode = updateFields.mobile_country_code || '+91';
+								const isoCode = dialCodeToCountryCode[selectedDialCode] || 'in';
+								body[key] = `${value}|${isoCode}`;
+								body.mobile_country_code = selectedDialCode;
+							} else if (key === 'tax' && !isIndia) {
+								body.trn_number = value;
+							} else {
+								body[key] = value;
 							}
-						}
+						};
 
-						// Add opening balance fields to body
-						if (openingReceivable !== 0 || openingReceivableAsOnDate !== '') {
-							body.opening_receivable = openingReceivable.toString();
-							body.opening_receivable_as_ondate = openingReceivableAsOnDate;
-						}
-						if (openingPayable !== 0 || openingPayableAsOnDate !== '') {
-							body.opening_payable = openingPayable.toString();
-							body.opening_payable_as_ondate = openingPayableAsOnDate;
+						Object.entries(updateFields).forEach(([key, value]) => {
+							if (value !== undefined && value !== null) {
+								processField(key, value);
+							}
+						});
+
+						// Add opening balance fields to body based on region
+						if (isIndia) {
+							// India API structure
+							if (openingReceivable !== 0 || openingReceivableAsOnDate !== '') {
+								body.opening_receivable = openingReceivable.toString();
+								body.opening_receivable_as_ondate = openingReceivableAsOnDate;
+							}
+							if (openingPayable !== 0 || openingPayableAsOnDate !== '') {
+								body.opening_payable = openingPayable.toString();
+								body.opening_payable_as_ondate = openingPayableAsOnDate;
+							}
+						} else {
+							// UAE API structure
+							if (openingReceivable !== 0) {
+								body.opening_receivable = openingReceivable;
+							}
+							if (openingPayable !== 0) {
+								body.opening_payable = openingPayable.toString();
+							}
 						}
 
 						options.method = 'PUT';
@@ -323,36 +361,43 @@ export async function execute(this: IExecuteFunctions) {
 						}
 						const contactData = contactResponse.data;
 
+						// Helper function to create address object based on region
+						const createAddressObject = (type: 'billing' | 'shipping') => {
+							if (isIndia) {
+								return {
+									[`${type}_address1`]: addressFields.address1 ?? '',
+									[`${type}_address2`]: addressFields.address2 ?? '',
+									location: addressFields.location ?? '',
+									state: addressFields.state ?? '',
+									country: addressFields.country ?? '',
+									pincode: addressFields.postalcode ?? '',
+									email: addressFields.email ?? '',
+									gstin: addressFields.tax ?? '',
+									mobile: addressFields.mobile ?? '',
+								};
+							} else {
+								return {
+									[`${type}_address1`]: addressFields.address1 ?? '',
+									[`${type}_address2`]: addressFields.address2 ?? '',
+									po_box: addressFields.postalcode ?? '',
+									[type === 'billing' ? 'emirates' : 'emirate']: addressFields.state ?? '',
+									location: addressFields.location ?? '',
+									country: addressFields.country ?? '',
+									trn_number: addressFields.tax ?? '',
+								};
+							}
+						};
+
 						const body: IDataObject = {};
+
 						if (addressType === 'billing' || addressType === 'both') {
-							let newAddressObject: IDataObject = {
-								billing_address1: addressFields.address1 ?? '',
-								billing_address2: addressFields.address2 ?? '',
-								location: addressFields.location ?? '',
-								state: addressFields.state ?? '',
-								country: addressFields.country ?? '',
-								pincode: addressFields.pincode ?? '',
-								email: addressFields.email ?? '',
-								gstin: addressFields.gstin ?? '',
-								mobile: addressFields.mobile ?? '',
-							};
 							const existingBilling = contactData.billing_address || [];
-							body.billing_address = [...existingBilling, newAddressObject];
+							body.billing_address = [...existingBilling, createAddressObject('billing')];
 						}
+
 						if (addressType === 'shipping' || addressType === 'both') {
-							let newAddressObject: IDataObject = {
-								shipping_address1: addressFields.address1 ?? '',
-								shipping_address2: addressFields.address2 ?? '',
-								location: addressFields.location ?? '',
-								state: addressFields.state ?? '',
-								country: addressFields.country ?? '',
-								pincode: addressFields.pincode ?? '',
-								email: addressFields.email ?? '',
-								gstin: addressFields.gstin ?? '',
-								mobile: addressFields.mobile ?? '',
-							};
 							const existingShipping = contactData.shipping_address || [];
-							body.shipping_address = [...existingShipping, newAddressObject];
+							body.shipping_address = [...existingShipping, createAddressObject('shipping')];
 						}
 
 						body.contact_id = contactId;
@@ -397,45 +442,52 @@ export async function execute(this: IExecuteFunctions) {
 							...selectedAddress, // Keep all existing data including the id
 						};
 
-						// Only update fields that were actually provided by the user
-						if (updateFields.address1 !== undefined) {
-							// Map address1 to the correct field based on address type
-							if (addressType === 'billing') {
-								updatedAddress.billing_address1 = updateFields.address1;
-							} else {
-								updatedAddress.shipping_address1 = updateFields.address1;
+						// Helper function to update address field based on region
+						const updateAddressField = (field: string, value: any) => {
+							const addressPrefix = addressType === 'billing' ? 'billing_' : 'shipping_';
+
+							switch (field) {
+								case 'address1':
+									updatedAddress[`${addressPrefix}address1`] = value;
+									break;
+								case 'address2':
+									updatedAddress[`${addressPrefix}address2`] = value;
+									break;
+								case 'location':
+									updatedAddress.location = value;
+									updatedAddress.city = value;
+									break;
+								case 'state':
+									if (isIndia) {
+										updatedAddress.state = value;
+									} else {
+										updatedAddress[addressType === 'billing' ? 'emirates' : 'emirate'] = value;
+									}
+									break;
+								case 'country':
+									updatedAddress.country = value;
+									break;
+								case 'postalcode':
+									updatedAddress[isIndia ? 'pincode' : 'po_box'] = value;
+									break;
+								case 'email':
+									if (isIndia) updatedAddress.email = value;
+									break;
+								case 'tax':
+									updatedAddress[isIndia ? 'gstin' : 'trn_number'] = value;
+									break;
+								case 'mobile':
+									if (isIndia) updatedAddress.mobile = value;
+									break;
 							}
-						}
-						if (updateFields.address2 !== undefined) {
-							// Map address2 to the correct field based on address type
-							if (addressType === 'billing') {
-								updatedAddress.billing_address2 = updateFields.address2;
-							} else {
-								updatedAddress.shipping_address2 = updateFields.address2;
+						};
+
+						// Update only fields that were provided
+						Object.entries(updateFields).forEach(([field, value]) => {
+							if (value !== undefined) {
+								updateAddressField(field, value);
 							}
-						}
-						if (updateFields.location !== undefined) {
-							updatedAddress.location = updateFields.location;
-							updatedAddress.city = updateFields.location;
-						}
-						if (updateFields.state !== undefined) {
-							updatedAddress.state = updateFields.state;
-						}
-						if (updateFields.country !== undefined) {
-							updatedAddress.country = updateFields.country;
-						}
-						if (updateFields.pincode !== undefined) {
-							updatedAddress.pincode = updateFields.pincode;
-						}
-						if (updateFields.email !== undefined) {
-							updatedAddress.email = updateFields.email;
-						}
-						if (updateFields.gstin !== undefined) {
-							updatedAddress.gstin = updateFields.gstin;
-						}
-						if (updateFields.mobile !== undefined) {
-							updatedAddress.mobile = updateFields.mobile;
-						}
+						});
 
 						// Create updated addresses array with the selected address updated
 						const updatedAddresses = addresses.map((addr, index) =>
