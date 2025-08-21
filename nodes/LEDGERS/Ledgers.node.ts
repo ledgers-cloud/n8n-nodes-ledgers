@@ -47,19 +47,22 @@ export class Ledgers implements INodeType {
 					{ name: 'HRMS Operation', value: 'hrms' },
 					{ name: 'Purchase Operation', value: 'purchase' },
 					{ name: 'Sales Operation', value: 'sales' },
+					{ name: 'Tax Operation', value: 'tax' },
 				],
 				default: 'contact',
 			},
-			// Sales, Purchase, and Catalog operations (always visible)
+			// Sales, Purchase, and Catalog operations
 			...descriptions.salesOperations,
 			...descriptions.purchaseOperations,
 			...descriptions.catalogOperations,
-			// Contact Operations (available for both India and UAE)
+			// Contact Operations
 			...descriptions.contactOperations,
-			// HRMS Operations (India only)
+			// HRMS Operations
 			...descriptions.hrmsOperations,
-			// Banking Operations (India only
+			// Banking Operations
 			...descriptions.bankingOperations,
+			// Tax Operations
+			...descriptions.taxOperations,
 		],
 	};
 

@@ -72,7 +72,7 @@ export class LEDGERSApi implements ICredentialType {
 	test: ICredentialTestRequest = {
 		request: {
 			method: 'POST',
-			url: '${$credentials.apiUrl}/login',
+			url: '={{$credentials.apiUrl}}/login',
 			headers: {
 				'Content-Type': 'application/json',
 				'x-api-key': '={{$credentials.xApiKey}}',

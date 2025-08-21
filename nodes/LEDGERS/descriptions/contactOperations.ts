@@ -390,7 +390,7 @@ export const contactOperations: INodeProperties[] = [
 					},
 				],
 			},
-			{ displayName: 'PAN', name: 'pan', type: 'string', default: '', placeholder: '' },
+			{ displayName: 'PAN (India Only)', name: 'pan', type: 'string', default: '', placeholder: '' },
 			{
 				displayName: 'Business Name',
 				name: 'business_name',
@@ -534,7 +534,7 @@ export const contactOperations: INodeProperties[] = [
 			},
 			{ displayName: 'Mobile', name: 'mobile', type: 'string', default: '', placeholder: '' },
 			{ displayName: 'TAX Number', name: 'tax', type: 'string', default: '', placeholder: '' },
-			{ displayName: 'PAN', name: 'pan', type: 'string', default: '', placeholder: '' },
+			{ displayName: 'PAN (India Only)', name: 'pan', type: 'string', default: '', placeholder: '' },
 			{
 				displayName: 'Business Name',
 				name: 'business_name',
