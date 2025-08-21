@@ -13,22 +13,6 @@ import {
 import * as descriptions from './descriptions';
 import { execute } from './GenericFunctions';
 
-// Helper function to add displayOptions for India-only operations
-const addIndiaOnlyDisplayOptions = (operations: any[]) => {
-	return operations.map(operation => ({
-		...operation,
-		displayOptions: {
-			...operation.displayOptions,
-			show: {
-				...operation.displayOptions?.show,
-				'$credentials.apiUrl': [
-					{ _cnd: { contains: 'in-api.ledgers.cloud' } }
-				]
-			}
-		}
-	}));
-};
-
 export class Ledgers implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'LEDGERS',
@@ -67,15 +51,15 @@ export class Ledgers implements INodeType {
 				default: 'contact',
 			},
 			// Sales, Purchase, and Catalog operations (always visible)
-			...addIndiaOnlyDisplayOptions(descriptions.salesOperations),
-			...addIndiaOnlyDisplayOptions(descriptions.purchaseOperations),
+			...descriptions.salesOperations,
+			...descriptions.purchaseOperations,
 			...descriptions.catalogOperations,
 			// Contact Operations (available for both India and UAE)
 			...descriptions.contactOperations,
 			// HRMS Operations (India only)
-			...addIndiaOnlyDisplayOptions(descriptions.hrmsOperations),
-			// Banking Operations (India only)
-			...addIndiaOnlyDisplayOptions(descriptions.bankingOperations),
+			...descriptions.hrmsOperations,
+			// Banking Operations (India only
+			...descriptions.bankingOperations,
 		],
 	};
 
