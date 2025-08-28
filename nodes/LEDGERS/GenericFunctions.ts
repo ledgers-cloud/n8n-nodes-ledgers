@@ -2037,7 +2037,7 @@ export async function execute(this: IExecuteFunctions) {
 						const selectedAccount = this.getNodeParameter('selectedAccount', i) as string;
 						const fromDateRaw = this.getNodeParameter('fromDate', i) as string;
 						const toDateRaw = this.getNodeParameter('toDate', i) as string;
-
+						const bank = this.getNodeParameter('bank', i) as string;
 						// Check if account is selected
 						if (!selectedAccount || selectedAccount === '') {
 							throw new ApplicationError('Please select a bank account', { level: 'warning' });
@@ -2063,7 +2063,7 @@ export async function execute(this: IExecuteFunctions) {
 
 						// Set up the request options like other operations
 						options.method = 'POST';
-						options.url = `${baseUrl}/banking/icici`;
+						options.url = `${baseUrl}/banking/${bank}`;
 						options.body = {
 							operation: 'account-statement-sync',
 							urn: urn,

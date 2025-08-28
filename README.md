@@ -52,6 +52,11 @@ After installing, restart n8n and the node will be available in the editor.
 
 The LEDGERS node supports the following operations:
 
+### **Triggers**
+- **LEDGERS Webhook Trigger** - Listen to real-time events from LEDGERS API via webhooks
+
+### **Regular Operations**
+
 ### **Contacts**
 - **Create Contact** - Create a new contact with billing/shipping addresses
 - **Update Contact** - Update existing contact information
@@ -160,6 +165,28 @@ The LEDGERS node supports the following operations:
 - **Error Handling**: Clear error messages for missing accounts or configuration issues
 - **Multi-Account Support**: Handle multiple linked accounts per URN
 - **Validation**: Required field validation for account selection and date ranges
+
+### **Trigger Operations**
+- **Webhook Events**: Real-time notifications for contact, invoice, quote, receipt, catalog, purchase, voucher, employee, banking, and GST events
+- **Event Filtering**: Filter events by contact, status, amount range, bank account, and GSTIN
+- **Data Validation**: Webhook signature validation for security
+- **Error Handling**: Automatic retry mechanisms with configurable retry limits
+
+## 🔄 Trigger Use Cases
+
+The LEDGERS trigger nodes enable real-time and automated workflows:
+
+### **Webhook Trigger Use Cases**
+- **Real-time Notifications**: Get instant alerts when invoices are paid, quotes are converted, or new contacts are created
+- **Automated Follow-ups**: Trigger follow-up emails or SMS when invoices become overdue
+- **CRM Integration**: Sync new contacts and updates to your CRM system in real-time
+- **Payment Processing**: Automatically process payments when receipts are created
+- **Inventory Updates**: Update inventory levels when purchase invoices are received
+- **Employee Onboarding**: Automate employee onboarding processes when new employees are added
+- **Bank Reconciliation**: Real-time bank transaction monitoring for automatic reconciliation
+- **GST Compliance**: Get notified when GST returns are filed for compliance tracking
+
+
 
 ## 💼 Uses of Sales Operations
 

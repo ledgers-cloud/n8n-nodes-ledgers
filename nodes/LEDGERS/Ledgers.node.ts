@@ -615,7 +615,7 @@ export class Ledgers implements INodeType {
 					const credentials = await this.getCredentials('ledgersApi');
 					const { xApiKey, email, password, apiUrl } = credentials;
 					const baseUrl = String(apiUrl).includes('in-api.ledgers.cloud') ? `${apiUrl}/v3` : apiUrl;
-
+					const bank = this.getNodeParameter('bank', 0) as string;
 					// Authenticate to get api_token
 					const loginOptions: IRequestOptions = {
 						method: 'POST',
@@ -642,7 +642,7 @@ export class Ledgers implements INodeType {
 					// Fetch bank accounts
 					const bankOptions: IRequestOptions = {
 						method: 'POST',
-						url: `${baseUrl}/banking/icici`,
+						url: `${baseUrl}/banking/${bank}`,
 						headers: {
 							'Content-Type': 'application/json',
 							'x-api-key': xApiKey,

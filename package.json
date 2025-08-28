@@ -43,7 +43,8 @@
       "dist/credentials/LEDGERSApi.credentials.js"
     ],
     "nodes": [
-      "dist/nodes/LEDGERS/Ledgers.node.js"
+      "dist/nodes/LEDGERS/Ledgers.node.js",
+      "dist/nodes/LEDGERS/LedgersTrigger.node.js"
     ]
   },
   "devDependencies": {
