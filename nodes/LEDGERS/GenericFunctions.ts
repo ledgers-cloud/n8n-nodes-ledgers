@@ -522,19 +522,26 @@ export async function execute(this: IExecuteFunctions) {
 						const catalogType = this.getNodeParameter('catalog_type', i);
 						const itemType = this.getNodeParameter('item_type', i);
 						const additionalFields = this.getNodeParameter('additionalFields', i) as Record<string, any>;
-						const gst_type = additionalFields.gst_type ?? 'inclusive of gst';
-						const gst_rate = additionalFields.gst_rate ?? '5%';
+						const tax_type = additionalFields.tax_type ?? 'inclusive of tax';
+						const tax_rate = additionalFields.tax_rate ?? '5%';
 						const non_taxable = additionalFields.non_taxable != 0 ? additionalFields.non_taxable : '';
 						const sku = additionalFields.sku ?? '';
 						const unit = additionalFields.unit ?? 'UNT-UNITS';
 						const description = additionalFields.description ?? '';
+						const currency = additionalFields.currency ?? 'INR';
 						// 🔎 Validate price
 						if (price === undefined || price === null || price === '' || price === 0 || price === '0') {
 							throw new ApplicationError('Price must be a number greater than zero.');
 						}
-						// Handle cess_type and cess_value with validation
+						// Handle cess_type and cess_value with validation (India only)
 						let cess_type_api, cess_api;
-						if (additionalFields.cess_type) {
+
+						// Check if cess is selected for UAE (not allowed)
+						if (!isIndia && additionalFields.cess_type) {
+							throw new ApplicationError('Cess is not available for UAE operations. Cess is only available for India.');
+						}
+
+						if (isIndia && additionalFields.cess_type) {
 							// If cess type is selected, cess value must be entered
 							if (additionalFields.cess_value === undefined || additionalFields.cess_value === null || additionalFields.cess_value === '') {
 								throw new ApplicationError('Cess value is required when cess type is selected.');
@@ -561,45 +568,102 @@ export async function execute(this: IExecuteFunctions) {
 							delete additionalFields.cess_type;
 							delete additionalFields.cess_value;
 						}
-						// Prepare variants array
-						const variants = [{
-							variant_name: catalogName,
-							price,
-							gst_type,
-							non_taxable,
-							currency: 'INR',
-							sku_id: sku,
-							variant_description: description,
-						}];
+						// Prepare variants array based on country
+						let variants;
+						if (isIndia) {
+							// India structure
+							variants = [{
+								variant_name: catalogName,
+								price,
+								gst_type: tax_type === 'inclusive of tax' ? 'inclusive of gst' : 'exclusive of gst',
+								non_taxable,
+								currency: currency ?? 'INR',
+								sku_id: sku,
+								variant_description: description,
+							}];
+						} else {
+							// UAE structure
+							variants = [{
+								variant_name: catalogName,
+								price,
+								vat_type: tax_type === 'inclusive of tax' ? 'Inclusive of VAT' : 'Exclusive of VAT',
+								currency: currency ?? 'AED',
+								variant_description: description,
+								sku_id: sku,
+							}];
+						}
 						options.method = 'POST';
 						options.url = `${baseUrl}/catalog`;
-						options.body = {
-							item_name: catalogName,
-							catalog_type: catalogType,
-							gst_rate: gst_rate,
-							item_type: itemType,
-							units: unit,
-							description: description,
-							variants: variants,
-							...(additionalFields.coa_account ? (() => {
-								let expense_id = '', expense_type = '';
-								try {
-									const parsed = JSON.parse(additionalFields.coa_account);
-									expense_id = parsed.id;
-									expense_type = parsed.name;
-								} catch {}
-								return { expense_id, expense_type };
-							})() : {}),
-							...(cess_type_api && cess_api !== undefined ? { cess_type: cess_type_api, cess: cess_api } : {}),
-						};
+						// Build API body based on country
+						if (isIndia) {
+							// India API structure
+							options.body = {
+								item_name: catalogName,
+								catalog_type: catalogType,
+								gst_rate: tax_rate,
+								item_type: itemType,
+								units: unit,
+								description: description,
+								variants: variants,
+								...(additionalFields.coa_account ? (() => {
+									let expense_id = '', expense_type = '';
+									try {
+										const parsed = JSON.parse(additionalFields.coa_account);
+										expense_id = parsed.id;
+										expense_type = parsed.name;
+									} catch {}
+									return { expense_id, expense_type };
+								})() : {}),
+								...(isIndia && cess_type_api && cess_api !== undefined ? { cess_type: cess_type_api, cess: cess_api } : {}),
+							};
+						} else {
+							// UAE API structure - validate VAT rate
+							let vat_rate_value;
+							if (tax_rate === 'Exempted Supply') {
+								vat_rate_value = -1;
+							} else if (tax_rate === '5%' || tax_rate === '0%') {
+								vat_rate_value = tax_rate.replace('%', '');
+							} else {
+								throw new ApplicationError('UAE VAT rate must be 5%, 0%, or Exempted Supply only.');
+							}
+
+							options.body = {
+								item_name: catalogName,
+								catalog_type: catalogType,
+								item_type: itemType,
+								vat_rate: vat_rate_value,
+								units: unit,
+								description: description,
+								variants: variants,
+								...(additionalFields.coa_account ? (() => {
+									let expense_id = '', expense_type = '';
+									try {
+										const parsed = JSON.parse(additionalFields.coa_account);
+										expense_id = parsed.id;
+										expense_type = parsed.name;
+									} catch {}
+									return { expense_id, expense_type };
+								})() : {}),
+							};
+						}
+						if(additionalFields.currency) {
+							options.body.currency = additionalFields.currency;
+						}
 					} else if (operation === 'updateCatalog') {
 						const catalogId = this.getNodeParameter('catalogId', i);
 						const updateFields = this.getNodeParameter('catalogUpdateFields', i) as Record<string, any>;
 						// Always include catalog_id
 						const body: Record<string, any> = { catalog_id: catalogId };
-						// Handle cess_type and cess_value with validation
+
+						// Handle cess_type and cess_value with validation (India only)
 						let cess_type_api, cess_api;
-						if (updateFields.cess_type) {
+
+						// Check if cess is selected for UAE (not allowed)
+						if (!isIndia && updateFields.cess_type) {
+							throw new ApplicationError('Cess is not available for UAE operations. Cess is only available for India.');
+						}
+
+						if (isIndia && updateFields.cess_type) {
 							// If cess type is selected, cess value must be entered
 							if (updateFields.cess_value === undefined || updateFields.cess_value === null || updateFields.cess_value === '') {
 								throw new ApplicationError('Cess value is required when cess type is selected.');
@@ -629,7 +693,28 @@ export async function execute(this: IExecuteFunctions) {
 						// Add only provided fields to the body
 						for (const [key, value] of Object.entries(updateFields)) {
 							if (value !== undefined && value !== null && value !== '') {
-								if (key === 'unit') {
+								if (key === 'tax_rate') {
+									// Handle tax rate based on country
+									if (isIndia) {
+										body.gst_rate = value;
+									} else {
+										// UAE VAT rate validation
+										if (value === 'Exempted Supply') {
+											body.vat_rate = -1;
+										} else if (value === '5%' || value === '0%') {
+											body.vat_rate = value.replace('%', '');
+										} else {
+											throw new ApplicationError('UAE VAT rate must be 5%, 0%, or Exempted Supply only.');
+										}
+									}
+								} else if (key === 'tax_type') {
+									// Handle tax type based on country
+									if (isIndia) {
+										body.gst_type = value === 'inclusive of tax' ? 'inclusive of gst' : 'exclusive of gst';
+									} else {
+										body.vat_type = value === 'inclusive of tax' ? 'Inclusive of VAT' : 'Exclusive of VAT';
+									}
+								} else if (key === 'units') {
 									body.units = value;
 								} else if (key === 'hsn_sac') {
 									body.hsn_sac = value;
@@ -649,10 +734,12 @@ export async function execute(this: IExecuteFunctions) {
 								}
 							}
 						}
-						if (cess_type_api && cess_api !== undefined) {
+
+						if (isIndia && cess_type_api && cess_api !== undefined) {
 							body.cess_type = cess_type_api;
 							body.cess = cess_api;
 						}
+
 						options.method = 'PUT';
 						options.url = `${baseUrl}/catalog`;
 						options.body = body;
@@ -669,7 +756,14 @@ export async function execute(this: IExecuteFunctions) {
 						// Only include fields that are provided
 						if (updateFields.variant_name !== undefined) variantUpdate.variant_name = updateFields.variant_name;
 						if (updateFields.variant_price !== undefined) variantUpdate.price = updateFields.variant_price;
-						if (updateFields.variant_gst_type !== undefined) variantUpdate.gst_type = updateFields.variant_gst_type;
+						if (updateFields.variant_tax_type !== undefined) {
+							// Handle tax type based on country
+							if (isIndia) {
+								variantUpdate.gst_type = updateFields.variant_tax_type === 'inclusive of tax' ? 'inclusive of gst' : 'exclusive of gst';
+							} else {
+								variantUpdate.vat_type = updateFields.variant_tax_type === 'inclusive of tax' ? 'Inclusive of VAT' : 'Exclusive of VAT';
+							}
+						}
 						if (updateFields.variant_non_taxable !== undefined) variantUpdate.non_taxable = updateFields.variant_non_taxable;
 						if (updateFields.variant_sku !== undefined) variantUpdate.sku_id = updateFields.variant_sku;
 						if (updateFields.variant_description !== undefined) variantUpdate.variant_description = updateFields.variant_description;
@@ -728,12 +822,24 @@ export async function execute(this: IExecuteFunctions) {
 							variant_id: newId,
 							variant_name: variant_name,
 							price: variant_price,
-							gst_type: additionalFields.variant_gst_type ?? 'inclusive of gst',
 							non_taxable: additionalFields.variant_non_taxable != 0 ? additionalFields.variant_non_taxable : '',
 							sku_id: additionalFields.variant_sku ?? '',
 							variant_description: additionalFields.variant_description ?? '',
-							currency: 'INR',
 						};
+
+						// Handle tax type based on country
+						const tax_type = additionalFields.variant_tax_type ?? 'inclusive of tax';
+						if (isIndia) {
+							newVariant.gst_type = tax_type === 'inclusive of tax' ? 'inclusive of gst' : 'exclusive of gst';
+							newVariant.currency = additionalFields.currency ?? 'INR';
+						} else {
+							newVariant.vat_type = tax_type === 'inclusive of tax' ? 'Inclusive of VAT' : 'Exclusive of VAT';
+							newVariant.currency = additionalFields.currency ?? 'AED';
+							// Include SKU for UAE variants
+							if (additionalFields.variant_sku) {
+								newVariant.sku_id = additionalFields.variant_sku;
+							}
+						}
 
 
 						// 5. Update catalog with new variants array
