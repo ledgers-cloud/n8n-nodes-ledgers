@@ -1,6 +1,6 @@
 {
   "name": "@ledgers/n8n-nodes-ledgers-cloud",
-  "version": "0.0.10",
+  "version": "0.0.11",
   "description": "n8n node for interacting with LEDGERS.cloud API",
   "keywords": [
     "n8n",
@@ -43,8 +43,7 @@
       "dist/credentials/LEDGERSApi.credentials.js"
     ],
     "nodes": [
-      "dist/nodes/LEDGERS/Ledgers.node.js",
-      "dist/nodes/LEDGERS/LedgersTrigger.node.js"
+      "dist/nodes/LEDGERS/Ledgers.node.js"
     ]
   },
   "devDependencies": {

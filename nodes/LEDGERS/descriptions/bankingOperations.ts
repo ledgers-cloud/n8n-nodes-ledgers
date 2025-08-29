@@ -24,6 +24,12 @@ export const bankingOperations: INodeProperties[] = [
 			{ name: 'Axis Bank', value: 'axis' },
 		],
 		default: 'selectBank',
+		displayOptions: {
+			show: {
+				resource: ['banking'],
+				operation: ['getBankStatement']
+			},
+		},
 	},
 	{
 		displayName: 'Bank Account Name or ID',

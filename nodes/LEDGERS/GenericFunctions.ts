@@ -227,13 +227,20 @@ export async function execute(this: IExecuteFunctions) {
 							contact_name: contactName,
 							...(billingAddresses.length > 0 ? { billing_address: billingAddresses } : {}),
 							...(shippingAddresses.length > 0 ? { shipping_address: shippingAddresses } : {}),
+							currency: additionalFields.currency ?? 'INR',
 						};
 
 						if (isIndia) {
-							// India API structure
+							// India API structure - map tax to gstin
+							const indiaFields = { ...additionalFields };
+							if (indiaFields.tax) {
+								indiaFields.gstin = indiaFields.tax;
+								delete indiaFields.tax;
+							}
+
 							options.body = {
 								...baseBody,
-								...additionalFields,
+								...indiaFields,
 								opening_receivable: openingReceivable.toString(),
 								opening_receivable_as_ondate: openingReceivableAsOnDate,
 								opening_payable: openingPayable.toString(),
@@ -261,7 +268,9 @@ export async function execute(this: IExecuteFunctions) {
 							any
 						>;
 
-						const body: Record<string, any> = { contact_id: contactId };
+						const body: Record<string, any> = {
+							contact_id: contactId,
+						};
 
 						// Process opening balance fields for update
 						let openingReceivable = 0;
@@ -306,8 +315,15 @@ export async function execute(this: IExecuteFunctions) {
 								const isoCode = dialCodeToCountryCode[selectedDialCode] || 'in';
 								body[key] = `${value}|${isoCode}`;
 								body.mobile_country_code = selectedDialCode;
+							} else if (key === 'tax' && isIndia) {
+								body.gstin = value;
 							} else if (key === 'tax' && !isIndia) {
 								body.trn_number = value;
+							} else if (key === 'currency') {
+								// Currency is already set in base body, update if provided
+								if (value) {
+									body.currency = value;
+								}
 							} else {
 								body[key] = value;
 							}
@@ -624,7 +640,7 @@ export async function execute(this: IExecuteFunctions) {
 							} else if (tax_rate === '5%' || tax_rate === '0%') {
 								vat_rate_value = tax_rate.replace('%', '');
 							} else {
-								throw new ApplicationError('UAE VAT rate must be 5%, 0%, or Exempted Supply only.');
+								throw new ApplicationError('UAE Tax Rate must be 5%, 0%, or Exempted Supply only.');
 							}
 
 							options.body = {
@@ -704,7 +720,7 @@ export async function execute(this: IExecuteFunctions) {
 										} else if (value === '5%' || value === '0%') {
 											body.vat_rate = value.replace('%', '');
 										} else {
-											throw new ApplicationError('UAE VAT rate must be 5%, 0%, or Exempted Supply only.');
+											throw new ApplicationError('UAE Tax Rate must be 5%, 0%, or Exempted Supply only.');
 										}
 									}
 								} else if (key === 'tax_type') {
