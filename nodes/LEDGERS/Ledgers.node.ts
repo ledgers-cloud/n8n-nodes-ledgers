@@ -35,32 +35,34 @@ export class Ledgers implements INodeType {
 			},
 		],
 		properties: [
-			// Remove Country parameter
-			// Resource dropdown: show all resources, add (India) or (UAE) to displayName for clarity
 			{
 				displayName: 'Resource',
 				name: 'resource',
 				type: 'options',
 				noDataExpression: true,
 				options: [
-					{ name: 'Banking Operation', value: 'banking' },
+					{ name: 'Banking Operation (India)', value: 'banking' },
 					{ name: 'Catalog Operation', value: 'catalog' },
 					{ name: 'Contact Operation', value: 'contact' },
-					{ name: 'HRMS Operation', value: 'hrms' },
-					{ name: 'Purchase Operation', value: 'purchase' },
-					{ name: 'Sales Operation', value: 'sales' },
+					{ name: 'HRMS Operation (India)', value: 'hrms' },
+					{ name: 'Purchase Operation (India)', value: 'purchase' },
+					{ name: 'Sales Operation (India)', value: 'sales' },
+					{ name: 'Tax Operation (India)', value: 'tax' },
 				],
 				default: 'contact',
 			},
-			// Sales, Purchase, and Catalog operations (always visible)
+			// Sales, Purchase, and Catalog operations
 			...descriptions.salesOperations,
 			...descriptions.purchaseOperations,
 			...descriptions.catalogOperations,
-			// Only India Contact Operations
+			// Contact Operations
 			...descriptions.contactOperations,
 			// HRMS Operations
 			...descriptions.hrmsOperations,
+			// Banking Operations
 			...descriptions.bankingOperations,
+			// Tax Operations
+			...descriptions.taxOperations,
 		],
 	};
 
@@ -166,7 +168,7 @@ export class Ledgers implements INodeType {
 					// Authenticate to get api_token
 					const loginOptions: IRequestOptions = {
 						method: 'POST',
-						url: 'https://in-api.ledgers.cloud/login',
+						url: '${$credentials.apiUrl}/login',
 						headers: {
 							'Content-Type': 'application/json',
 							'x-api-key': xApiKey,
@@ -191,7 +193,7 @@ export class Ledgers implements INodeType {
 
 					const options: IRequestOptions = {
 						method: 'GET',
-						url: `https://in-api.ledgers.cloud/v3/catalog/${catalogId}`,
+						url: '${$credentials.apiUrl}/v3/catalog/' + catalogId,
 						headers: {
 							'Content-Type': 'application/json',
 							'x-api-key': xApiKey,
@@ -227,7 +229,7 @@ export class Ledgers implements INodeType {
 					// Authenticate to get api_token
 					const loginOptions: IRequestOptions = {
 						method: 'POST',
-						url: 'https://in-api.ledgers.cloud/login',
+						url: '${$credentials.apiUrl}/login',
 						headers: {
 							'Content-Type': 'application/json',
 							'x-api-key': xApiKey,
@@ -248,7 +250,7 @@ export class Ledgers implements INodeType {
 
 					const options: IRequestOptions = {
 						method: 'GET',
-						url: 'https://in-api.ledgers.cloud/v3/coa',
+						url: '${$credentials.apiUrl}'+(String(credentials.apiUrl).includes('in-api.ledgers.cloud') ? '/v3/coa' : '/coa'),
 						headers: {
 							'Content-Type': 'application/json',
 							'x-api-key': xApiKey,
@@ -295,7 +297,7 @@ export class Ledgers implements INodeType {
 
 					const loginOptions: IRequestOptions = {
 						method: 'POST',
-						url: 'https://in-api.ledgers.cloud/login',
+						url: '${$credentials.apiUrl}/login',
 						headers: { 'Content-Type': 'application/json', 'x-api-key': xApiKey },
 						body: { email, password },
 						json: true,
@@ -309,7 +311,7 @@ export class Ledgers implements INodeType {
 
 					const getContactOptions: IRequestOptions = {
 						method: 'GET',
-						url: `https://in-api.ledgers.cloud/v3/contact/${contactId}`,
+						url: '${$credentials.apiUrl}'+(String(credentials.apiUrl).includes('in-api.ledgers.cloud') ? '/v3/contact/' : '/contact/') + contactId,
 						headers: { 'Content-Type': 'application/json', 'x-api-key': xApiKey, 'api-token': apiToken },
 						json: true,
 					};
@@ -368,7 +370,7 @@ export class Ledgers implements INodeType {
 					// Authenticate to get api_token
 					const loginOptions: IRequestOptions = {
 						method: 'POST',
-						url: 'https://in-api.ledgers.cloud/login',
+						url: '${$credentials.apiUrl}/login',
 						headers: {
 							'Content-Type': 'application/json',
 							'x-api-key': xApiKey,
@@ -444,7 +446,7 @@ export class Ledgers implements INodeType {
 					// Authenticate to get api_token
 					const loginOptions: IRequestOptions = {
 						method: 'POST',
-						url: 'https://in-api.ledgers.cloud/login',
+						url: '${$credentials.apiUrl}/login',
 						headers: {
 							'Content-Type': 'application/json',
 							'x-api-key': xApiKey,
@@ -519,7 +521,7 @@ export class Ledgers implements INodeType {
 
 					const loginOptions: IRequestOptions = {
 						method: 'POST',
-						url: `${apiUrl}/login`,
+						url: `https://in-api.ledgers.cloud/login`,
 						headers: { 'Content-Type': 'application/json', 'x-api-key': xApiKey },
 						body: { email, password },
 						json: true,
@@ -569,7 +571,7 @@ export class Ledgers implements INodeType {
 
 					const loginOptions: IRequestOptions = {
 						method: 'POST',
-						url: `${apiUrl}/login`,
+						url: `https://in-api.ledgers.cloud/login`,
 						headers: { 'Content-Type': 'application/json', 'x-api-key': xApiKey },
 						body: { email, password },
 						json: true,
@@ -613,11 +615,11 @@ export class Ledgers implements INodeType {
 					const credentials = await this.getCredentials('ledgersApi');
 					const { xApiKey, email, password, apiUrl } = credentials;
 					const baseUrl = String(apiUrl).includes('in-api.ledgers.cloud') ? `${apiUrl}/v3` : apiUrl;
-
+					const bank = this.getNodeParameter('bank', 0) as string;
 					// Authenticate to get api_token
 					const loginOptions: IRequestOptions = {
 						method: 'POST',
-						url: `${apiUrl}/login`,
+						url: `https://in-api.ledgers.cloud/login`,
 						headers: {
 							'Content-Type': 'application/json',
 							'x-api-key': xApiKey,
@@ -640,7 +642,7 @@ export class Ledgers implements INodeType {
 					// Fetch bank accounts
 					const bankOptions: IRequestOptions = {
 						method: 'POST',
-						url: `${baseUrl}/banking/icici`,
+						url: `${baseUrl}/banking/${bank}`,
 						headers: {
 							'Content-Type': 'application/json',
 							'x-api-key': xApiKey,

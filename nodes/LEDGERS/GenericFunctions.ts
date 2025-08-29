@@ -10,6 +10,41 @@ const dialCodeToCountryCode: Record<string, string> = {
 	'+971': 'ae',
 };
 
+/**
+ * Generate fiscal year options and get current fiscal year in a single function
+ * @param startYear - The starting year for fiscal years (default: 2018)
+ * @returns Object containing options array and current fiscal year default
+ */
+export function getFiscalYearData(startYear: number = 2018): { options: Array<{ name: string; value: string }>; default: string } {
+	const options: Array<{ name: string; value: string }> = [];
+
+	// Calculate current fiscal year
+	const currentYear = new Date().getFullYear();
+	const currentMonth = new Date().getMonth() + 1; // getMonth() returns 0-11
+
+	// If current month is January-March, current FY started last year
+	// If current month is April-December, current FY started this year
+	const currentFiscalYear = currentMonth < 4 ? currentYear - 1 : currentYear;
+
+	// Generate years from startYear up to current fiscal year
+	for (let year = startYear; year <= currentFiscalYear; year++) {
+		const nextYear = year + 1;
+		const fiscalYearStart = `${year}-04-01`;
+
+		options.push({
+			name: `FY-${year}-${nextYear}`,
+			value: fiscalYearStart,
+		});
+	}
+
+	const currentFiscalYearStart = `${currentFiscalYear}-04-01`;
+
+	return {
+		options,
+		default: currentFiscalYearStart
+	};
+}
+
 export async function execute(this: IExecuteFunctions) {
 	const items = this.getInputData();
 	const returnData: INodeExecutionData[] = [];
@@ -26,15 +61,15 @@ export async function execute(this: IExecuteFunctions) {
 	const baseUrl = isIndia ? `${apiUrl}/v3` : apiUrl;
 
 	// Validate operation-country match
-	const indiaOps = ['contact', 'createContact', 'updateContact', 'addAddress', 'updateAddress', 'getContact', 'getAllContacts', 'catalog', 'createCatalog', 'updateCatalog', 'getCatalog', 'getAllCatalogs', 'sales', 'createInvoice', 'createQuote', 'viewInvoice', 'viewQuote', 'listInvoices', 'listQuotes', 'createReceipt', 'viewReceipt', 'listReceipts', 'purchase', 'createPurchaseInvoice', 'listPurchaseInvoices', 'viewPurchaseInvoice', 'createPurchaseOrder', 'listPurchaseOrders', 'viewPurchaseOrder', 'createVoucher', 'listVouchers', 'viewVoucher', 'hrms', 'getAllEmployees', 'addEmployee', 'updateEmployee', 'getEmployee', 'getEmployeeData', 'updateAttendance', 'banking', 'getBankDetails'];
+	const indiaOnlyOps = ['hrms', 'banking', 'getBankStatement', 'getAllEmployees', 'addEmployee', 'updateEmployee', 'getEmployee', 'createPurchaseInvoice', 'listPurchaseInvoices', 'viewPurchaseInvoice', 'createPurchaseOrder', 'listPurchaseOrders', 'viewPurchaseOrder', 'createVoucher', 'listVouchers', 'viewVoucher', 'createInvoice', 'createQuote', 'viewInvoice', 'viewQuote', 'listInvoices', 'listQuotes', 'createReceipt', 'viewReceipt', 'listReceipts', 'getGSTReturnStatus', 'getGSTSearch'];
 
 	for (let i = 0; i < items.length; i++) {
 		const operation = this.getNodeParameter('operation', i);
-		const resource = this.getNodeParameter('resource', i);
-		if (!indiaOps.includes(operation) && resource !== 'catalog' && resource !== 'sales' && resource !== 'contact' && resource !== 'purchase' && resource !== 'hrms' && resource !== 'banking') {
+
+		// If using UAE API, restrict India-only operations
+		if (!isIndia && indiaOnlyOps.includes(operation)) {
 			throw new ApplicationError('This operation/resource is only available for India API URL. Please update your credentials.');
 		}
-		// Catalog, Sales, Purchase, HRMS, and Banking always allowed
 	}
 
 	// Step 1: Authenticate and get api_token once for all items
@@ -101,53 +136,50 @@ export async function execute(this: IExecuteFunctions) {
 
 						additionalFields.mobile_country_code = selectedDialCode;
 
-						// Auto-fill PAN from GSTIN if GSTIN is provided and PAN is not already set
-						if (additionalFields.gstin && !additionalFields.pan) {
-							const gstin = additionalFields.gstin.toString().trim();
-							// GSTIN format: 2-digit state code + 10-digit PAN + 1-digit entity + 1-digit checksum + 1-alphabet
-							// PAN is characters 3-12 (index 2-11) of GSTIN
-							if (gstin.length === 15) {
-								const extractedPAN = gstin.substring(2, 12);
-								// Validate PAN format (5 letters + 4 digits + 1 letter)
-								const panPattern = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
-								if (panPattern.test(extractedPAN)) {
-									additionalFields.pan = extractedPAN;
-								}
+
+
+						// Helper function to transform address data based on region
+						const transformAddress = (address: any, type: 'billing' | 'shipping') => {
+							const prefix = type === 'billing' ? 'billing_' : 'shipping_';
+
+							if (isIndia) {
+								return {
+									[`${prefix}address1`]: address[`${prefix}address1`] ?? '',
+									[`${prefix}address2`]: address[`${prefix}address2`] ?? '',
+									location: address[`${prefix}city`] ?? '',
+									state: address[`${prefix}state`] ?? '',
+									country: address[`${prefix}country`] ?? '',
+									email: address[`${prefix}email`] ?? '',
+									gstin: address[`${prefix}tax`] ?? '',
+									mobile: address[`${prefix}mobile`] ?? '',
+									pincode: address[`${prefix}postalcode`] ?? '',
+								};
+							} else {
+								return {
+									[`${prefix}address1`]: address[`${prefix}address1`] ?? '',
+									[`${prefix}address2`]: address[`${prefix}address2`] ?? '',
+									po_box: address[`${prefix}postalcode`] ?? '',
+									emirates: address[`${prefix}state`] ?? '',
+									location: address[`${prefix}city`] ?? '',
+									country: address[`${prefix}country`] ?? '',
+								};
 							}
-						}
+						};
 
-						// Extract billing address from fixedCollection
-						let billingAddress: any = {};
+						// Extract billing addresses
+						let billingAddresses: any[] = [];
 						if (additionalFields.billing_address) {
-							const b = additionalFields.billing_address;
-							billingAddress = {
-								billing_address1: b.billing_address1 ?? '',
-								billing_address2: b.billing_address2 ?? '',
-								location: b.billing_city ?? '',
-								state: b.billing_state ?? '',
-								country: b.billing_country ?? '',
-								email: b.billing_email ?? '',
-								gstin: b.billing_gstin ?? '',
-								mobile: b.billing_mobile ?? '',
-								pincode: b.billing_pincode ?? '',
-							};
+							const billingData = additionalFields.billing_address;
+							const addresses = Array.isArray(billingData.address) ? billingData.address : [billingData.address || billingData];
+							billingAddresses = addresses.map((address: any) => transformAddress(address, 'billing'));
 						}
 
-						// Extract shipping address from fixedCollection
-						let shippingAddress: any = {};
+						// Extract shipping addresses
+						let shippingAddresses: any[] = [];
 						if (additionalFields.shipping_address) {
-							const s = additionalFields.shipping_address;
-							shippingAddress = {
-								shipping_address1: s.shipping_address1 ?? '',
-								shipping_address2: s.shipping_address2 ?? '',
-								location: s.shipping_city ?? '',
-								state: s.shipping_state ?? '',
-								country: s.shipping_country ?? '',
-								email: s.shipping_email ?? '',
-								gstin: s.shipping_gstin ?? '',
-								mobile: s.shipping_mobile ?? '',
-								pincode: s.shipping_pincode ?? '',
-							};
+							const shippingData = additionalFields.shipping_address;
+							const addresses = Array.isArray(shippingData.address) ? shippingData.address : [shippingData.address || shippingData];
+							shippingAddresses = addresses.map((address: any) => transformAddress(address, 'shipping'));
 						}
 
 						// Process opening balance fields
@@ -160,7 +192,11 @@ export async function execute(this: IExecuteFunctions) {
 						if (additionalFields.opening_customer_receivable_group) {
 							const customerReceivableData = additionalFields.opening_customer_receivable_group.customer_receivable;
 							if (customerReceivableData && customerReceivableData.amount !== undefined && customerReceivableData.amount !== null) {
-								openingReceivable = parseInt(customerReceivableData.amount.toString()) || 0;
+								const amountStr = customerReceivableData.amount.toString().trim();
+								if (amountStr === '' || isNaN(Number(amountStr))) {
+									throw new ApplicationError('Opening Customer Receivable amount must be a valid numeric value', { level: 'warning' });
+								}
+								openingReceivable = parseInt(amountStr) || 0;
 								openingReceivableAsOnDate = customerReceivableData.fiscal_year || '';
 							}
 						}
@@ -169,7 +205,11 @@ export async function execute(this: IExecuteFunctions) {
 						if (additionalFields.opening_supplier_payable_group) {
 							const supplierPayableData = additionalFields.opening_supplier_payable_group.supplier_payable;
 							if (supplierPayableData && supplierPayableData.amount !== undefined && supplierPayableData.amount !== null) {
-								openingPayable = parseInt(supplierPayableData.amount.toString()) || 0;
+								const amountStr = supplierPayableData.amount.toString().trim();
+								if (amountStr === '' || isNaN(Number(amountStr))) {
+									throw new ApplicationError('Opening Supplier Payable amount must be a valid numeric value', { level: 'warning' });
+								}
+								openingPayable = parseInt(amountStr) || 0;
 								openingPayableAsOnDate = supplierPayableData.fiscal_year || '';
 							}
 						}
@@ -182,16 +222,45 @@ export async function execute(this: IExecuteFunctions) {
 
 						options.method = 'POST';
 						options.url = `${baseUrl}/contact`;
-						options.body = {
+						// Build the API body based on the region
+						const baseBody = {
 							contact_name: contactName,
-							...additionalFields,
-							...(Object.keys(billingAddress).length ? { billing_address: [billingAddress] } : {}),
-							...(Object.keys(shippingAddress).length ? { shipping_address: [shippingAddress] } : {}),
-							opening_receivable: openingReceivable.toString(),
-							opening_receivable_as_ondate: openingReceivableAsOnDate,
-							opening_payable: openingPayable.toString(),
-							opening_payable_as_ondate: openingPayableAsOnDate,
+							...(billingAddresses.length > 0 ? { billing_address: billingAddresses } : {}),
+							...(shippingAddresses.length > 0 ? { shipping_address: shippingAddresses } : {}),
+							currency: additionalFields.currency ?? 'INR',
 						};
+
+						if (isIndia) {
+							// India API structure - map tax to gstin
+							const indiaFields = { ...additionalFields };
+							if (indiaFields.tax) {
+								indiaFields.gstin = indiaFields.tax;
+								delete indiaFields.tax;
+							}
+
+							options.body = {
+								...baseBody,
+								...indiaFields,
+								opening_receivable: openingReceivable.toString(),
+								opening_receivable_as_ondate: openingReceivableAsOnDate,
+								opening_payable: openingPayable.toString(),
+								opening_payable_as_ondate: openingPayableAsOnDate,
+							};
+						} else {
+							// UAE API structure - map tax to trn_number
+							const uaeFields = { ...additionalFields };
+							if (uaeFields.tax) {
+								uaeFields.trn_number = uaeFields.tax;
+								delete uaeFields.tax;
+							}
+
+							options.body = {
+								...baseBody,
+								...uaeFields,
+								opening_receivable: openingReceivable,
+								opening_payable: openingPayable.toString(),
+							};
+						}
 					} else if (operation === 'updateContact') {
 						const contactId = this.getNodeParameter('contactId', i);
 						const updateFields = this.getNodeParameter('contactAdditionalFields', i) as Record<
@@ -199,7 +268,9 @@ export async function execute(this: IExecuteFunctions) {
 							any
 						>;
 
-						const body: Record<string, any> = { contact_id: contactId };
+						const body: Record<string, any> = {
+							contact_id: contactId,
+						};
 
 						// Process opening balance fields for update
 						let openingReceivable = 0;
@@ -211,7 +282,11 @@ export async function execute(this: IExecuteFunctions) {
 						if (updateFields.opening_customer_receivable_group) {
 							const customerReceivableData = updateFields.opening_customer_receivable_group.customer_receivable;
 							if (customerReceivableData && customerReceivableData.amount !== undefined && customerReceivableData.amount !== null) {
-								openingReceivable = parseInt(customerReceivableData.amount.toString()) || 0;
+								const amountStr = customerReceivableData.amount.toString().trim();
+								if (amountStr === '' || isNaN(Number(amountStr))) {
+									throw new ApplicationError('Opening Customer Receivable amount must be a valid numeric value', { level: 'warning' });
+								}
+								openingReceivable = parseInt(amountStr) || 0;
 								openingReceivableAsOnDate = customerReceivableData.fiscal_year || '';
 							}
 						}
@@ -220,7 +295,11 @@ export async function execute(this: IExecuteFunctions) {
 						if (updateFields.opening_supplier_payable_group) {
 							const supplierPayableData = updateFields.opening_supplier_payable_group.supplier_payable;
 							if (supplierPayableData && supplierPayableData.amount !== undefined && supplierPayableData.amount !== null) {
-								openingPayable = parseInt(supplierPayableData.amount.toString()) || 0;
+								const amountStr = supplierPayableData.amount.toString().trim();
+								if (amountStr === '' || isNaN(Number(amountStr))) {
+									throw new ApplicationError('Opening Supplier Payable amount must be a valid numeric value', { level: 'warning' });
+								}
+								openingPayable = parseInt(amountStr) || 0;
 								openingPayableAsOnDate = supplierPayableData.fiscal_year || '';
 							}
 						}
@@ -229,27 +308,52 @@ export async function execute(this: IExecuteFunctions) {
 						delete updateFields.opening_customer_receivable_group;
 						delete updateFields.opening_supplier_payable_group;
 
-						for (const [key, value] of Object.entries(updateFields)) {
-							if (value !== undefined && value !== null) {
-								if (key === 'mobile' && value !== '') {
-									const selectedDialCode = updateFields.mobile_country_code || '+91';
-									const isoCode = dialCodeToCountryCode[selectedDialCode] || 'in';
-									body[key] = `${value}|${isoCode}`;
-									body.mobile_country_code = selectedDialCode;
-								} else {
-									body[key] = value;
+						// Helper function to process field mapping
+						const processField = (key: string, value: any) => {
+							if (key === 'mobile' && value !== '') {
+								const selectedDialCode = updateFields.mobile_country_code || '+91';
+								const isoCode = dialCodeToCountryCode[selectedDialCode] || 'in';
+								body[key] = `${value}|${isoCode}`;
+								body.mobile_country_code = selectedDialCode;
+							} else if (key === 'tax' && isIndia) {
+								body.gstin = value;
+							} else if (key === 'tax' && !isIndia) {
+								body.trn_number = value;
+							} else if (key === 'currency') {
+								// Currency is already set in base body, update if provided
+								if (value) {
+									body.currency = value;
 								}
+							} else {
+								body[key] = value;
 							}
-						}
+						};
 
-						// Add opening balance fields to body
-						if (openingReceivable !== 0 || openingReceivableAsOnDate !== '') {
-							body.opening_receivable = openingReceivable.toString();
-							body.opening_receivable_as_ondate = openingReceivableAsOnDate;
-						}
-						if (openingPayable !== 0 || openingPayableAsOnDate !== '') {
-							body.opening_payable = openingPayable.toString();
-							body.opening_payable_as_ondate = openingPayableAsOnDate;
+						Object.entries(updateFields).forEach(([key, value]) => {
+							if (value !== undefined && value !== null) {
+								processField(key, value);
+							}
+						});
+
+						// Add opening balance fields to body based on region
+						if (isIndia) {
+							// India API structure
+							if (openingReceivable !== 0 || openingReceivableAsOnDate !== '') {
+								body.opening_receivable = openingReceivable.toString();
+								body.opening_receivable_as_ondate = openingReceivableAsOnDate;
+							}
+							if (openingPayable !== 0 || openingPayableAsOnDate !== '') {
+								body.opening_payable = openingPayable.toString();
+								body.opening_payable_as_ondate = openingPayableAsOnDate;
+							}
+						} else {
+							// UAE API structure
+							if (openingReceivable !== 0) {
+								body.opening_receivable = openingReceivable;
+							}
+							if (openingPayable !== 0) {
+								body.opening_payable = openingPayable.toString();
+							}
 						}
 
 						options.method = 'PUT';
@@ -272,36 +376,43 @@ export async function execute(this: IExecuteFunctions) {
 						}
 						const contactData = contactResponse.data;
 
+						// Helper function to create address object based on region
+						const createAddressObject = (type: 'billing' | 'shipping') => {
+							if (isIndia) {
+								return {
+									[`${type}_address1`]: addressFields.address1 ?? '',
+									[`${type}_address2`]: addressFields.address2 ?? '',
+									location: addressFields.location ?? '',
+									state: addressFields.state ?? '',
+									country: addressFields.country ?? '',
+									pincode: addressFields.postalcode ?? '',
+									email: addressFields.email ?? '',
+									gstin: addressFields.tax ?? '',
+									mobile: addressFields.mobile ?? '',
+								};
+							} else {
+								return {
+									[`${type}_address1`]: addressFields.address1 ?? '',
+									[`${type}_address2`]: addressFields.address2 ?? '',
+									po_box: addressFields.postalcode ?? '',
+									[type === 'billing' ? 'emirates' : 'emirate']: addressFields.state ?? '',
+									location: addressFields.location ?? '',
+									country: addressFields.country ?? '',
+									trn_number: addressFields.tax ?? '',
+								};
+							}
+						};
+
 						const body: IDataObject = {};
+
 						if (addressType === 'billing' || addressType === 'both') {
-							let newAddressObject: IDataObject = {
-								billing_address1: addressFields.address1 ?? '',
-								billing_address2: addressFields.address2 ?? '',
-								location: addressFields.location ?? '',
-								state: addressFields.state ?? '',
-								country: addressFields.country ?? '',
-								pincode: addressFields.pincode ?? '',
-								email: addressFields.email ?? '',
-								gstin: addressFields.gstin ?? '',
-								mobile: addressFields.mobile ?? '',
-							};
 							const existingBilling = contactData.billing_address || [];
-							body.billing_address = [...existingBilling, newAddressObject];
+							body.billing_address = [...existingBilling, createAddressObject('billing')];
 						}
+
 						if (addressType === 'shipping' || addressType === 'both') {
-							let newAddressObject: IDataObject = {
-								shipping_address1: addressFields.address1 ?? '',
-								shipping_address2: addressFields.address2 ?? '',
-								location: addressFields.location ?? '',
-								state: addressFields.state ?? '',
-								country: addressFields.country ?? '',
-								pincode: addressFields.pincode ?? '',
-								email: addressFields.email ?? '',
-								gstin: addressFields.gstin ?? '',
-								mobile: addressFields.mobile ?? '',
-							};
 							const existingShipping = contactData.shipping_address || [];
-							body.shipping_address = [...existingShipping, newAddressObject];
+							body.shipping_address = [...existingShipping, createAddressObject('shipping')];
 						}
 
 						body.contact_id = contactId;
@@ -346,45 +457,52 @@ export async function execute(this: IExecuteFunctions) {
 							...selectedAddress, // Keep all existing data including the id
 						};
 
-						// Only update fields that were actually provided by the user
-						if (updateFields.address1 !== undefined) {
-							// Map address1 to the correct field based on address type
-							if (addressType === 'billing') {
-								updatedAddress.billing_address1 = updateFields.address1;
-							} else {
-								updatedAddress.shipping_address1 = updateFields.address1;
+						// Helper function to update address field based on region
+						const updateAddressField = (field: string, value: any) => {
+							const addressPrefix = addressType === 'billing' ? 'billing_' : 'shipping_';
+
+							switch (field) {
+								case 'address1':
+									updatedAddress[`${addressPrefix}address1`] = value;
+									break;
+								case 'address2':
+									updatedAddress[`${addressPrefix}address2`] = value;
+									break;
+								case 'location':
+									updatedAddress.location = value;
+									updatedAddress.city = value;
+									break;
+								case 'state':
+									if (isIndia) {
+										updatedAddress.state = value;
+									} else {
+										updatedAddress[addressType === 'billing' ? 'emirates' : 'emirate'] = value;
+									}
+									break;
+								case 'country':
+									updatedAddress.country = value;
+									break;
+								case 'postalcode':
+									updatedAddress[isIndia ? 'pincode' : 'po_box'] = value;
+									break;
+								case 'email':
+									if (isIndia) updatedAddress.email = value;
+									break;
+								case 'tax':
+									updatedAddress[isIndia ? 'gstin' : 'trn_number'] = value;
+									break;
+								case 'mobile':
+									if (isIndia) updatedAddress.mobile = value;
+									break;
 							}
-						}
-						if (updateFields.address2 !== undefined) {
-							// Map address2 to the correct field based on address type
-							if (addressType === 'billing') {
-								updatedAddress.billing_address2 = updateFields.address2;
-							} else {
-								updatedAddress.shipping_address2 = updateFields.address2;
+						};
+
+						// Update only fields that were provided
+						Object.entries(updateFields).forEach(([field, value]) => {
+							if (value !== undefined) {
+								updateAddressField(field, value);
 							}
-						}
-						if (updateFields.location !== undefined) {
-							updatedAddress.location = updateFields.location;
-							updatedAddress.city = updateFields.location;
-						}
-						if (updateFields.state !== undefined) {
-							updatedAddress.state = updateFields.state;
-						}
-						if (updateFields.country !== undefined) {
-							updatedAddress.country = updateFields.country;
-						}
-						if (updateFields.pincode !== undefined) {
-							updatedAddress.pincode = updateFields.pincode;
-						}
-						if (updateFields.email !== undefined) {
-							updatedAddress.email = updateFields.email;
-						}
-						if (updateFields.gstin !== undefined) {
-							updatedAddress.gstin = updateFields.gstin;
-						}
-						if (updateFields.mobile !== undefined) {
-							updatedAddress.mobile = updateFields.mobile;
-						}
+						});
 
 						// Create updated addresses array with the selected address updated
 						const updatedAddresses = addresses.map((addr, index) =>
@@ -420,19 +538,26 @@ export async function execute(this: IExecuteFunctions) {
 						const catalogType = this.getNodeParameter('catalog_type', i);
 						const itemType = this.getNodeParameter('item_type', i);
 						const additionalFields = this.getNodeParameter('additionalFields', i) as Record<string, any>;
-						const gst_type = additionalFields.gst_type ?? 'inclusive of gst';
-						const gst_rate = additionalFields.gst_rate ?? '5%';
+						const tax_type = additionalFields.tax_type ?? 'inclusive of tax';
+						const tax_rate = additionalFields.tax_rate ?? '5%';
 						const non_taxable = additionalFields.non_taxable != 0 ? additionalFields.non_taxable : '';
 						const sku = additionalFields.sku ?? '';
 						const unit = additionalFields.unit ?? 'UNT-UNITS';
 						const description = additionalFields.description ?? '';
+						const currency = additionalFields.currency ?? 'INR';
 						// 🔎 Validate price
 						if (price === undefined || price === null || price === '' || price === 0 || price === '0') {
 							throw new ApplicationError('Price must be a number greater than zero.');
 						}
-						// Handle cess_type and cess_value with validation
+						// Handle cess_type and cess_value with validation (India only)
 						let cess_type_api, cess_api;
-						if (additionalFields.cess_type) {
+
+						// Check if cess is selected for UAE (not allowed)
+						if (!isIndia && additionalFields.cess_type) {
+							throw new ApplicationError('Cess is not available for UAE operations. Cess is only available for India.');
+						}
+
+						if (isIndia && additionalFields.cess_type) {
 							// If cess type is selected, cess value must be entered
 							if (additionalFields.cess_value === undefined || additionalFields.cess_value === null || additionalFields.cess_value === '') {
 								throw new ApplicationError('Cess value is required when cess type is selected.');
@@ -459,45 +584,102 @@ export async function execute(this: IExecuteFunctions) {
 							delete additionalFields.cess_type;
 							delete additionalFields.cess_value;
 						}
-						// Prepare variants array
-						const variants = [{
-							variant_name: catalogName,
-							price,
-							gst_type,
-							non_taxable,
-							currency: 'INR',
-							sku_id: sku,
-							variant_description: description,
-						}];
+						// Prepare variants array based on country
+						let variants;
+						if (isIndia) {
+							// India structure
+							variants = [{
+								variant_name: catalogName,
+								price,
+								gst_type: tax_type === 'inclusive of tax' ? 'inclusive of gst' : 'exclusive of gst',
+								non_taxable,
+								currency: currency ?? 'INR',
+								sku_id: sku,
+								variant_description: description,
+							}];
+						} else {
+							// UAE structure
+							variants = [{
+								variant_name: catalogName,
+								price,
+								vat_type: tax_type === 'inclusive of tax' ? 'Inclusive of VAT' : 'Exclusive of VAT',
+								currency: currency ?? 'AED',
+								variant_description: description,
+								sku_id: sku,
+							}];
+						}
 						options.method = 'POST';
 						options.url = `${baseUrl}/catalog`;
-						options.body = {
-							item_name: catalogName,
-							catalog_type: catalogType,
-							gst_rate: gst_rate,
-							item_type: itemType,
-							units: unit,
-							description: description,
-							variants: variants,
-							...(additionalFields.coa_account ? (() => {
-								let expense_id = '', expense_type = '';
-								try {
-									const parsed = JSON.parse(additionalFields.coa_account);
-									expense_id = parsed.id;
-									expense_type = parsed.name;
-								} catch {}
-								return { expense_id, expense_type };
-							})() : {}),
-							...(cess_type_api && cess_api !== undefined ? { cess_type: cess_type_api, cess: cess_api } : {}),
-						};
+						// Build API body based on country
+						if (isIndia) {
+							// India API structure
+							options.body = {
+								item_name: catalogName,
+								catalog_type: catalogType,
+								gst_rate: tax_rate,
+								item_type: itemType,
+								units: unit,
+								description: description,
+								variants: variants,
+								...(additionalFields.coa_account ? (() => {
+									let expense_id = '', expense_type = '';
+									try {
+										const parsed = JSON.parse(additionalFields.coa_account);
+										expense_id = parsed.id;
+										expense_type = parsed.name;
+									} catch {}
+									return { expense_id, expense_type };
+								})() : {}),
+								...(isIndia && cess_type_api && cess_api !== undefined ? { cess_type: cess_type_api, cess: cess_api } : {}),
+							};
+						} else {
+							// UAE API structure - validate VAT rate
+							let vat_rate_value;
+							if (tax_rate === 'Exempted Supply') {
+								vat_rate_value = -1;
+							} else if (tax_rate === '5%' || tax_rate === '0%') {
+								vat_rate_value = tax_rate.replace('%', '');
+							} else {
+								throw new ApplicationError('UAE Tax Rate must be 5%, 0%, or Exempted Supply only.');
+							}
+
+							options.body = {
+								item_name: catalogName,
+								catalog_type: catalogType,
+								item_type: itemType,
+								vat_rate: vat_rate_value,
+								units: unit,
+								description: description,
+								variants: variants,
+								...(additionalFields.coa_account ? (() => {
+									let expense_id = '', expense_type = '';
+									try {
+										const parsed = JSON.parse(additionalFields.coa_account);
+										expense_id = parsed.id;
+										expense_type = parsed.name;
+									} catch {}
+									return { expense_id, expense_type };
+								})() : {}),
+							};
+						}
+						if(additionalFields.currency) {
+							options.body.currency = additionalFields.currency;
+						}
 					} else if (operation === 'updateCatalog') {
 						const catalogId = this.getNodeParameter('catalogId', i);
 						const updateFields = this.getNodeParameter('catalogUpdateFields', i) as Record<string, any>;
 						// Always include catalog_id
 						const body: Record<string, any> = { catalog_id: catalogId };
-						// Handle cess_type and cess_value with validation
+
+						// Handle cess_type and cess_value with validation (India only)
 						let cess_type_api, cess_api;
-						if (updateFields.cess_type) {
+
+						// Check if cess is selected for UAE (not allowed)
+						if (!isIndia && updateFields.cess_type) {
+							throw new ApplicationError('Cess is not available for UAE operations. Cess is only available for India.');
+						}
+
+						if (isIndia && updateFields.cess_type) {
 							// If cess type is selected, cess value must be entered
 							if (updateFields.cess_value === undefined || updateFields.cess_value === null || updateFields.cess_value === '') {
 								throw new ApplicationError('Cess value is required when cess type is selected.');
@@ -527,7 +709,28 @@ export async function execute(this: IExecuteFunctions) {
 						// Add only provided fields to the body
 						for (const [key, value] of Object.entries(updateFields)) {
 							if (value !== undefined && value !== null && value !== '') {
-								if (key === 'unit') {
+								if (key === 'tax_rate') {
+									// Handle tax rate based on country
+									if (isIndia) {
+										body.gst_rate = value;
+									} else {
+										// UAE VAT rate validation
+										if (value === 'Exempted Supply') {
+											body.vat_rate = -1;
+										} else if (value === '5%' || value === '0%') {
+											body.vat_rate = value.replace('%', '');
+										} else {
+											throw new ApplicationError('UAE Tax Rate must be 5%, 0%, or Exempted Supply only.');
+										}
+									}
+								} else if (key === 'tax_type') {
+									// Handle tax type based on country
+									if (isIndia) {
+										body.gst_type = value === 'inclusive of tax' ? 'inclusive of gst' : 'exclusive of gst';
+									} else {
+										body.vat_type = value === 'inclusive of tax' ? 'Inclusive of VAT' : 'Exclusive of VAT';
+									}
+								} else if (key === 'units') {
 									body.units = value;
 								} else if (key === 'hsn_sac') {
 									body.hsn_sac = value;
@@ -547,10 +750,12 @@ export async function execute(this: IExecuteFunctions) {
 								}
 							}
 						}
-						if (cess_type_api && cess_api !== undefined) {
+
+						if (isIndia && cess_type_api && cess_api !== undefined) {
 							body.cess_type = cess_type_api;
 							body.cess = cess_api;
 						}
+
 						options.method = 'PUT';
 						options.url = `${baseUrl}/catalog`;
 						options.body = body;
@@ -567,7 +772,14 @@ export async function execute(this: IExecuteFunctions) {
 						// Only include fields that are provided
 						if (updateFields.variant_name !== undefined) variantUpdate.variant_name = updateFields.variant_name;
 						if (updateFields.variant_price !== undefined) variantUpdate.price = updateFields.variant_price;
-						if (updateFields.variant_gst_type !== undefined) variantUpdate.gst_type = updateFields.variant_gst_type;
+						if (updateFields.variant_tax_type !== undefined) {
+							// Handle tax type based on country
+							if (isIndia) {
+								variantUpdate.gst_type = updateFields.variant_tax_type === 'inclusive of tax' ? 'inclusive of gst' : 'exclusive of gst';
+							} else {
+								variantUpdate.vat_type = updateFields.variant_tax_type === 'inclusive of tax' ? 'Inclusive of VAT' : 'Exclusive of VAT';
+							}
+						}
 						if (updateFields.variant_non_taxable !== undefined) variantUpdate.non_taxable = updateFields.variant_non_taxable;
 						if (updateFields.variant_sku !== undefined) variantUpdate.sku_id = updateFields.variant_sku;
 						if (updateFields.variant_description !== undefined) variantUpdate.variant_description = updateFields.variant_description;
@@ -626,12 +838,24 @@ export async function execute(this: IExecuteFunctions) {
 							variant_id: newId,
 							variant_name: variant_name,
 							price: variant_price,
-							gst_type: additionalFields.variant_gst_type ?? 'inclusive of gst',
 							non_taxable: additionalFields.variant_non_taxable != 0 ? additionalFields.variant_non_taxable : '',
 							sku_id: additionalFields.variant_sku ?? '',
 							variant_description: additionalFields.variant_description ?? '',
-							currency: 'INR',
 						};
+
+						// Handle tax type based on country
+						const tax_type = additionalFields.variant_tax_type ?? 'inclusive of tax';
+						if (isIndia) {
+							newVariant.gst_type = tax_type === 'inclusive of tax' ? 'inclusive of gst' : 'exclusive of gst';
+							newVariant.currency = additionalFields.currency ?? 'INR';
+						} else {
+							newVariant.vat_type = tax_type === 'inclusive of tax' ? 'Inclusive of VAT' : 'Exclusive of VAT';
+							newVariant.currency = additionalFields.currency ?? 'AED';
+							// Include SKU for UAE variants
+							if (additionalFields.variant_sku) {
+								newVariant.sku_id = additionalFields.variant_sku;
+							}
+						}
 
 
 						// 5. Update catalog with new variants array
@@ -1829,7 +2053,7 @@ export async function execute(this: IExecuteFunctions) {
 						const selectedAccount = this.getNodeParameter('selectedAccount', i) as string;
 						const fromDateRaw = this.getNodeParameter('fromDate', i) as string;
 						const toDateRaw = this.getNodeParameter('toDate', i) as string;
-
+						const bank = this.getNodeParameter('bank', i) as string;
 						// Check if account is selected
 						if (!selectedAccount || selectedAccount === '') {
 							throw new ApplicationError('Please select a bank account', { level: 'warning' });
@@ -1855,7 +2079,7 @@ export async function execute(this: IExecuteFunctions) {
 
 						// Set up the request options like other operations
 						options.method = 'POST';
-						options.url = `${baseUrl}/banking/icici`;
+						options.url = `${baseUrl}/banking/${bank}`;
 						options.body = {
 							operation: 'account-statement-sync',
 							urn: urn,
@@ -1863,6 +2087,21 @@ export async function execute(this: IExecuteFunctions) {
 							fromDate: fromDate,
 							toDate: toDate
 						};
+					} else if (operation === 'getGSTReturnStatus') {
+						const gstin = this.getNodeParameter('gstin', i) as string;
+						options.method = 'POST';
+						options.url = `${baseUrl}/gst/return-status`;
+						options.body = {
+							gstin,
+							force:1,
+						}
+					} else if (operation === 'getGSTSearch') {
+						const gstin = this.getNodeParameter('gstin', i) as string;
+						options.method = 'POST';
+						options.url = `${baseUrl}/gst/search`;
+						options.body = {
+							gstin,
+						}
 					}
 					const result = await this.helpers.request(options);
 					returnData.push({ json: result });

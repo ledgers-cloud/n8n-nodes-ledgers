@@ -52,6 +52,11 @@ After installing, restart n8n and the node will be available in the editor.
 
 The LEDGERS node supports the following operations:
 
+### **Triggers**
+- **LEDGERS Webhook Trigger** - Listen to real-time events from LEDGERS API via webhooks
+
+### **Regular Operations**
+
 ### **Contacts**
 - **Create Contact** - Create a new contact with billing/shipping addresses
 - **Update Contact** - Update existing contact information
@@ -95,6 +100,9 @@ The LEDGERS node supports the following operations:
 
 ### **Banking**
 - **Get Bank Statement** - Retrieve account statements for selected bank accounts with date range filtering
+  - **Supported Banks**: ICICI Bank and Axis Bank
+  - **Requirements**: Connected banking must be set up in LEDGERS
+  - **Features**: Dynamic account selection, date range filtering, secure data handling
 
 ---
 
@@ -102,9 +110,10 @@ The LEDGERS node supports the following operations:
 
 ### **Contact Operations**
 - **Required Fields**: Contact name, mobile, email
-- **Address Support**: Billing and shipping addresses with GSTIN
+- **Address Support**: Billing and shipping addresses with GSTIN (India) / TRN Number (UAE)
 - **Country Codes**: Support for multiple country dial codes
 - **Validation**: Mobile number format validation
+- **Multi-region Support**: India and UAE operations with region-specific field mapping
 
 ### **Catalog Operations**
 - **Item Types**: Goods and Services support
@@ -112,6 +121,7 @@ The LEDGERS node supports the following operations:
 - **Variants**: Multiple variants per catalog item
 - **HSN/SAC Codes**: Automatic code suggestions via AI
 - **Cess Support**: Flat and percentage-based cess
+- **Multi-region Support**: India and UAE operations with region-specific business rules
 
 ### **Sales Operations**
 - **Invoice Creation**: Full invoice generation with comprehensive validation and contact/item details
@@ -160,6 +170,11 @@ The LEDGERS node supports the following operations:
 - **Error Handling**: Clear error messages for missing accounts or configuration issues
 - **Multi-Account Support**: Handle multiple linked accounts per URN
 - **Validation**: Required field validation for account selection and date ranges
+- **Supported Banks**: ICICI Bank and Axis Bank integration
+- **Setup Requirements**: Connected banking must be configured in LEDGERS platform
+- **Connected Banking**: Only works when banking integration is set up in LEDGERS
+
+
 
 ## 💼 Uses of Sales Operations
 
@@ -239,17 +254,23 @@ To authenticate with the LEDGERS API, you must provide the following:
 
 ## 🚀 Upcoming Release
 
+### **LEDGERS Triggers**
+- **Real-time Webhooks**: Listen to events from LEDGERS platform
+- **Event-driven Workflows**: Automate based on contact, invoice, and catalog changes
+- **Multi-region Support**: Triggers for both India and UAE operations
+
+### **UAE Sales and Purchase Operations**
+- **Complete UAE Sales**: Full invoice, quote, and receipt management for UAE
+- **UAE Purchase Operations**: Purchase invoices, vouchers, and procurement management
+- **Multi-region Workflows**: Handle both India and UAE operations in single workflows
+- **Currency Support**: Enhanced multi-currency handling for UAE operations
+- **Localization**: UAE-specific business rules and compliance features
+
 ### **Enhanced Purchase Operations**
 - **Create Purchase Order**: Generate purchase orders for suppliers
 - **View Purchase Order**: Retrieve specific purchase order details  
 - **List Purchase Orders**: List all purchase orders with filtering
 - **Inventory Integration**: Link purchases with catalog items
-
-### **UAE LEDGERS Support**
-- **Complete UAE Operations**: Full support for UAE region including all current operations
-- **Multi-region Workflows**: Handle both India and UAE operations in single workflows
-- **Currency Support**: Enhanced multi-currency handling for UAE operations
-- **Localization**: UAE-specific business rules and compliance features
 
 ---
 
@@ -272,6 +293,10 @@ To authenticate with the LEDGERS API, you must provide the following:
 | Specialized Supply Types| ✅ Implemented |
 | Export Documentation| ✅ Implemented |
 | HRMS Operations     | ✅ Implemented |
+| Banking Operations  | ✅ Implemented |
+| ICICI & Axis Bank   | ✅ Implemented |
+| UAE Contact Operations| ✅ Implemented |
+| UAE Catalog Operations| ✅ Implemented |
 
 ---
 
@@ -339,6 +364,14 @@ To authenticate with the LEDGERS API, you must provide the following:
 2. Choose **List Purchase Invoices** operation
 3. Set page size and filters (date range, payment status)
 4. Configure ordering options (order by, order column)
+
+### Get Bank Statement
+1. Select **Banking** as resource
+2. Choose **Get Bank Statement** operation
+3. Select bank (ICICI or Axis Bank)
+4. Choose account from dropdown (requires connected banking setup)
+5. Set date range for statement period
+6. **Note**: Connected banking must be configured in LEDGERS platform
 
 ### Create a Catalog Item
 1. Select **Catalog** as resource
@@ -431,6 +464,7 @@ You can enable this in the node's settings under the **"Continue On Fail"** opti
 | 0.0.8   | Purchase Operations Release with Purchase Invoices, Vouchers, and advanced features |
 | 0.0.9   | HRMS operations and Enhanced Validations for Sales and Purchase Operations |
 | 0.0.10  | Banking Operation to Retrieve connected banking account statements in LEDGERS and Opening Balance in Create and Update Contact |
+| 0.0.11  | Enhanced Contact Operations with multiple billing/shipping addresses, tax field mapping, currency support, and multi-region API support (India & UAE) |
 
 ---
 
