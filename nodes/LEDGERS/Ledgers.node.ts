@@ -74,12 +74,12 @@ export class Ledgers implements INodeType {
 					// TODO: Implement actual HSN/SAC codes loading from API
 					// Your loadOptions code here
 					const credentials = await this.getCredentials('ledgersApi');
-					const { xApiKey, email, password } = credentials;
+					const { xApiKey, email, password, apiUrl } = credentials;
 
 					// Authenticate to get api_token
 					const loginOptions: IRequestOptions = {
 						method: 'POST',
-						url: 'https://in-api.ledgers.cloud/login',
+						url: `${apiUrl}/login`,
 						headers: {
 							'Content-Type': 'application/json',
 							'x-api-key': xApiKey,
@@ -163,12 +163,12 @@ export class Ledgers implements INodeType {
 				const continueOnFail = this.getNode().continueOnFail;
 				try {
 					const credentials = await this.getCredentials('ledgersApi');
-					const { xApiKey, email, password } = credentials;
+					const { xApiKey, email, password, apiUrl } = credentials;
 
 					// Authenticate to get api_token
 					const loginOptions: IRequestOptions = {
 						method: 'POST',
-						url: '${$credentials.apiUrl}/login',
+						url: `${apiUrl}/login`,
 						headers: {
 							'Content-Type': 'application/json',
 							'x-api-key': xApiKey,
@@ -193,7 +193,7 @@ export class Ledgers implements INodeType {
 
 					const options: IRequestOptions = {
 						method: 'GET',
-						url: '${$credentials.apiUrl}/v3/catalog/' + catalogId,
+						url: `${apiUrl}`+(String(credentials.apiUrl).includes('in-api.ledgers.cloud') ? '/v3/catalog/' : '/catalog/') + catalogId,
 						headers: {
 							'Content-Type': 'application/json',
 							'x-api-key': xApiKey,
@@ -224,12 +224,12 @@ export class Ledgers implements INodeType {
 				const continueOnFail = this.getNode().continueOnFail;
 				try {
 					const credentials = await this.getCredentials('ledgersApi');
-					const { xApiKey, email, password } = credentials;
+					const { xApiKey, email, password, apiUrl } = credentials;
 
 					// Authenticate to get api_token
 					const loginOptions: IRequestOptions = {
 						method: 'POST',
-						url: '${$credentials.apiUrl}/login',
+						url: `${apiUrl}/login`,
 						headers: {
 							'Content-Type': 'application/json',
 							'x-api-key': xApiKey,
@@ -250,7 +250,7 @@ export class Ledgers implements INodeType {
 
 					const options: IRequestOptions = {
 						method: 'GET',
-						url: '${$credentials.apiUrl}'+(String(credentials.apiUrl).includes('in-api.ledgers.cloud') ? '/v3/coa' : '/coa'),
+						url: `${apiUrl}`+(String(credentials.apiUrl).includes('in-api.ledgers.cloud') ? '/v3/coa' : '/coa'),
 						headers: {
 							'Content-Type': 'application/json',
 							'x-api-key': xApiKey,
@@ -293,11 +293,11 @@ export class Ledgers implements INodeType {
 					}
 
 					const credentials = await this.getCredentials('ledgersApi');
-					const { xApiKey, email, password } = credentials;
+					const { xApiKey, email, password, apiUrl } = credentials;
 
 					const loginOptions: IRequestOptions = {
 						method: 'POST',
-						url: '${$credentials.apiUrl}/login',
+						url: `${apiUrl}/login`,
 						headers: { 'Content-Type': 'application/json', 'x-api-key': xApiKey },
 						body: { email, password },
 						json: true,
@@ -311,7 +311,7 @@ export class Ledgers implements INodeType {
 
 					const getContactOptions: IRequestOptions = {
 						method: 'GET',
-						url: '${$credentials.apiUrl}'+(String(credentials.apiUrl).includes('in-api.ledgers.cloud') ? '/v3/contact/' : '/contact/') + contactId,
+						url: `${apiUrl}`+(String(credentials.apiUrl).includes('in-api.ledgers.cloud') ? '/v3/contact/' : '/contact/') + contactId,
 						headers: { 'Content-Type': 'application/json', 'x-api-key': xApiKey, 'api-token': apiToken },
 						json: true,
 					};
@@ -365,12 +365,12 @@ export class Ledgers implements INodeType {
 				// const continueOnFail = this.getNode().continueOnFail;
 				try {
 					const credentials = await this.getCredentials('ledgersApi');
-					const { xApiKey, email, password } = credentials;
+					const { xApiKey, email, password, apiUrl } = credentials;
 
 					// Authenticate to get api_token
 					const loginOptions: IRequestOptions = {
 						method: 'POST',
-						url: '${$credentials.apiUrl}/login',
+						url: `${apiUrl}/login`,
 						headers: {
 							'Content-Type': 'application/json',
 							'x-api-key': xApiKey,
@@ -389,7 +389,7 @@ export class Ledgers implements INodeType {
 
 					const options: IRequestOptions = {
 						method: 'GET',
-						url: 'https://in-api.ledgers.cloud/v3/settings/paymentsmode',
+						url: `${apiUrl}`+(String(credentials.apiUrl).includes('in-api.ledgers.cloud') ? '/v3/settings/paymentsmode' : '/settings/paymentsmode'),
 						headers: {
 							'Content-Type': 'application/json',
 							'x-api-key': xApiKey,
@@ -441,12 +441,12 @@ export class Ledgers implements INodeType {
 				// const continueOnFail = this.getNode().continueOnFail;
 				try {
 					const credentials = await this.getCredentials('ledgersApi');
-					const { xApiKey, email, password } = credentials;
+					const { xApiKey, email, password, apiUrl } = credentials;
 
 					// Authenticate to get api_token
 					const loginOptions: IRequestOptions = {
 						method: 'POST',
-						url: '${$credentials.apiUrl}/login',
+						url: `${apiUrl}/login`,
 						headers: {
 							'Content-Type': 'application/json',
 							'x-api-key': xApiKey,
@@ -465,7 +465,7 @@ export class Ledgers implements INodeType {
 
 					const options: IRequestOptions = {
 						method: 'GET',
-						url: 'https://in-api.ledgers.cloud/v3/settings/paymentsmode',
+						url: `${apiUrl}`+(String(credentials.apiUrl).includes('in-api.ledgers.cloud') ? '/v3/settings/paymentsmode' : '/settings/paymentsmode'),
 						headers: {
 							'Content-Type': 'application/json',
 							'x-api-key': xApiKey,
@@ -521,7 +521,7 @@ export class Ledgers implements INodeType {
 
 					const loginOptions: IRequestOptions = {
 						method: 'POST',
-						url: `https://in-api.ledgers.cloud/login`,
+						url: `${apiUrl}/login`,
 						headers: { 'Content-Type': 'application/json', 'x-api-key': xApiKey },
 						body: { email, password },
 						json: true,
@@ -571,7 +571,7 @@ export class Ledgers implements INodeType {
 
 					const loginOptions: IRequestOptions = {
 						method: 'POST',
-						url: `https://in-api.ledgers.cloud/login`,
+						url: `${apiUrl}/login`,
 						headers: { 'Content-Type': 'application/json', 'x-api-key': xApiKey },
 						body: { email, password },
 						json: true,
@@ -619,7 +619,7 @@ export class Ledgers implements INodeType {
 					// Authenticate to get api_token
 					const loginOptions: IRequestOptions = {
 						method: 'POST',
-						url: `https://in-api.ledgers.cloud/login`,
+						url: `${apiUrl}/login`,
 						headers: {
 							'Content-Type': 'application/json',
 							'x-api-key': xApiKey,
@@ -709,10 +709,10 @@ export class Ledgers implements INodeType {
 	async fetchBranchData(this: IExecuteFunctions, branchId: string): Promise<any> {
 		try {
 			const credentials = await this.getCredentials('ledgersApi');
-			const { xApiKey, email, password } = credentials;
+			const { xApiKey, email, password, apiUrl } = credentials;
 			const loginOptions: IRequestOptions = {
 				method: 'POST',
-				url: 'https://in-api.ledgers.cloud/login',
+				url: `${apiUrl}/login`,
 				headers: {
 					'Content-Type': 'application/json',
 					'x-api-key': xApiKey,
@@ -729,7 +729,7 @@ export class Ledgers implements INodeType {
 			const apiToken = loginResponse.api_token;
 			const options: IRequestOptions = {
 				method: 'GET',
-				url: `https://in-api.ledgers.cloud/v3/business/branch/${branchId}`,
+				url: `${apiUrl}`+(String(credentials.apiUrl).includes('in-api.ledgers.cloud') ? '/v3/business/branch/' : '/business/branch/') + branchId,
 				headers: {
 					'Content-Type': 'application/json',
 					'x-api-key': xApiKey,
