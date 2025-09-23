@@ -613,10 +613,17 @@ export async function execute(this: IExecuteFunctions) {
 						// Build API body based on country
 						if (isIndia) {
 							// India API structure
+							let tax_rate_value = '';
+							if(tax_rate == 'Non-Tax Supply') {
+								tax_rate_value = 'Non-GST Supply';
+							}
+							else {
+								tax_rate_value = tax_rate;
+							}
 							options.body = {
 								item_name: catalogName,
 								catalog_type: catalogType,
-								gst_rate: tax_rate,
+								gst_rate: tax_rate_value,
 								item_type: itemType,
 								units: unit,
 								description: description,
@@ -710,9 +717,16 @@ export async function execute(this: IExecuteFunctions) {
 						for (const [key, value] of Object.entries(updateFields)) {
 							if (value !== undefined && value !== null && value !== '') {
 								if (key === 'tax_rate') {
+									let tax_rate_value = '';
+									if(value == 'Non-Tax Supply') {
+										tax_rate_value = 'Non-GST Supply';
+									}
+									else {
+										tax_rate_value = value;
+									}
 									// Handle tax rate based on country
 									if (isIndia) {
-										body.gst_rate = value;
+										body.gst_rate = tax_rate_value;
 									} else {
 										// UAE VAT rate validation
 										if (value === 'Exempted Supply') {
