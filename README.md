@@ -467,6 +467,7 @@ You can enable this in the node's settings under the **"Continue On Fail"** opti
 | 0.0.11  | Enhanced Contact Operations with multiple billing/shipping addresses, tax field mapping, currency support, and multi-region API support (India & UAE) |
 | 0.0.12  | In Catalog Operations Units List Updated as per Document |
 | 0.0.13  | Tax Rate Updates, Contact Inputs Name Update and Payment Mode Bug Fix |
+| 0.0.14  | Tax Rate Updates for India |
 
 ---
 
