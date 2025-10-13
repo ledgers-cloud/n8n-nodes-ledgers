@@ -325,7 +325,6 @@ export const SalesOperations: INodeProperties[] = [
       { displayName: 'Contact ID', name: 'id', type: 'string', default: '' },
       { displayName: 'Contact Name', name: 'name', type: 'string', default: '' },
       { displayName: 'Email', name: 'email', type: 'string', default: '', placeholder: 'name@email.com' },
-      { displayName: 'GSTIN', name: 'gstin', type: 'string', default: '', placeholder: 'Enter GSTIN' },
       { displayName: 'Mobile', name: 'mobile', type: 'string', default: '' },
       {
         displayName: 'Mobile Country Code',
@@ -481,6 +480,7 @@ export const SalesOperations: INodeProperties[] = [
         ],
         default: 'TAMIL NADU',
       },
+      { displayName: 'Tax Number', name: 'tax_number', type: 'string', default: '', placeholder: 'Enter Tax Number' },
     ],
   },
 	{
@@ -1251,9 +1251,23 @@ export const SalesOperations: INodeProperties[] = [
         values: [
           { displayName: 'Description', name: 'description', type: 'string', default: '' },
           { displayName: 'Discount', name: 'discount', type: 'number', default: 0 },
-          {
-            displayName: 'GST Rate',
-            name: 'gst_rate',
+          { displayName: 'HSN/SAC Code', name: 'item_code', type: 'string', default: '' },
+          { displayName: 'Item ID', name: 'pid', type: 'string', default: '' },
+          { displayName: 'Item Name', name: 'name', type: 'string', default: '' },
+          { displayName: 'Item Type', name: 'item_type', type: 'options', options: [
+            { name: 'Goods', value: '1' },
+            { name: 'Service', value: '2' },
+          ], default: '1' },
+          { displayName: 'Non Taxable Per Item', name: 'non_taxable_per_item', type: 'string', default: '' },
+          { displayName: 'Price Type', name: 'price_type', type: 'options', options: [
+            { name: 'Inclusive of Tax', value: 0 },
+            { name: 'Exclusive of Tax', value: 1 },
+          ], default: 0 },
+          { displayName: 'Quantity', name: 'quantity', type: 'number', default: 1 },
+          { displayName: 'Rate', name: 'rate', type: 'string', default: '' },
+					{
+            displayName: 'Tax Rate',
+            name: 'tax_rate',
             type: 'options',
             options: [
               { name: '0.1%', value: '0.1' },
@@ -1267,25 +1281,11 @@ export const SalesOperations: INodeProperties[] = [
               { name: '7.5%', value: '7.5' },
               { name: 'Exempted Supply', value: 'Exempted Supply' },
               { name: 'Nil-Rated', value: 'Nil-Rated' },
-              { name: 'Non-GST Supply', value: 'Non-GST Supply' },
+              { name: 'Non-Tax Supply', value: 'Non-Tax Supply' },
               { name: 'Zero-Rated', value: 'Zero-Rated' },
             ],
             default: '5',
           },
-          { displayName: 'HSN/SAC Code', name: 'item_code', type: 'string', default: '' },
-          { displayName: 'Item ID', name: 'pid', type: 'string', default: '' },
-          { displayName: 'Item Name', name: 'name', type: 'string', default: '' },
-          { displayName: 'Item Type', name: 'item_type', type: 'options', options: [
-            { name: 'Goods', value: '1' },
-            { name: 'Service', value: '2' },
-          ], default: '1' },
-          { displayName: 'Non Taxable Per Item', name: 'non_taxable_per_item', type: 'string', default: '' },
-          { displayName: 'Price Type', name: 'price_type', type: 'options', options: [
-            { name: 'Inclusive of GST', value: 0 },
-            { name: 'Exclusive of GST', value: 1 },
-          ], default: 0 },
-          { displayName: 'Quantity', name: 'quantity', type: 'number', default: 1 },
-          { displayName: 'Rate', name: 'rate', type: 'string', default: '' },
           { displayName: 'Taxable Per Item', name: 'taxable_per_item', type: 'string', default: '' },
           { displayName: 'Variant ID', name: 'variant_id', type: 'string', default: '' },
         ],

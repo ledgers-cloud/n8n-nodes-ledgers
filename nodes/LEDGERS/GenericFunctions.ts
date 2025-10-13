@@ -61,7 +61,7 @@ export async function execute(this: IExecuteFunctions) {
 	const baseUrl = isIndia ? `${apiUrl}/v3` : apiUrl;
 
 	// Validate operation-country match
-	const indiaOnlyOps = ['hrms', 'banking', 'getBankStatement', 'getAllEmployees', 'addEmployee', 'updateEmployee', 'getEmployee', 'createPurchaseInvoice', 'listPurchaseInvoices', 'viewPurchaseInvoice', 'createPurchaseOrder', 'listPurchaseOrders', 'viewPurchaseOrder', 'createVoucher', 'listVouchers', 'viewVoucher', 'createInvoice', 'createQuote', 'viewInvoice', 'viewQuote', 'listInvoices', 'listQuotes', 'createReceipt', 'viewReceipt', 'listReceipts', 'getGSTReturnStatus', 'getGSTSearch'];
+	const indiaOnlyOps = ['hrms', 'banking', 'getBankStatement', 'getAllEmployees', 'addEmployee', 'updateEmployee', 'getEmployee', 'createPurchaseInvoice', 'listPurchaseInvoices', 'viewPurchaseInvoice', 'createPurchaseOrder', 'listPurchaseOrders', 'viewPurchaseOrder', 'createVoucher', 'listVouchers', 'viewVoucher', 'createQuote', 'viewInvoice', 'viewQuote', 'listInvoices', 'listQuotes', 'createReceipt', 'viewReceipt', 'listReceipts', 'getGSTReturnStatus', 'getGSTSearch'];
 
 	for (let i = 0; i < items.length; i++) {
 		const operation = this.getNodeParameter('operation', i);
@@ -898,22 +898,85 @@ export async function execute(this: IExecuteFunctions) {
 							throw new ApplicationError('At least one item is required for creating invoice', { level: 'warning' });
 						}
 
-						for (let j = 0; j < items.length; j++) {
-							const item = items[j];
+						// Transform contact data based on region (same pattern as contact operations)
+						const transformedContact = { ...contact };
+						if (isIndia) {
+							// India structure - keep existing fields
+							if (contact.tax_number) {
+								transformedContact.gstin = contact.tax_number ?? '';
+							}
+						} else {
+							// UAE structure - map tax_number to tax_id and contact_id to id
+							if (contact.tax_number) {
+								transformedContact.tax_id = contact.tax_number ?? '';
+							}
+							// Always remove tax_number for UAE structure and ensure tax_id is present
+							delete transformedContact.tax_number;
+							if (!transformedContact.tax_id) {
+								transformedContact.tax_id = contact.tax_number ?? '';
+							}
+							// Map contact_id to id for UAE structure
+							if (contact.contact_id) {
+								transformedContact.id = contact.contact_id;
+								delete transformedContact.contact_id;
+							}
+						}
+
+						// Transform items based on region
+						const transformedItems = items.map((item: any) => {
+							const transformedItem = { ...item };
+
+							if (isIndia) {
+								// India structure - keep existing fields
+								if (item.item_code) {
+									transformedItem.item_code = item.item_code;
+								}
+								if (item.pid) {
+									transformedItem.pid = item.pid;
+								}
+								if (item.tax_rate) {
+									transformedItem.gst_rate = item.tax_rate;
+									delete transformedItem.tax_rate;
+								}
+							} else {
+								// UAE structure - map fields
+								if (item.item_code) {
+									transformedItem.hsn_sac_code = item.item_code;
+									delete transformedItem.item_code;
+								}
+								if (item.pid) {
+									transformedItem.id = item.pid;
+									delete transformedItem.pid;
+								}
+								if (item.tax_rate) {
+									transformedItem.vat_rate = item.tax_rate;
+									delete transformedItem.tax_rate;
+								}
+							}
+
+							return transformedItem;
+						});
+
+						// Validate transformed items
+						for (let j = 0; j < transformedItems.length; j++) {
+							const item = transformedItems[j];
 							if (!item.name || item.name === '') {
 								throw new ApplicationError(`Item Name is required for item ${j + 1}`, { level: 'warning' });
 							}
-							if (!item.item_code || item.item_code === '') {
-								throw new ApplicationError(`SAC/HSN Code is required for item ${j + 1}`, { level: 'warning' });
+
+							const codeField = isIndia ? 'item_code' : 'hsn_sac_code';
+							if (!item[codeField] || item[codeField] === '') {
+								throw new ApplicationError(`${isIndia ? 'SAC/HSN' : 'HSN/SAC'} Code is required for item ${j + 1}`, { level: 'warning' });
 							}
 
 							// Validate numeric fields - must be integers >= 0 and not empty
-							if (item.pid === '' || item.pid === null || item.pid === undefined) {
-								throw new ApplicationError(`Item ID (PID) is required for item ${j + 1}`, { level: 'warning' });
+							const idField = isIndia ? 'pid' : 'id';
+							if (item[idField] === '' || item[idField] === null || item[idField] === undefined) {
+								throw new ApplicationError(`Item ID (${isIndia ? 'PID' : 'ID'}) is required for item ${j + 1}`, { level: 'warning' });
 							}
-							const pidValue = Number(item.pid);
-							if (!Number.isInteger(pidValue) || pidValue <= 0) {
-								throw new ApplicationError(`Item ID (PID) must be an integer > 0 for item ${j + 1}`, { level: 'warning' });
+							const idValue = Number(item[idField]);
+							if (!Number.isInteger(idValue) || idValue <= 0) {
+								throw new ApplicationError(`Item ID (${isIndia ? 'PID' : 'ID'}) must be an integer > 0 for item ${j + 1}`, { level: 'warning' });
 							}
 
 							if (item.variant_id === '' || item.variant_id === null || item.variant_id === undefined) {
@@ -959,9 +1022,20 @@ export async function execute(this: IExecuteFunctions) {
 							if(!item.item_type || item.item_type === '') {
 								throw new ApplicationError(`Item Type is required for item ${j + 1}`, { level: 'warning' });
 							}
-							if(!item.gst_rate || item.gst_rate === '') {
-								throw new ApplicationError(`GST Rate is required for item ${j + 1}`, { level: 'warning' });
+
+							const rateField = isIndia ? 'gst_rate' : 'vat_rate';
+							if(!item[rateField] || item[rateField] === '') {
+								throw new ApplicationError(`${isIndia ? 'GST' : 'VAT'} Rate is required for item ${j + 1}`, { level: 'warning' });
 							}
+
+							// UAE specific VAT rate validation
+							if (!isIndia && item[rateField]) {
+								const vatRate = item[rateField];
+								if (vatRate !== '0' && vatRate !== '5' && vatRate !== 'Exempted Supply') {
+									throw new ApplicationError(`VAT Rate must be 0, 5, or Exempted Supply only for item ${j + 1}`, { level: 'warning' });
+								}
+							}
+
 							if(rateValue && nonTaxableValue) {
 								if(rateValue < nonTaxableValue) {
 									throw new ApplicationError(`Non-Taxable value cannot be greater than Rate for item ${j + 1}`, { level: 'warning' });
@@ -969,27 +1043,75 @@ export async function execute(this: IExecuteFunctions) {
 							}
 						}
 
-						// Format invoice date to YYYY-MM-DD format (date only, no time)
-						if (additionalFields.invoice_date) {
-							const invoiceDate = new Date(additionalFields.invoice_date as string);
-							additionalFields.invoice_date = invoiceDate.toISOString().split('T')[0];
+						// Transform additional fields based on region (same pattern as contact operations)
+						const transformedAdditionalFields = { ...additionalFields };
+
+						// Transform billing and shipping addresses
+						if (additionalFields.billing_address) {
+							const billingAddr = additionalFields.billing_address as IDataObject;
+							if (isIndia) {
+								// India structure - keep existing fields
+								transformedAdditionalFields.billing_address = billingAddr;
+							} else {
+								// UAE structure - transform to UAE format
+								transformedAdditionalFields.billing_address = {
+									floor_no_flat_name: billingAddr.bill_addr1 || '',
+									building_name: billingAddr.bill_addr2 || '',
+									street_name: billingAddr.bill_city || '',
+									emirate: billingAddr.bill_state || '',
+									po_box: billingAddr.bill_pincode || '',
+								};
+							}
 						}
 
-						if(additionalFields.validity_date) {
-							const validityDate = new Date(additionalFields.validity_date as string);
-							additionalFields.validity_date = validityDate.toISOString().split('T')[0];
+						if (additionalFields.shipping_address) {
+							const shippingAddr = additionalFields.shipping_address as IDataObject;
+							if (isIndia) {
+								// India structure - keep existing fields
+								transformedAdditionalFields.shipping_address = shippingAddr;
+							} else {
+								// UAE structure - transform to UAE format
+								transformedAdditionalFields.shipping_address = {
+									floor_no_flat_name: shippingAddr.ship_addr1 || '',
+									building_name: shippingAddr.ship_addr2 || '',
+									street_name: shippingAddr.ship_city || '',
+									emirate: shippingAddr.ship_state || '',
+									po_box: Number(shippingAddr.ship_pincode) || 0,
+								};
+							}
+						}
+
+						// Transform currency field
+						if (additionalFields.billings_currency) {
+							transformedAdditionalFields.billing_currency = additionalFields.billings_currency;
+							delete transformedAdditionalFields.billings_currency;
+						}
+
+						// Format invoice date to YYYY-MM-DD format (date only, no time)
+						if (transformedAdditionalFields.invoice_date) {
+							const invoiceDate = new Date(transformedAdditionalFields.invoice_date as string);
+							transformedAdditionalFields.invoice_date = invoiceDate.toISOString().split('T')[0];
+						}
+
+						if(transformedAdditionalFields.validity_date) {
+							const validityDate = new Date(transformedAdditionalFields.validity_date as string);
+							transformedAdditionalFields.validity_date = validityDate.toISOString().split('T')[0];
 						}
 
 						const body: IDataObject = {
-							contact,
-							items,
+							contact: transformedContact,
+							items: transformedItems,
 							seller_branch_id,
-							...additionalFields,
+							...transformedAdditionalFields,
 						};
 
 						options.method = 'POST';
 						options.url = `${baseUrl}/invoice`;
 						options.body = body;
+						console.log(body);
+						console.log(options.body);
+						console.log(options.url);
+						console.log(options.method);
 					} else if (operation === 'viewInvoice') {
 						const invoiceId = this.getNodeParameter('invoiceId', i) as string;
 						options.method = 'GET';
