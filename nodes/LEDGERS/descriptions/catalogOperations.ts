@@ -96,41 +96,14 @@ export const catalogOperations: INodeProperties[] = [
 		}
 	},
 
-	// {
-	// 	displayName: 'HSN/SAC Code Name or ID',
-	// 	name: 'hsn_sac_mode',
-	// 	type: 'options',
-	// 	typeOptions: {
-	// 		loadOptionsMethod: 'getHsnSacCodes',  // Matches the loadOptions method in Ledgers.node.ts
-	// 		allowManualEntry: true,  // 👈 this allows users to enter a custom value
-	// 	},
-	// 	required: true,
-	// 	displayOptions: {
-	// 		show: {
-	// 			resource: ['catalog'],
-	// 			operation: ['createCatalog', 'updateCatalog'],
-	// 			loadOptionsDependsOn: ['catalogName'],  // 👈 This line ensures the API call waits until Catalog Name is filled
-	// 		},
-	// 	},
-	// 	description: 'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
-	// 	default: '',
-	// 	placeholder: 'Select HSN/SAC Code',
-	// },
-
-	// {
-	// 	displayName: 'HSN/SAC Code (Manual)',
-	// 	name: 'hsn_sac_manual',
-	// 	type: 'string',
-	// 	default: '',
-	// 	placeholder: 'Enter HSN/SAC Code',
-	// 	displayOptions: {
-	// 		show: {
-	// 			resource: ['catalog'],
-	// 			operation: ['createCatalog', 'updateCatalog'],
-	// 			hsn_sac_mode: ['manualEntry'],
-	// 		},
-	// 	},
-	// },
+	{
+		displayName: 'HSN/SAC Code',
+		name: 'hsn_sac',
+		type: 'string',
+		default: '',
+		required: true,
+		placeholder: 'Enter HSN/SAC Code',
+	},
 
 	{
 		displayName: 'Additional Fields',
@@ -404,13 +377,6 @@ export const catalogOperations: INodeProperties[] = [
 				type: 'string',
 				default: '',
 				placeholder: '',
-			},
-			{
-				displayName: 'HSN/SAC Code',
-				name: 'hsn_sac',
-				type: 'string',
-				default: '',
-				placeholder: 'Enter HSN/SAC Code',
 			},
 			{
 				displayName: 'Expense Name or ID',
@@ -719,6 +685,7 @@ export const catalogOperations: INodeProperties[] = [
 				name: 'hsn_sac',
 				type: 'string',
 				default: '',
+				required: true,
 				placeholder: 'Enter HSN/SAC Code',
 			},
 			{
