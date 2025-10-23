@@ -469,6 +469,7 @@ You can enable this in the node's settings under the **"Continue On Fail"** opti
 | 0.0.13  | Tax Rate Updates, Contact Inputs Name Update and Payment Mode Bug Fix |
 | 0.0.14  | Tax Rates Updated for India |
 | 0.0.15  | Removed HSN/SAC code function, made HSN/SAC manual input required, fixed hardcoded API credentials, updated deprecated IRequestOptions to IHttpRequestOptions, and added pairedItem for data provenance |
+| 0.0.16  | Removed HSN/SAC code required in Update Catalog |
 
 ---
 

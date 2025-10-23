@@ -685,7 +685,6 @@ export const catalogOperations: INodeProperties[] = [
 				name: 'hsn_sac',
 				type: 'string',
 				default: '',
-				required: true,
 				placeholder: 'Enter HSN/SAC Code',
 			},
 			{
