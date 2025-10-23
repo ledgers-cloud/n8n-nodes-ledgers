@@ -61,7 +61,7 @@ export async function execute(this: IExecuteFunctions) {
 	const baseUrl = isIndia ? `${apiUrl}/v3` : apiUrl;
 
 	// Validate operation-country match
-	const indiaOnlyOps = ['hrms', 'banking', 'getBankStatement', 'getAllEmployees', 'addEmployee', 'updateEmployee', 'getEmployee', 'createPurchaseInvoice', 'listPurchaseInvoices', 'viewPurchaseInvoice', 'createPurchaseOrder', 'listPurchaseOrders', 'viewPurchaseOrder', 'createVoucher', 'listVouchers', 'viewVoucher', 'createInvoice', 'createQuote', 'viewInvoice', 'viewQuote', 'listInvoices', 'listQuotes', 'createReceipt', 'viewReceipt', 'listReceipts', 'getGSTReturnStatus', 'getGSTSearch'];
+	const indiaOnlyOps = ['hrms', 'banking', 'getBankStatement', 'getAllEmployees', 'addEmployee', 'updateEmployee', 'getEmployee', 'createPurchaseInvoice', 'listPurchaseInvoices', 'viewPurchaseInvoice', 'createPurchaseOrder', 'listPurchaseOrders', 'viewPurchaseOrder', 'createVoucher', 'listVouchers', 'viewVoucher', 'createInvoice', 'viewInvoice', 'viewQuote', 'listInvoices', 'listQuotes', 'createReceipt', 'viewReceipt', 'listReceipts', 'getGSTReturnStatus', 'getGSTSearch'];
 
 	for (let i = 0; i < items.length; i++) {
 		const operation = this.getNodeParameter('operation', i);
@@ -1143,6 +1143,60 @@ export async function execute(this: IExecuteFunctions) {
 						const seller_branch_id = this.getNodeParameter('seller_branch_id', i) as string;
 						const additionalFields = this.getNodeParameter('additionalFields', i, {}) as IDataObject;
 
+						// Transform contact based on region
+						const transformedContact = { ...contact };
+						if (isIndia) {
+							// India structure - keep existing fields
+							if (contact.tax_number) {
+								transformedContact.gstin = contact.tax_number ?? '';
+							}
+						} else {
+							// UAE structure - map tax_number to tax_id and contact_id to id
+							if (contact.tax_number) {
+								transformedContact.tax_id = contact.tax_number ?? '';
+							}
+							// Always remove tax_number for UAE structure and ensure tax_id is present
+							delete transformedContact.tax_number;
+							if (!transformedContact.tax_id) {
+								transformedContact.tax_id = contact.tax_number ?? '';
+							}
+							// Map contact_id to id for UAE structure
+							if (contact.contact_id) {
+								transformedContact.id = contact.contact_id;
+								delete transformedContact.contact_id;
+							}
+						}
+
+						// Transform items based on region
+						const transformedItems = items.map(item => {
+							const transformedItem = { ...item };
+							if (!isIndia) {
+								// UAE structure - map item_code to hsn_sac
+								if (item.item_code) {
+									transformedItem.hsn_sac = item.item_code;
+									delete transformedItem.item_code;
+								}
+								// Map gst_rate to vat_rate
+								if (item.gst_rate) {
+									transformedItem.vat_rate = item.gst_rate;
+									delete transformedItem.gst_rate;
+								}
+								// Map taxable_per_item to taxable_per_item
+								if (item.taxable_per_item) {
+									transformedItem.taxable_per_item = item.taxable_per_item;
+								}
+								// Map non_taxable_per_item to non_taxable_per_item
+								if (item.non_taxable_per_item) {
+									transformedItem.non_taxable_per_item = item.non_taxable_per_item;
+								}
+								// Map tax_type
+								if (item.tax_type) {
+									transformedItem.tax_type = item.tax_type;
+								}
+							}
+							return transformedItem;
+						});
+
 						// Validate required contact fields
 						if (!contact.name || contact.name === '') {
 							throw new ApplicationError('Contact Name is required for creating quote', { level: 'warning' });
@@ -1162,7 +1216,7 @@ export async function execute(this: IExecuteFunctions) {
 								throw new ApplicationError(`Item Name is required for item ${j + 1}`, { level: 'warning' });
 							}
 							if (!item.item_code || item.item_code === '') {
-								throw new ApplicationError(`SAC/HSN Code is required for item ${j + 1}`, { level: 'warning' });
+								throw new ApplicationError(`HSN/SAC Code is required for item ${j + 1}`, { level: 'warning' });
 							}
 
 							// Validate numeric fields - must be integers >= 0 and not empty
@@ -1218,7 +1272,7 @@ export async function execute(this: IExecuteFunctions) {
 								throw new ApplicationError(`Item Type is required for item ${j + 1}`, { level: 'warning' });
 							}
 							if(!item.gst_rate || item.gst_rate === '') {
-								throw new ApplicationError(`GST Rate is required for item ${j + 1}`, { level: 'warning' });
+								throw new ApplicationError(`${isIndia ? 'GST' : 'VAT'} Rate is required for item ${j + 1}`, { level: 'warning' });
 							}
 							if(rateValue && nonTaxableValue) {
 								if(rateValue < nonTaxableValue) {
@@ -1238,8 +1292,8 @@ export async function execute(this: IExecuteFunctions) {
 						}
 
 						const body: IDataObject = {
-							contact,
-							items,
+							contact: transformedContact,
+							items: transformedItems,
 							seller_branch_id,
 							...additionalFields,
 						};
@@ -1578,7 +1632,7 @@ export async function execute(this: IExecuteFunctions) {
 								throw new ApplicationError(`Item Type is required for item ${j + 1}`, { level: 'warning' });
 							}
 							if(!item.gst_rate || item.gst_rate === '') {
-								throw new ApplicationError(`GST Rate is required for item ${j + 1}`, { level: 'warning' });
+								throw new ApplicationError(`${isIndia ? 'GST' : 'VAT'} Rate is required for item ${j + 1}`, { level: 'warning' });
 							}
 							if(rateValue && nonTaxableValue) {
 								if(rateValue < nonTaxableValue) {
