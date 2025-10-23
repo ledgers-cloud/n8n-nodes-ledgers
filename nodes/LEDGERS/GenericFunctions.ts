@@ -1,4 +1,4 @@
-import type { IExecuteFunctions, IRequestOptions, IDataObject, INodeExecutionData } from 'n8n-workflow';
+import type { IExecuteFunctions, IHttpRequestOptions, IDataObject, INodeExecutionData } from 'n8n-workflow';
 import { ApplicationError } from 'n8n-workflow';
 
 // 🔹 Map Dial Codes to ISO Country Codes
@@ -61,7 +61,7 @@ export async function execute(this: IExecuteFunctions) {
 	const baseUrl = isIndia ? `${apiUrl}/v3` : apiUrl;
 
 	// Validate operation-country match
-	const indiaOnlyOps = ['hrms', 'banking', 'getBankStatement', 'getAllEmployees', 'addEmployee', 'updateEmployee', 'getEmployee', 'createPurchaseInvoice', 'listPurchaseInvoices', 'viewPurchaseInvoice', 'createPurchaseOrder', 'listPurchaseOrders', 'viewPurchaseOrder', 'createVoucher', 'listVouchers', 'viewVoucher', 'createQuote', 'viewInvoice', 'viewQuote', 'listInvoices', 'listQuotes', 'createReceipt', 'viewReceipt', 'listReceipts', 'getGSTReturnStatus', 'getGSTSearch'];
+	const indiaOnlyOps = ['hrms', 'banking', 'getBankStatement', 'getAllEmployees', 'addEmployee', 'updateEmployee', 'getEmployee', 'createPurchaseInvoice', 'listPurchaseInvoices', 'viewPurchaseInvoice', 'createPurchaseOrder', 'listPurchaseOrders', 'viewPurchaseOrder', 'createVoucher', 'listVouchers', 'viewVoucher', 'createInvoice', 'createQuote', 'viewInvoice', 'viewQuote', 'listInvoices', 'listQuotes', 'createReceipt', 'viewReceipt', 'listReceipts', 'getGSTReturnStatus', 'getGSTSearch'];
 
 	for (let i = 0; i < items.length; i++) {
 		const operation = this.getNodeParameter('operation', i);
@@ -75,7 +75,7 @@ export async function execute(this: IExecuteFunctions) {
 	// Step 1: Authenticate and get api_token once for all items
 	let apiToken: string;
 	try {
-		const loginOptions: IRequestOptions = {
+		const loginOptions: IHttpRequestOptions = {
 			method: 'POST',
 			url: `${apiUrl}/login`,
 			headers: {
@@ -110,7 +110,7 @@ export async function execute(this: IExecuteFunctions) {
 		const continueOnFail = this.continueOnFail?.();
 		try {
 					const operation = this.getNodeParameter('operation', i);
-					const options: IRequestOptions = {
+					const options: IHttpRequestOptions = {
 							method: 'GET', // Default method
 							url: '',
 							headers: {
@@ -364,7 +364,7 @@ export async function execute(this: IExecuteFunctions) {
 						const addressFields = this.getNodeParameter('addressFields', i) as IDataObject;
 						const addressType = this.getNodeParameter('addressType', i, 'billing') as string;
 
-						const getContactOptions: IRequestOptions = {
+						const getContactOptions: IHttpRequestOptions = {
 							method: 'GET',
 							url: `${baseUrl}/contact/${contactId}`,
 							headers: options.headers,
@@ -426,7 +426,7 @@ export async function execute(this: IExecuteFunctions) {
 						const addressSelector = this.getNodeParameter('addressSelector', i, 0) as number;
 						const updateFields = this.getNodeParameter('addressUpdateFields', i, {}) as Record<string, any>;
 
-						const getContactOptions: IRequestOptions = {
+						const getContactOptions: IHttpRequestOptions = {
 							method: 'GET',
 							url: `${baseUrl}/contact/${contactId}`,
 							headers: options.headers,
@@ -826,7 +826,7 @@ export async function execute(this: IExecuteFunctions) {
 						const variant_price = this.getNodeParameter('variant_price', i);
 						const additionalFields = this.getNodeParameter('variantAdditionalFields', i) as Record<string, any>;
 						// 1. Fetch catalog details to get current variants
-						const getOptions: IRequestOptions = {
+						const getOptions: IHttpRequestOptions = {
 							method: 'GET',
 							url: `${baseUrl}/catalog/${catalogId}`,
 							headers: {
@@ -1333,7 +1333,7 @@ export async function execute(this: IExecuteFunctions) {
 						if (sellerBranchId && sellerBranchId.trim() !== '') {
 							try {
 								// Fetch branch data directly
-								const branchOptions: IRequestOptions = {
+								const branchOptions: IHttpRequestOptions = {
 									method: 'GET',
 									url: `${baseUrl}/business/branch/${sellerBranchId}`,
 									headers: {
@@ -2240,10 +2240,10 @@ export async function execute(this: IExecuteFunctions) {
 						}
 					}
 					const result = await this.helpers.request(options);
-					returnData.push({ json: result });
+					returnData.push({ json: result, pairedItem: { item: i } });
 		} catch (error) {
 			if (continueOnFail) {
-				returnData.push({ json: { error: (error as Error).message } });
+				returnData.push({ json: { error: (error as Error).message }, pairedItem: { item: i } });
 				continue;
 			}
 			throw error;
