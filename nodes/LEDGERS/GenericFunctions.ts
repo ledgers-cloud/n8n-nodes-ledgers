@@ -61,7 +61,7 @@ export async function execute(this: IExecuteFunctions) {
 	const baseUrl = isIndia ? `${apiUrl}/v3` : apiUrl;
 
 	// Validate operation-country match
-	const indiaOnlyOps = ['hrms', 'banking', 'getBankStatement', 'getAllEmployees', 'addEmployee', 'updateEmployee', 'getEmployee', 'createPurchaseInvoice', 'listPurchaseInvoices', 'viewPurchaseInvoice', 'createPurchaseOrder', 'listPurchaseOrders', 'viewPurchaseOrder', 'createVoucher', 'listVouchers', 'viewVoucher', 'createInvoice', 'viewInvoice', 'viewQuote', 'listInvoices', 'listQuotes', 'createReceipt', 'viewReceipt', 'listReceipts', 'getGSTReturnStatus', 'getGSTSearch'];
+	const indiaOnlyOps = ['hrms', 'banking', 'getBankStatement', 'getAllEmployees', 'addEmployee', 'updateEmployee', 'getEmployee', 'createPurchaseInvoice', 'listPurchaseInvoices', 'viewPurchaseInvoice', 'createPurchaseOrder', 'listPurchaseOrders', 'viewPurchaseOrder', 'createVoucher', 'listVouchers', 'viewVoucher', 'viewInvoice', 'viewQuote', 'listInvoices', 'listQuotes', 'createReceipt', 'viewReceipt', 'listReceipts', 'getGSTReturnStatus', 'getGSTSearch'];
 
 	for (let i = 0; i < items.length; i++) {
 		const operation = this.getNodeParameter('operation', i);
@@ -899,7 +899,7 @@ export async function execute(this: IExecuteFunctions) {
 						}
 
 						// Transform contact data based on region (same pattern as contact operations)
-						const transformedContact = { ...contact };
+						let transformedContact = { ...contact };
 						if (isIndia) {
 							// India structure - keep existing fields
 							if (contact.tax_number) {
@@ -920,6 +920,22 @@ export async function execute(this: IExecuteFunctions) {
 								transformedContact.id = contact.contact_id;
 								delete transformedContact.contact_id;
 							}
+
+							// Remove unwanted keys for UAE contact
+							delete transformedContact.tax_number;
+							delete transformedContact.contact_id;
+
+							// Keep only the necessary fields for UAE contact
+							const uaeContactFields = ['id', 'name', 'business_name', 'tax_id', 'email', 'mobile', 'business_country', 'country_code', 'place_of_supply'];
+							const cleanedContact: any = {};
+
+							uaeContactFields.forEach(field => {
+								if (transformedContact[field] !== undefined) {
+									cleanedContact[field] = transformedContact[field];
+								}
+							});
+
+							transformedContact = cleanedContact;
 						}
 
 						// Transform items based on region
@@ -934,27 +950,41 @@ export async function execute(this: IExecuteFunctions) {
 								if (item.pid) {
 									transformedItem.pid = item.pid;
 								}
-								if (item.tax_rate) {
-									transformedItem.gst_rate = item.tax_rate;
-									delete transformedItem.tax_rate;
+								if (item.gst_rate) {
+									transformedItem.gst_rate = item.gst_rate;
 								}
 							} else {
-								// UAE structure - map fields
+								// UAE structure - map fields and remove unwanted keys
 								if (item.item_code) {
-									transformedItem.hsn_sac_code = item.item_code;
+									transformedItem.hsn_sac = item.item_code;
 									delete transformedItem.item_code;
 								}
 								if (item.pid) {
 									transformedItem.id = item.pid;
 									delete transformedItem.pid;
 								}
-								if (item.tax_rate) {
-									transformedItem.vat_rate = item.tax_rate;
-									delete transformedItem.tax_rate;
+								if (item.gst_rate) {
+									transformedItem.vat_rate = item.gst_rate;
+									delete transformedItem.gst_rate;
 								}
-							}
 
-							return transformedItem;
+								// Remove unwanted keys for UAE
+								delete transformedItem.item_code;
+								delete transformedItem.pid;
+								delete transformedItem.gst_rate;
+
+								// Keep only the necessary fields for UAE
+								const uaeFields = ['id', 'name', 'description', 'quantity', 'rate', 'price', 'discount', 'vat_amount', 'tax_type', 'vat_rate', 'taxable_per_item', 'non_taxable_per_item', 'total_amount', 'nontaxable_amount', 'non_tax', 'taxable', 'hsn_sac'];
+								const cleanedItem: any = {};
+
+								uaeFields.forEach(field => {
+									if (transformedItem[field] !== undefined) {
+										cleanedItem[field] = transformedItem[field];
+									}
+								});
+
+								return cleanedItem;
+							}
 						});
 
 						// Validate transformed items
@@ -964,9 +994,9 @@ export async function execute(this: IExecuteFunctions) {
 								throw new ApplicationError(`Item Name is required for item ${j + 1}`, { level: 'warning' });
 							}
 
-							const codeField = isIndia ? 'item_code' : 'hsn_sac_code';
+							const codeField = isIndia ? 'item_code' : 'hsn_sac';
 							if (!item[codeField] || item[codeField] === '') {
-								throw new ApplicationError(`${isIndia ? 'SAC/HSN' : 'HSN/SAC'} Code is required for item ${j + 1}`, { level: 'warning' });
+								throw new ApplicationError(`${isIndia ? 'HSN/SAC' : 'HSN/SAC'} Code is required for item ${j + 1}`, { level: 'warning' });
 							}
 
 							// Validate numeric fields - must be integers >= 0 and not empty
@@ -1108,10 +1138,6 @@ export async function execute(this: IExecuteFunctions) {
 						options.method = 'POST';
 						options.url = `${baseUrl}/invoice`;
 						options.body = body;
-						console.log(body);
-						console.log(options.body);
-						console.log(options.url);
-						console.log(options.method);
 					} else if (operation === 'viewInvoice') {
 						const invoiceId = this.getNodeParameter('invoiceId', i) as string;
 						options.method = 'GET';
