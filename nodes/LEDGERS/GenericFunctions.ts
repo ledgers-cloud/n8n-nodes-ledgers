@@ -537,6 +537,7 @@ export async function execute(this: IExecuteFunctions) {
 						const price = this.getNodeParameter('price', i);
 						const catalogType = this.getNodeParameter('catalog_type', i);
 						const itemType = this.getNodeParameter('item_type', i);
+						const hsnSac = this.getNodeParameter('hsn_sac', i);
 						const additionalFields = this.getNodeParameter('additionalFields', i) as Record<string, any>;
 						const tax_type = additionalFields.tax_type ?? 'inclusive of tax';
 						const tax_rate = additionalFields.tax_rate ?? '5%';
@@ -548,6 +549,11 @@ export async function execute(this: IExecuteFunctions) {
 						// 🔎 Validate price
 						if (price === undefined || price === null || price === '' || price === 0 || price === '0') {
 							throw new ApplicationError('Price must be a number greater than zero.');
+						}
+
+						// 🔎 Validate HSN/SAC Code based on country
+						if (isIndia && (!hsnSac || hsnSac === '')) {
+							throw new ApplicationError('HSN/SAC Code is required for India operations.');
 						}
 						// Handle cess_type and cess_value with validation (India only)
 						let cess_type_api, cess_api;
@@ -625,6 +631,7 @@ export async function execute(this: IExecuteFunctions) {
 								catalog_type: catalogType,
 								gst_rate: tax_rate_value,
 								item_type: itemType,
+								hsn_sac: hsnSac,
 								units: unit,
 								description: description,
 								variants: variants,
@@ -996,7 +1003,7 @@ export async function execute(this: IExecuteFunctions) {
 
 							const codeField = isIndia ? 'item_code' : 'hsn_sac';
 							if (!item[codeField] || item[codeField] === '') {
-								throw new ApplicationError(`${isIndia ? 'HSN/SAC' : 'HSN/SAC'} Code is required for item ${j + 1}`, { level: 'warning' });
+								throw new ApplicationError(`${isIndia ? 'HSN/SAC' : 'Item'} Code is required for item ${j + 1}`, { level: 'warning' });
 							}
 
 							// Validate numeric fields - must be integers >= 0 and not empty
