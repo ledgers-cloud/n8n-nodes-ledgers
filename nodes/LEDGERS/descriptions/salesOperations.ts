@@ -321,9 +321,9 @@ export const SalesOperations: INodeProperties[] = [
         ],
         default: 'INDIA',
       },
-      { displayName: 'Business Name', name: 'business_name', type: 'string', default: '', description: 'Required for UAE operations' },
-      { displayName: 'Contact ID', name: 'id', type: 'string', default: '', required: true },
-      { displayName: 'Contact Name', name: 'name', type: 'string', default: '', required: true },
+      { displayName: 'Business Name', name: 'business_name', type: 'string', default: ''},
+      { displayName: 'Contact ID', name: 'id', type: 'string', default: '' },
+      { displayName: 'Contact Name', name: 'name', type: 'string', default: '' },
       { displayName: 'Email', name: 'email', type: 'string', default: '', placeholder: 'name@email.com' },
       { displayName: 'Mobile', name: 'mobile', type: 'string', default: '' },
       {
@@ -479,7 +479,6 @@ export const SalesOperations: INodeProperties[] = [
           { value: 'WEST BENGAL', name: 'WEST BENGAL' }
         ],
         default: 'TAMIL NADU',
-        description: 'Required for UAE operations',
       },
       { displayName: 'Tax Number', name: 'tax_number', type: 'string', default: '', placeholder: 'Enter Tax Number' },
     ],
@@ -824,6 +823,7 @@ export const SalesOperations: INodeProperties[] = [
 						],
 						default: 'TAMIL NADU',
 					},
+					{ displayName: 'Tax Number', name: 'tax_number', type: 'string', default: '' },
 				],
 			},
 			{
@@ -1072,9 +1072,9 @@ export const SalesOperations: INodeProperties[] = [
         ],
         default: 'INDIA',
       },
-      { displayName: 'Business Name', name: 'business_name', type: 'string', default: '', description: 'Required for UAE operations' },
-      { displayName: 'Contact ID', name: 'id', type: 'string', default: '', required: true },
-      { displayName: 'Contact Name', name: 'name', type: 'string', default: '', required: true },
+      { displayName: 'Business Name', name: 'business_name', type: 'string', default: '' },
+      { displayName: 'Contact ID', name: 'id', type: 'string', default: '' },
+      { displayName: 'Contact Name', name: 'name', type: 'string', default: '' },
       { displayName: 'Email', name: 'email', type: 'string', default: '', placeholder: 'name@email.com' },
       { displayName: 'Mobile', name: 'mobile', type: 'string', default: '' },
 			{
@@ -1206,20 +1206,20 @@ export const SalesOperations: INodeProperties[] = [
         values: [
           { displayName: 'Description', name: 'description', type: 'string', default: '' },
           { displayName: 'Discount', name: 'discount', type: 'number', default: 0 },
-          { displayName: 'HSN/SAC Code', name: 'item_code', type: 'string', default: '', required: true },
+          { displayName: 'HSN/SAC Code', name: 'item_code', type: 'string', default: ''},
           { displayName: 'Item ID', name: 'pid', type: 'string', default: '' },
-          { displayName: 'Item Name', name: 'name', type: 'string', default: '', required: true },
+          { displayName: 'Item Name', name: 'name', type: 'string', default: ''},
           { displayName: 'Item Type', name: 'item_type', type: 'options', options: [
             { name: 'Goods', value: '1' },
             { name: 'Service', value: '2' },
           ], default: '1' },
-          { displayName: 'Non Taxable Per Item', name: 'non_taxable_per_item', type: 'string', default: '', required: true },
+          { displayName: 'Non Taxable Per Item', name: 'non_taxable_per_item', type: 'string', default: '' },
           { displayName: 'Price Type', name: 'price_type', type: 'options', options: [
             { name: 'Inclusive of Tax', value: 0 },
             { name: 'Exclusive of Tax', value: 1 },
           ], default: 0 },
-          { displayName: 'Quantity', name: 'quantity', type: 'number', default: 1, required: true },
-          { displayName: 'Rate', name: 'rate', type: 'string', default: '', required: true },
+          { displayName: 'Quantity', name: 'quantity', type: 'number', default: 1 },
+          { displayName: 'Rate', name: 'rate', type: 'string', default: '' },
 					{
             displayName: 'Tax Rate',
             name: 'gst_rate',
@@ -1240,9 +1240,8 @@ export const SalesOperations: INodeProperties[] = [
               { name: 'Zero-Rated', value: 'Zero-Rated' },
             ],
             default: '5',
-            required: true,
           },
-          { displayName: 'Taxable Per Item', name: 'taxable_per_item', type: 'string', default: '', required: true },
+          { displayName: 'Taxable Per Item', name: 'taxable_per_item', type: 'string', default: '' },
           { displayName: 'Variant ID', name: 'variant_id', type: 'string', default: '' },
         ],
       },
@@ -1296,16 +1295,12 @@ export const SalesOperations: INodeProperties[] = [
 		},
 	},
 	{
-		displayName: 'Payment Method Name or ID',
+		displayName: 'Payment Method',
 		name: 'payment_method',
-		type: 'options',
+		type: 'string',
 		default: '',
-		typeOptions: {
-			loadOptionsMethod: 'getPaymentMethods',
-		},
 		required: true,
-		placeholder: 'Select Payment Method',
-		description: 'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
+		placeholder: 'Enter Payment Method',
 		displayOptions: {
 			show: {
 				resource: ['sales'],
@@ -1342,6 +1337,7 @@ export const SalesOperations: INodeProperties[] = [
 					{ displayName: 'Billing Country', name: 'bill_country', type: 'string', default: '' },
 					{ displayName: 'Billing Pincode', name: 'bill_pincode', type: 'string', default: '' },
 					{ displayName: 'Billing State', name: 'bill_state', type: 'string', default: '' },
+					{ displayName: 'Billing Tax Number', name: 'bill_tax_number', type: 'string', default: '' },
         ],
       },
       {
@@ -1962,6 +1958,13 @@ export const SalesOperations: INodeProperties[] = [
     },
     options: [
       {
+        displayName: 'Bank Branch',
+        name: 'bank_branch',
+        type: 'string',
+        default: '',
+        description: 'Enter the bank branch information',
+      },
+      {
         displayName: 'Billing Address',
         name: 'billing_address',
         type: 'collection',
@@ -1974,7 +1977,22 @@ export const SalesOperations: INodeProperties[] = [
 					{ displayName: 'Billing Country', name: 'bill_country', type: 'string', default: '' },
 					{ displayName: 'Billing Pincode', name: 'bill_pincode', type: 'string', default: '' },
 					{ displayName: 'Billing State', name: 'bill_state', type: 'string', default: '' },
+					{ displayName: 'Billing Tax Number', name: 'bill_tax', type: 'string', default: '' }
         ],
+      },
+      {
+        displayName: 'Branch ID',
+        name: 'branch_id',
+        type: 'string',
+        default: '',
+        description: 'Enter the branch ID for the receipt',
+      },
+      {
+        displayName: 'Collected By',
+        name: 'collected_by',
+        type: 'string',
+        default: '',
+        description: 'Enter the ID or name of the person who collected the payment',
       },
       {
         displayName: 'Currency', name: 'currency', type: 'options',
@@ -2153,7 +2171,7 @@ export const SalesOperations: INodeProperties[] = [
 				description: 'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
 			},
 			{
-				displayName: 'Note', name: 'note', type: 'string', default: '' },
+				displayName: 'Notes', name: 'notes', type: 'string', default: '' },
 			{
         displayName: 'Notification', name: 'notification', type: 'options', description: 'If you want Notification, select Yes', options: [
 					{ name: 'Yes', value: 'Yes' },
@@ -2354,8 +2372,10 @@ export const SalesOperations: INodeProperties[] = [
 					{ displayName: 'Shipping Country', name: 'ship_country', type: 'string', default: '' },
 					{ displayName: 'Shipping Pincode', name: 'ship_pincode', type: 'string', default: '' },
 					{ displayName: 'Shipping State', name: 'ship_state', type: 'string', default: '' },
+					{ displayName: 'Shipping Tax Number', name: 'ship_tax', type: 'string', default: '' }
 				],
-			},{
+			},
+			{
 				displayName: 'Transaction Number',
 				name: 'transaction_number',
 				type: 'string',
