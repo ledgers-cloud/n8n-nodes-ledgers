@@ -553,7 +553,7 @@ export async function execute(this: IExecuteFunctions) {
 
 						// 🔎 Validate HSN/SAC Code based on country
 						if (isIndia && (!hsnSac || hsnSac === '')) {
-							throw new ApplicationError('HSN/SAC Code is required for India operations.');
+							throw new ApplicationError('HSN/SAC Code is required for India Region only.');
 						}
 						// Handle cess_type and cess_value with validation (India only)
 						let cess_type_api, cess_api;
@@ -892,7 +892,7 @@ export async function execute(this: IExecuteFunctions) {
 						const seller_branch_id = this.getNodeParameter('seller_branch_id', i) as string;
 						const additionalFields = this.getNodeParameter('additionalFields', i, {}) as IDataObject;
 
-						// Validate required contact fields
+						// Validate required contact fields based on country
 						if (!contact.name || contact.name === '') {
 							throw new ApplicationError('Contact Name is required for creating invoice', { level: 'warning' });
 						}
@@ -900,9 +900,21 @@ export async function execute(this: IExecuteFunctions) {
 							throw new ApplicationError('Contact ID is required for creating invoice', { level: 'warning' });
 						}
 
-						// Validate required item fields
-						if (!items || items.length === 0) {
-							throw new ApplicationError('At least one item is required for creating invoice', { level: 'warning' });
+						// UAE specific contact validations
+						if (!isIndia) {
+							if (!contact.business_name || contact.business_name === '') {
+								throw new ApplicationError('Business Name is required for UAE operations', { level: 'warning' });
+							}
+							if (!contact.place_of_supply || contact.place_of_supply === '') {
+								throw new ApplicationError('Place of Supply is required for UAE operations', { level: 'warning' });
+							}
+						}
+
+						// India specific validations
+						if (isIndia) {
+							if (!seller_branch_id || seller_branch_id === '') {
+								throw new ApplicationError('Seller Branch ID is required for India operations', { level: 'warning' });
+							}
 						}
 
 						// Transform contact data based on region (same pattern as contact operations)
@@ -1053,7 +1065,7 @@ export async function execute(this: IExecuteFunctions) {
 								throw new ApplicationError(`Taxable Per Item cannot be greater than Rate for item ${j + 1}`, { level: 'warning' });
 							}
 
-							if(!item.quantity || item.quantity === '' || item.quantity === 0) {
+							if(item.quantity === undefined || item.quantity === null || item.quantity === '') {
 								throw new ApplicationError(`Quantity is required for item ${j + 1}`, { level: 'warning' });
 							}
 							if(!item.item_type || item.item_type === '') {
@@ -1070,6 +1082,26 @@ export async function execute(this: IExecuteFunctions) {
 								const vatRate = item[rateField];
 								if (vatRate !== '0' && vatRate !== '5' && vatRate !== 'Exempted Supply') {
 									throw new ApplicationError(`VAT Rate must be 0, 5, or Exempted Supply only for item ${j + 1}`, { level: 'warning' });
+								}
+							}
+
+							// UAE specific additional validations
+							if (!isIndia) {
+								// Ensure all UAE required fields are present
+								if (item.quantity === undefined || item.quantity === null || item.quantity === '') {
+									throw new ApplicationError(`Quantity is required for UAE operations - item ${j + 1}`, { level: 'warning' });
+								}
+								if (item.rate === undefined || item.rate === null || item.rate === '') {
+									throw new ApplicationError(`Rate is required for UAE operations - item ${j + 1}`, { level: 'warning' });
+								}
+								if (item.taxable_per_item === undefined || item.taxable_per_item === null || item.taxable_per_item === '') {
+									throw new ApplicationError(`Taxable Per Item is required for UAE operations - item ${j + 1}`, { level: 'warning' });
+								}
+								if (item.non_taxable_per_item === undefined || item.non_taxable_per_item === null || item.non_taxable_per_item === '') {
+									throw new ApplicationError(`Non Taxable Per Item is required for UAE operations - item ${j + 1}`, { level: 'warning' });
+								}
+								if (item.vat_rate === undefined || item.vat_rate === null || item.vat_rate === '') {
+									throw new ApplicationError(`VAT Rate is required for UAE operations - item ${j + 1}`, { level: 'warning' });
 								}
 							}
 
@@ -1298,7 +1330,7 @@ export async function execute(this: IExecuteFunctions) {
 								throw new ApplicationError(`Taxable Per Item cannot be greater than Rate for item ${j + 1}`, { level: 'warning' });
 							}
 
-							if(!item.quantity || item.quantity === '' || item.quantity === 0) {
+							if(item.quantity === undefined || item.quantity === null || item.quantity === '') {
 								throw new ApplicationError(`Quantity is required for item ${j + 1}`, { level: 'warning' });
 							}
 							if(!item.item_type || item.item_type === '') {
@@ -1658,7 +1690,7 @@ export async function execute(this: IExecuteFunctions) {
 								throw new ApplicationError(`Taxable Amount cannot be greater than Rate for item ${j + 1}`, { level: 'warning' });
 							}
 
-							if(!item.quantity || item.quantity === '' || item.quantity === 0) {
+							if(item.quantity === undefined || item.quantity === null || item.quantity === '') {
 								throw new ApplicationError(`Quantity is required for item ${j + 1}`, { level: 'warning' });
 							}
 							if(!item.item_type || item.item_type === '') {

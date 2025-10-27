@@ -102,7 +102,7 @@ export const catalogOperations: INodeProperties[] = [
 		type: 'string',
 		default: '',
 		placeholder: 'Enter HSN/SAC Code',
-		description: 'HSN/SAC Code is required for India operations only. For UAE operations, this field is optional.',
+		description: 'HSN/SAC Code is required for India Region only',
 		displayOptions: {
 			show: {
 				resource: ['catalog'],
