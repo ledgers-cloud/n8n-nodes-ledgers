@@ -537,6 +537,7 @@ export async function execute(this: IExecuteFunctions) {
 						const price = this.getNodeParameter('price', i);
 						const catalogType = this.getNodeParameter('catalog_type', i);
 						const itemType = this.getNodeParameter('item_type', i);
+						const hsnSac = this.getNodeParameter('hsn_sac', i);
 						const additionalFields = this.getNodeParameter('additionalFields', i) as Record<string, any>;
 						const tax_type = additionalFields.tax_type ?? 'inclusive of tax';
 						const tax_rate = additionalFields.tax_rate ?? '5%';
@@ -555,6 +556,11 @@ export async function execute(this: IExecuteFunctions) {
 						// Check if cess is selected for UAE (not allowed)
 						if (!isIndia && additionalFields.cess_type) {
 							throw new ApplicationError('Cess is not available for UAE operations. Cess is only available for India.');
+						}
+
+						// 🔎 Validate HSN/SAC Code based on country
+						if (isIndia && (!hsnSac || hsnSac === '')) {
+							throw new ApplicationError('HSN/SAC Code is required for India Region only.');
 						}
 
 						if (isIndia && additionalFields.cess_type) {
@@ -624,6 +630,7 @@ export async function execute(this: IExecuteFunctions) {
 								item_name: catalogName,
 								catalog_type: catalogType,
 								gst_rate: tax_rate_value,
+								hsn_sac: hsnSac,
 								item_type: itemType,
 								units: unit,
 								description: description,

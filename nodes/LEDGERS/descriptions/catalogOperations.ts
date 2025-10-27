@@ -101,8 +101,14 @@ export const catalogOperations: INodeProperties[] = [
 		name: 'hsn_sac',
 		type: 'string',
 		default: '',
-		required: true,
 		placeholder: 'Enter HSN/SAC Code',
+		description: 'HSN/SAC Code is required for India Region only',
+		displayOptions: {
+			show: {
+				resource: ['catalog'],
+				operation: ['createCatalog'],
+			},
+		},
 	},
 
 	{
