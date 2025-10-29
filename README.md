@@ -135,6 +135,7 @@ The LEDGERS node supports the following operations:
 - **GST Rate Dropdown**: Standardized GST rate selection with predefined options
 - **Advanced Validation**: Integer validation for PID (>0), Variant ID (>0), rates (≥0), and taxable amounts (≥0)
 - **Business Logic Validation**: Taxable amount cannot exceed rate, non-taxable amount cannot exceed rate
+- **Multi-region Support**: Full support for both India and UAE regions with region-specific validations and filter formats
 
 ### **Purchase Operations**
 - **Purchase Invoice Management**: Create supplier invoices with comprehensive validation and item details
@@ -259,8 +260,7 @@ To authenticate with the LEDGERS API, you must provide the following:
 - **Event-driven Workflows**: Automate based on contact, invoice, and catalog changes
 - **Multi-region Support**: Triggers for both India and UAE operations
 
-### **UAE Sales and Purchase Operations**
-- **Complete UAE Sales**: Full invoice, quote, and receipt management for UAE
+### **UAE Purchase Operations**
 - **UAE Purchase Operations**: Purchase invoices, vouchers, and procurement management
 - **Multi-region Workflows**: Handle both India and UAE operations in single workflows
 - **Currency Support**: Enhanced multi-currency handling for UAE operations
@@ -297,6 +297,7 @@ To authenticate with the LEDGERS API, you must provide the following:
 | ICICI & Axis Bank   | ✅ Implemented |
 | UAE Contact Operations| ✅ Implemented |
 | UAE Catalog Operations| ✅ Implemented |
+| UAE Sales Operations| ✅ Implemented |
 
 ---
 
@@ -471,6 +472,7 @@ You can enable this in the node's settings under the **"Continue On Fail"** opti
 | 0.0.15  | Removed HSN/SAC code function, made HSN/SAC manual input required, fixed hardcoded API credentials, updated deprecated IRequestOptions to IHttpRequestOptions, and added pairedItem for data provenance |
 | 0.0.16  | Removed HSN/SAC code required in Update Catalog |
 | 0.0.17  | HSN/SAC Bug Fix in Front end of Catalog Operations and Back end |
+| 0.0.18  | Sales Operation released for UAE |
 
 ---
 
