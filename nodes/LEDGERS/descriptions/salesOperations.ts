@@ -321,11 +321,10 @@ export const SalesOperations: INodeProperties[] = [
         ],
         default: 'INDIA',
       },
-      { displayName: 'Business Name', name: 'business_name', type: 'string', default: '' },
+      { displayName: 'Business Name', name: 'business_name', type: 'string', default: ''},
       { displayName: 'Contact ID', name: 'id', type: 'string', default: '' },
       { displayName: 'Contact Name', name: 'name', type: 'string', default: '' },
       { displayName: 'Email', name: 'email', type: 'string', default: '', placeholder: 'name@email.com' },
-      { displayName: 'GSTIN', name: 'gstin', type: 'string', default: '', placeholder: 'Enter GSTIN' },
       { displayName: 'Mobile', name: 'mobile', type: 'string', default: '' },
       {
         displayName: 'Mobile Country Code',
@@ -481,6 +480,7 @@ export const SalesOperations: INodeProperties[] = [
         ],
         default: 'TAMIL NADU',
       },
+      { displayName: 'Tax Number', name: 'tax_number', type: 'string', default: '', placeholder: 'Enter Tax Number' },
     ],
   },
 	{
@@ -823,6 +823,7 @@ export const SalesOperations: INodeProperties[] = [
 						],
 						default: 'TAMIL NADU',
 					},
+					{ displayName: 'Tax Number', name: 'tax_number', type: 'string', default: '' },
 				],
 			},
 			{
@@ -1075,9 +1076,8 @@ export const SalesOperations: INodeProperties[] = [
       { displayName: 'Contact ID', name: 'id', type: 'string', default: '' },
       { displayName: 'Contact Name', name: 'name', type: 'string', default: '' },
       { displayName: 'Email', name: 'email', type: 'string', default: '', placeholder: 'name@email.com' },
-      { displayName: 'GSTIN', name: 'gstin', type: 'string', default: '', placeholder: 'Enter GSTIN' },
       { displayName: 'Mobile', name: 'mobile', type: 'string', default: '' },
-      {
+			{
         displayName: 'Mobile Country Code',
         name: 'country_code',
         type: 'options',
@@ -1184,53 +1184,8 @@ export const SalesOperations: INodeProperties[] = [
 				],
         default: 91,
       },
-      {
-        displayName: 'Place of Supply',
-        name: 'pos',
-        type: 'options',
-        options: [
-          { value: 'ANDAMAN AND NICOBAR ISLANDS', name: 'ANDAMAN AND NICOBAR ISLANDS' },
-          { value: 'ANDHRA PRADESH', name: 'ANDHRA PRADESH' },
-          { value: 'ARUNACHAL PRADESH', name: 'ARUNACHAL PRADESH' },
-          { value: 'ASSAM', name: 'ASSAM' },
-          { value: 'BIHAR', name: 'BIHAR' },
-          { value: 'CHANDIGARH', name: 'CHANDIGARH' },
-          { value: 'CHHATTISGARH', name: 'CHHATTISGARH' },
-          { value: 'DADRA AND NAGAR HAVELI', name: 'DADRA AND NAGAR HAVELI' },
-          { value: 'DAMAN AND DIU', name: 'DAMAN AND DIU' },
-          { value: 'DELHI', name: 'DELHI' },
-          { value: 'GOA', name: 'GOA' },
-          { value: 'GUJARAT', name: 'GUJARAT' },
-          { value: 'HARYANA', name: 'HARYANA' },
-          { value: 'HIMACHAL PRADESH', name: 'HIMACHAL PRADESH' },
-          { value: 'INTERNATIONAL', name: 'INTERNATIONAL' },
-          { value: 'JAMMU AND KASHMIR', name: 'JAMMU AND KASHMIR' },
-          { value: 'JHARKHAND', name: 'JHARKHAND' },
-          { value: 'KARNATAKA', name: 'KARNATAKA' },
-          { value: 'KERALA', name: 'KERALA' },
-          { value: 'LADAKH', name: 'LADAKH' },
-          { value: 'LAKSHADWEEP', name: 'LAKSHADWEEP' },
-          { value: 'MADHYA PRADESH', name: 'MADHYA PRADESH' },
-          { value: 'MAHARASHTRA', name: 'MAHARASHTRA' },
-          { value: 'MANIPUR', name: 'MANIPUR' },
-          { value: 'MEGHALAYA', name: 'MEGHALAYA' },
-          { value: 'MIZORAM', name: 'MIZORAM' },
-          { value: 'NAGALAND', name: 'NAGALAND' },
-          { value: 'ODISHA', name: 'ODISHA' },
-          { value: 'OTHER TERRITORY', name: 'OTHER TERRITORY' },
-          { value: 'PUDUCHERRY', name: 'PUDUCHERRY' },
-          { value: 'PUNJAB', name: 'PUNJAB' },
-          { value: 'RAJASTHAN', name: 'RAJASTHAN' },
-          { value: 'SIKKIM', name: 'SIKKIM' },
-          { value: 'TAMIL NADU', name: 'TAMIL NADU' },
-          { value: 'TELANGANA', name: 'TELANGANA' },
-          { value: 'TRIPURA', name: 'TRIPURA' },
-          { value: 'UTTAR PRADESH', name: 'UTTAR PRADESH' },
-          { value: 'UTTARAKHAND', name: 'UTTARAKHAND' },
-          { value: 'WEST BENGAL', name: 'WEST BENGAL' }
-        ],
-        default: 'TAMIL NADU',
-      },
+      { displayName: 'Tax Number', name: 'tax_number', type: 'string', default: '', placeholder: 'Enter Tax Number' },
+
 		],
 	},
   // Items for create operations
@@ -1251,8 +1206,22 @@ export const SalesOperations: INodeProperties[] = [
         values: [
           { displayName: 'Description', name: 'description', type: 'string', default: '' },
           { displayName: 'Discount', name: 'discount', type: 'number', default: 0 },
-          {
-            displayName: 'GST Rate',
+          { displayName: 'HSN/SAC Code', name: 'item_code', type: 'string', default: ''},
+          { displayName: 'Item ID', name: 'pid', type: 'string', default: '' },
+          { displayName: 'Item Name', name: 'name', type: 'string', default: ''},
+          { displayName: 'Item Type', name: 'item_type', type: 'options', options: [
+            { name: 'Goods', value: '1' },
+            { name: 'Service', value: '2' },
+          ], default: '1' },
+          { displayName: 'Non Taxable Per Item', name: 'non_taxable_per_item', type: 'string', default: '' },
+          { displayName: 'Price Type', name: 'price_type', type: 'options', options: [
+            { name: 'Inclusive of Tax', value: 0 },
+            { name: 'Exclusive of Tax', value: 1 },
+          ], default: 0 },
+          { displayName: 'Quantity', name: 'quantity', type: 'number', default: 1 },
+          { displayName: 'Rate', name: 'rate', type: 'string', default: '' },
+					{
+            displayName: 'Tax Rate',
             name: 'gst_rate',
             type: 'options',
             options: [
@@ -1267,25 +1236,11 @@ export const SalesOperations: INodeProperties[] = [
               { name: '7.5%', value: '7.5' },
               { name: 'Exempted Supply', value: 'Exempted Supply' },
               { name: 'Nil-Rated', value: 'Nil-Rated' },
-              { name: 'Non-GST Supply', value: 'Non-GST Supply' },
+              { name: 'Non-Tax Supply', value: 'Non-Tax Supply' },
               { name: 'Zero-Rated', value: 'Zero-Rated' },
             ],
             default: '5',
           },
-          { displayName: 'HSN/SAC Code', name: 'item_code', type: 'string', default: '' },
-          { displayName: 'Item ID', name: 'pid', type: 'string', default: '' },
-          { displayName: 'Item Name', name: 'name', type: 'string', default: '' },
-          { displayName: 'Item Type', name: 'item_type', type: 'options', options: [
-            { name: 'Goods', value: '1' },
-            { name: 'Service', value: '2' },
-          ], default: '1' },
-          { displayName: 'Non Taxable Per Item', name: 'non_taxable_per_item', type: 'string', default: '' },
-          { displayName: 'Price Type', name: 'price_type', type: 'options', options: [
-            { name: 'Inclusive of GST', value: 0 },
-            { name: 'Exclusive of GST', value: 1 },
-          ], default: 0 },
-          { displayName: 'Quantity', name: 'quantity', type: 'number', default: 1 },
-          { displayName: 'Rate', name: 'rate', type: 'string', default: '' },
           { displayName: 'Taxable Per Item', name: 'taxable_per_item', type: 'string', default: '' },
           { displayName: 'Variant ID', name: 'variant_id', type: 'string', default: '' },
         ],
@@ -1305,6 +1260,7 @@ export const SalesOperations: INodeProperties[] = [
     type: 'string',
     default: '',
     required: true,
+    description: 'Required for India operations only',
     displayOptions: {
       show: {
         resource: ['sales'],
@@ -1339,16 +1295,12 @@ export const SalesOperations: INodeProperties[] = [
 		},
 	},
 	{
-		displayName: 'Payment Method Name or ID',
+		displayName: 'Payment Method',
 		name: 'payment_method',
-		type: 'options',
+		type: 'string',
 		default: '',
-		typeOptions: {
-			loadOptionsMethod: 'getPaymentMethods',
-		},
 		required: true,
-		placeholder: 'Select Payment Method',
-		description: 'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
+		placeholder: 'Enter Payment Method',
 		displayOptions: {
 			show: {
 				resource: ['sales'],
@@ -1356,6 +1308,7 @@ export const SalesOperations: INodeProperties[] = [
 			},
 		},
 	},
+
   // Additional Fields
   {
     displayName: 'Additional Fields',
@@ -1385,6 +1338,7 @@ export const SalesOperations: INodeProperties[] = [
 					{ displayName: 'Billing Country', name: 'bill_country', type: 'string', default: '' },
 					{ displayName: 'Billing Pincode', name: 'bill_pincode', type: 'string', default: '' },
 					{ displayName: 'Billing State', name: 'bill_state', type: 'string', default: '' },
+					{ displayName: 'Billing Tax Number', name: 'bill_tax_number', type: 'string', default: '' },
         ],
       },
       {
@@ -1748,9 +1702,9 @@ export const SalesOperations: INodeProperties[] = [
 						{ displayName: 'Shipping Address Line 2', name: 'ship_addr2', type: 'string', default: '' },
 						{ displayName: 'Shipping City', name: 'ship_city', type: 'string', default: '' },
 						{ displayName: 'Shipping Country', name: 'ship_country', type: 'string', default: '' },
-						{ displayName: 'Shipping GSTIN', name: 'ship_gstin', type: 'string', default: '' },
 						{ displayName: 'Shipping Pincode', name: 'ship_pincode', type: 'string', default: '' },
 						{ displayName: 'Shipping State', name: 'ship_state', type: 'string', default: '' },
+						{ displayName: 'Shipping Tax Number', name: 'ship_tax_number', type: 'string', default: '' },
 					],
 				},
 				{
@@ -1979,9 +1933,9 @@ export const SalesOperations: INodeProperties[] = [
 						{ displayName: 'Shipping Address Line 2', name: 'ship_addr2', type: 'string', default: '' },
 						{ displayName: 'Shipping City', name: 'ship_city', type: 'string', default: '' },
 						{ displayName: 'Shipping Country', name: 'ship_country', type: 'string', default: '' },
-						{ displayName: 'Shipping GSTIN', name: 'ship_gstin', type: 'string', default: '' },
 						{ displayName: 'Shipping Pincode', name: 'ship_pincode', type: 'string', default: '' },
 						{ displayName: 'Shipping State', name: 'ship_state', type: 'string', default: '' },
+						{ displayName: 'Shipping Tax Number', name: 'ship_tax_number', type: 'string', default: '' },
 					],
 				},
 				{
@@ -2005,6 +1959,13 @@ export const SalesOperations: INodeProperties[] = [
     },
     options: [
       {
+        displayName: 'Bank Branch',
+        name: 'bank_branch',
+        type: 'string',
+        default: '',
+        description: 'Enter the bank branch information',
+      },
+      {
         displayName: 'Billing Address',
         name: 'billing_address',
         type: 'collection',
@@ -2017,7 +1978,22 @@ export const SalesOperations: INodeProperties[] = [
 					{ displayName: 'Billing Country', name: 'bill_country', type: 'string', default: '' },
 					{ displayName: 'Billing Pincode', name: 'bill_pincode', type: 'string', default: '' },
 					{ displayName: 'Billing State', name: 'bill_state', type: 'string', default: '' },
+					{ displayName: 'Billing Tax Number', name: 'bill_tax', type: 'string', default: '' }
         ],
+      },
+      {
+        displayName: 'Branch ID',
+        name: 'branch_id',
+        type: 'string',
+        default: '',
+        description: 'Enter the branch ID for the receipt',
+      },
+      {
+        displayName: 'Collected By',
+        name: 'collected_by',
+        type: 'string',
+        default: '',
+        description: 'Enter the ID or name of the person who collected the payment',
       },
       {
         displayName: 'Currency', name: 'currency', type: 'options',
@@ -2196,19 +2172,18 @@ export const SalesOperations: INodeProperties[] = [
 				description: 'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
 			},
 			{
-				displayName: 'Note', name: 'note', type: 'string', default: '' },
+				displayName: 'Notes', name: 'notes', type: 'string', default: '' },
 			{
         displayName: 'Notification', name: 'notification', type: 'options', description: 'If you want Notification, select Yes', options: [
 					{ name: 'Yes', value: 'Yes' },
 					{ name: 'No', value: 'No' },
 				], default: 'Yes'
 			},
+
 			{
 				displayName: 'Receipt Date', name: 'receipt_date', type: 'dateTime', typeOptions: { dateOnly: true, showTime: false }, default: '',
 			},
-			{
-				displayName: 'Receipt Number', name: 'receipt_number', type: 'string', default: ''
-			},
+			{ displayName: 'Receipt Number', name: 'receipt_number', type: 'string', default: '' },
 			{
 				displayName: 'Reconcile',
 				name: 'reconcile',
@@ -2397,8 +2372,10 @@ export const SalesOperations: INodeProperties[] = [
 					{ displayName: 'Shipping Country', name: 'ship_country', type: 'string', default: '' },
 					{ displayName: 'Shipping Pincode', name: 'ship_pincode', type: 'string', default: '' },
 					{ displayName: 'Shipping State', name: 'ship_state', type: 'string', default: '' },
+					{ displayName: 'Shipping Tax Number', name: 'ship_tax', type: 'string', default: '' }
 				],
-			},{
+			},
+			{
 				displayName: 'Transaction Number',
 				name: 'transaction_number',
 				type: 'string',
