@@ -1211,6 +1211,11 @@ export async function execute(this: IExecuteFunctions) {
 						const filters = this.getNodeParameter('filters', i) as IDataObject;
 						const pageSize = this.getNodeParameter('page_size', i) as number;
 
+						// Contact ID filter only works for India region
+						if (!isIndia && filters.contact_id && filters.contact_id !== '') {
+							throw new ApplicationError('Contact ID filter is only available for India region', { level: 'warning' });
+						}
+
 						// Validate date range - both from and to dates must be provided if either is selected
 						if ((filters.date_from && !filters.date_to) || (!filters.date_from && filters.date_to)) {
 							throw new ApplicationError('Both Date From and Date To must be provided for date range filtering', { level: 'warning' });
@@ -1229,7 +1234,32 @@ export async function execute(this: IExecuteFunctions) {
 						options.method = 'GET';
 						// Contact ID filter only works for India region
 						const contactIdFilter = isIndia ? `&filter.contact_id=${filters.contact_id ?? ''}` : '';
-						options.url = `${baseUrl}/invoice?page_size=${pageSize ?? 5}&filter.date_from=${filters.date_from ?? ''}&filter.date_to=${filters.date_to ?? ''}&filter.payment_status=${filters.payment_status ?? ''}${contactIdFilter}`;
+
+						// Payment status filter format differs between regions
+						let paymentStatusFilter = '';
+						if (filters.payment_status && filters.payment_status !== '') {
+							if (isIndia) {
+								// India format: filter.payment_status=value
+								paymentStatusFilter = `&filter.payment_status=${filters.payment_status}`;
+							} else {
+								// UAE format: filter_field=payment_status&filter_value=mapped_value
+								const paymentStatusMapping: Record<string, string> = {
+									'Paid': 'paid',
+									'Not Paid': 'unpaid',
+									'Deleted': 'deleted',
+									'Part Paid': 'partpaid'
+								};
+								const paymentStatus = String(filters.payment_status);
+								const mappedValue = paymentStatusMapping[paymentStatus] || paymentStatus;
+								paymentStatusFilter = `&filter_field=payment_status&filter_value=${mappedValue}`;
+							}
+						}
+
+						// Date range filter keys differ between regions
+						const dateFromKey = isIndia ? 'filter.date_from' : 'invoice_date_from';
+						const dateToKey = isIndia ? 'filter.date_to' : 'invoice_date_to';
+
+						options.url = `${baseUrl}/invoice?page_size=${pageSize ?? 5}&${dateFromKey}=${filters.date_from ?? ''}&${dateToKey}=${filters.date_to ?? ''}${paymentStatusFilter}${contactIdFilter}`;
 					} else if (operation === 'createQuote') {
 						const contact = this.getNodeParameter('contact', i) as IDataObject;
 						const items = this.getNodeParameter('items.item', i) as IDataObject[];
@@ -1427,7 +1457,11 @@ export async function execute(this: IExecuteFunctions) {
 						}
 
 						options.method = 'GET';
-						options.url = `${baseUrl}/estimate?&page_size=${pageSize ?? 5}&filter.date_from=${filters.date_from ?? ''}&filter.date_to=${filters.date_to ?? ''}&filter.payment_status=${filters.payment_status ?? ''}&filter.contact_id=${filters.contact_id ?? ''}`;
+						// Date range filter keys differ between regions
+						const dateFromKey = isIndia ? 'filter.date_from' : 'estimate_date_from';
+						const dateToKey = isIndia ? 'filter.date_to' : 'estimate_date_to';
+
+						options.url = `${baseUrl}/estimate?&page_size=${pageSize ?? 5}&${dateFromKey}=${filters.date_from ?? ''}&${dateToKey}=${filters.date_to ?? ''}`;
 					} else if (operation === 'createReceipt') {
 						const contact = this.getNodeParameter('contact', i) as IDataObject;
 						const amount = this.getNodeParameter('amount', i) as string;
@@ -1465,14 +1499,17 @@ export async function execute(this: IExecuteFunctions) {
 						// UAE specific contact validations
 						if (!isIndia) {
 							if (!contact.business_name || contact.business_name === '') {
-								throw new ApplicationError('Business Name is required for UAE operations', { level: 'warning' });
+								throw new ApplicationError('Business Name is required for UAE region', { level: 'warning' });
+							}
+							if (!additionalFields.receipt_number || additionalFields.receipt_number === '') {
+								throw new ApplicationError('Receipt Number is required for UAE region', { level: 'warning' });
 							}
 						}
 
 						// India specific validations
 						if (isIndia) {
 							if (!sellerBranchId || sellerBranchId === '') {
-								throw new ApplicationError('Seller Branch ID is required for India operations', { level: 'warning' });
+								throw new ApplicationError('Seller Branch ID is required for India region', { level: 'warning' });
 							}
 						}
 
@@ -1664,6 +1701,16 @@ export async function execute(this: IExecuteFunctions) {
 						const filters = this.getNodeParameter('filters', i) as IDataObject;
 						const pageSize = this.getNodeParameter('page_size', i) as number;
 
+						// Contact ID filter only works for India region
+						if (!isIndia && filters.contact_id && filters.contact_id !== '') {
+							throw new ApplicationError('Contact ID filter is only available for India region', { level: 'warning' });
+						}
+
+						// Reconcile status filter only works for India region
+						if (!isIndia && filters.recon_status && filters.recon_status !== '') {
+							throw new ApplicationError('Reconcile status filter is only available for India region', { level: 'warning' });
+						}
+
 						if ((filters.date_from && !filters.date_to) || (!filters.date_from && filters.date_to)) {
 							throw new ApplicationError('Both Date From and Date To must be provided for date range filtering', { level: 'warning' });
 						}
@@ -1678,10 +1725,16 @@ export async function execute(this: IExecuteFunctions) {
 							filters.date_to = dateTo.toISOString().split('T')[0];
 						}
 
+						// Date range filter keys differ between regions
+						const dateFromKey = isIndia ? 'filter.date_from' : 'receipt_date_from';
+						const dateToKey = isIndia ? 'filter.date_to' : 'receipt_date_to';
+
 						options.method = 'GET';
-						// Contact ID filter only works for India region
+						// Contact ID and reconcile status filters only work for India region
 						const contactIdFilter = isIndia ? `&filter.contact_id=${filters.contact_id ?? ''}` : '';
-						options.url = `${baseUrl}/receipt?page_size=${pageSize ?? 5}&filter.date_from=${filters.date_from ?? ''}&filter.date_to=${filters.date_to ?? ''}&filter.recon_status=${filters.recon_status ?? ''}${contactIdFilter}&filter.search=${filters.search ?? ''}`;
+						const reconStatusFilter = isIndia ? `&filter.recon_status=${filters.recon_status ?? ''}` : '';
+						options.url = `${baseUrl}/receipt?page_size=${pageSize ?? 5}&${dateFromKey}=${filters.date_from ?? ''}&${dateToKey}=${filters.date_to ?? ''}${reconStatusFilter}${contactIdFilter}&filter.search=${filters.search ?? ''}`;
+						console.log('options.url', options.url);
 					} else if (operation === 'viewReceipt') {
 						const receiptId = this.getNodeParameter('receiptId', i) as string;
 						options.method = 'GET';

@@ -1308,16 +1308,7 @@ export const SalesOperations: INodeProperties[] = [
 			},
 		},
 	},
-	{
-		displayName: 'Receipt Number', name: 'receipt_number', type: 'string', default: '',
-		displayOptions: {
-			show: {
-				resource: ['sales'],
-				operation: ['createReceipt'],
-			},
-		},
-		required: true,
-	},
+
   // Additional Fields
   {
     displayName: 'Additional Fields',
@@ -2188,9 +2179,11 @@ export const SalesOperations: INodeProperties[] = [
 					{ name: 'No', value: 'No' },
 				], default: 'Yes'
 			},
+
 			{
 				displayName: 'Receipt Date', name: 'receipt_date', type: 'dateTime', typeOptions: { dateOnly: true, showTime: false }, default: '',
 			},
+			{ displayName: 'Receipt Number', name: 'receipt_number', type: 'string', default: '' },
 			{
 				displayName: 'Reconcile',
 				name: 'reconcile',
