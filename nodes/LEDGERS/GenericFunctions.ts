@@ -1227,7 +1227,9 @@ export async function execute(this: IExecuteFunctions) {
 						}
 
 						options.method = 'GET';
-						options.url = `${baseUrl}/invoice?page_size=${pageSize ?? 5}&filter.date_from=${filters.date_from ?? ''}&filter.date_to=${filters.date_to ?? ''}&filter.payment_status=${filters.payment_status ?? ''}&filter.contact_id=${filters.contact_id ?? ''}`;
+						// Contact ID filter only works for India region
+						const contactIdFilter = isIndia ? `&filter.contact_id=${filters.contact_id ?? ''}` : '';
+						options.url = `${baseUrl}/invoice?page_size=${pageSize ?? 5}&filter.date_from=${filters.date_from ?? ''}&filter.date_to=${filters.date_to ?? ''}&filter.payment_status=${filters.payment_status ?? ''}${contactIdFilter}`;
 					} else if (operation === 'createQuote') {
 						const contact = this.getNodeParameter('contact', i) as IDataObject;
 						const items = this.getNodeParameter('items.item', i) as IDataObject[];
@@ -1677,7 +1679,9 @@ export async function execute(this: IExecuteFunctions) {
 						}
 
 						options.method = 'GET';
-						options.url = `${baseUrl}/receipt?page_size=${pageSize ?? 5}&filter.date_from=${filters.date_from ?? ''}&filter.date_to=${filters.date_to ?? ''}&filter.recon_status=${filters.recon_status ?? ''}&filter.contact_id=${filters.contact_id ?? ''}&filter.search=${filters.search ?? ''}`;
+						// Contact ID filter only works for India region
+						const contactIdFilter = isIndia ? `&filter.contact_id=${filters.contact_id ?? ''}` : '';
+						options.url = `${baseUrl}/receipt?page_size=${pageSize ?? 5}&filter.date_from=${filters.date_from ?? ''}&filter.date_to=${filters.date_to ?? ''}&filter.recon_status=${filters.recon_status ?? ''}${contactIdFilter}&filter.search=${filters.search ?? ''}`;
 					} else if (operation === 'viewReceipt') {
 						const receiptId = this.getNodeParameter('receiptId', i) as string;
 						options.method = 'GET';
