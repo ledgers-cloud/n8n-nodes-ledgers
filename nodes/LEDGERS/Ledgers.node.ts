@@ -193,6 +193,72 @@ export class Ledgers implements INodeType {
 					throw error;
 				}
 			},
+			async getExpenseAccounts(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+				const continueOnFail = this.getNode().continueOnFail;
+				try {
+					const credentials = await this.getCredentials('ledgersApi');
+					const { xApiKey, email, password, apiUrl } = credentials;
+
+					// Authenticate to get api_token
+					const loginOptions: IHttpRequestOptions = {
+						method: 'POST',
+						url: `${apiUrl}/login`,
+						headers: {
+							'Content-Type': 'application/json',
+							'x-api-key': xApiKey,
+						},
+						body: { email, password },
+						json: true,
+					};
+
+					const loginResponse = await this.helpers.request(loginOptions);
+
+					if (loginResponse.status !== 200 || !loginResponse.api_token) {
+						throw new ApplicationError('Authentication failed. Check your credentials.', {
+							level: 'warning',
+						});
+					}
+
+					const apiToken = loginResponse.api_token;
+
+					const options: IHttpRequestOptions = {
+						method: 'GET',
+						url: `${apiUrl}`+(String(credentials.apiUrl).includes('in-api.ledgers.cloud') ? '/v3/coa' : '/coa'),
+						headers: {
+							'Content-Type': 'application/json',
+							'x-api-key': xApiKey,
+							'api-token': apiToken,
+						},
+						json: true,
+					};
+
+					const response = await this.helpers.request(options);
+
+					if (!response.data || !Array.isArray(response.data)) {
+						return [];
+					}
+
+					const returnData = [];
+					for (const item of response.data) {
+						// Filter only accounts with head "Expense"
+						if (item && item.id !== undefined && item.head && String(item.head).toLowerCase() === 'expense') {
+							const category = item.category ? String(item.category).toUpperCase() : '';
+							const type = item.type ? String(item.type).toUpperCase() : '';
+							const displayName = category && type ? `${category} — ${type}` : (type || category || `Expense ${item.id}`);
+							returnData.push({
+								name: displayName,
+								value: JSON.stringify({ id: String(item.id), name: `${type || 'Expense'}` })
+							});
+						}
+					}
+					return returnData;
+				} catch (error) {
+					if (continueOnFail) {
+						return [];
+					}
+					throw error;
+				}
+			},
 			async getAddressOptions(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
 				const continueOnFail = this.getNode().continueOnFail;
 				try {

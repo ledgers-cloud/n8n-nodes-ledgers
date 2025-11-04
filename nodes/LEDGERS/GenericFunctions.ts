@@ -61,7 +61,7 @@ export async function execute(this: IExecuteFunctions) {
 	const baseUrl = isIndia ? `${apiUrl}/v3` : apiUrl;
 
 	// Validate operation-country match
-	const indiaOnlyOps = ['hrms', 'banking', 'getBankStatement', 'getAllEmployees', 'addEmployee', 'updateEmployee', 'getEmployee', 'createPurchaseInvoice', 'listPurchaseInvoices', 'viewPurchaseInvoice', 'createPurchaseOrder', 'listPurchaseOrders', 'viewPurchaseOrder', 'createVoucher', 'listVouchers', 'viewVoucher', 'getGSTReturnStatus', 'getGSTSearch'];
+	const indiaOnlyOps = ['hrms', 'banking', 'getBankStatement', 'getAllEmployees', 'addEmployee', 'updateEmployee', 'getEmployee', 'listPurchaseInvoices', 'viewPurchaseInvoice', 'createPurchaseOrder', 'listPurchaseOrders', 'viewPurchaseOrder', 'createVoucher', 'listVouchers', 'viewVoucher', 'getGSTReturnStatus', 'getGSTSearch'];
 
 	for (let i = 0; i < items.length; i++) {
 		const operation = this.getNodeParameter('operation', i);
@@ -560,7 +560,7 @@ export async function execute(this: IExecuteFunctions) {
 
 						// Check if cess is selected for UAE (not allowed)
 						if (!isIndia && additionalFields.cess_type) {
-							throw new ApplicationError('Cess is not available for UAE operations. Cess is only available for India.');
+							throw new ApplicationError('Cess is not available for UAE region. Cess is only available for India.');
 						}
 
 						if (isIndia && additionalFields.cess_type) {
@@ -690,7 +690,7 @@ export async function execute(this: IExecuteFunctions) {
 
 						// Check if cess is selected for UAE (not allowed)
 						if (!isIndia && updateFields.cess_type) {
-							throw new ApplicationError('Cess is not available for UAE operations. Cess is only available for India.');
+							throw new ApplicationError('Cess is not available for UAE region. Cess is only available for India.');
 						}
 
 						if (isIndia && updateFields.cess_type) {
@@ -908,10 +908,10 @@ export async function execute(this: IExecuteFunctions) {
 						// UAE specific contact validations
 						if (!isIndia) {
 							if (!contact.business_name || contact.business_name === '') {
-								throw new ApplicationError('Business Name is required for UAE operations', { level: 'warning' });
+								throw new ApplicationError('Business Name is required for UAE region', { level: 'warning' });
 							}
 							if (!contact.place_of_supply || contact.place_of_supply === '') {
-								throw new ApplicationError('Place of Supply is required for UAE operations', { level: 'warning' });
+								throw new ApplicationError('Place of Supply is required for UAE region', { level: 'warning' });
 							}
 						}
 
@@ -1111,19 +1111,19 @@ export async function execute(this: IExecuteFunctions) {
 							if (!isIndia) {
 								// Ensure all UAE required fields are present
 								if (item.quantity === undefined || item.quantity === null || item.quantity === '') {
-									throw new ApplicationError(`Quantity is required for UAE operations - item ${j + 1}`, { level: 'warning' });
+									throw new ApplicationError(`Quantity is required for UAE region - item ${j + 1}`, { level: 'warning' });
 								}
 								if (item.rate === undefined || item.rate === null || item.rate === '') {
-									throw new ApplicationError(`Rate is required for UAE operations - item ${j + 1}`, { level: 'warning' });
+									throw new ApplicationError(`Rate is required for UAE region - item ${j + 1}`, { level: 'warning' });
 								}
 								if (item.taxable_per_item === undefined || item.taxable_per_item === null || item.taxable_per_item === '') {
-									throw new ApplicationError(`Taxable Per Item is required for UAE operations - item ${j + 1}`, { level: 'warning' });
+									throw new ApplicationError(`Taxable Per Item is required for UAE region - item ${j + 1}`, { level: 'warning' });
 								}
 								if (item.non_taxable_per_item === undefined || item.non_taxable_per_item === null || item.non_taxable_per_item === '') {
-									throw new ApplicationError(`Non Taxable Per Item is required for UAE operations - item ${j + 1}`, { level: 'warning' });
+									throw new ApplicationError(`Non Taxable Per Item is required for UAE region - item ${j + 1}`, { level: 'warning' });
 								}
 								if (item.vat_rate === undefined || item.vat_rate === null || item.vat_rate === '') {
-									throw new ApplicationError(`VAT Rate is required for UAE operations - item ${j + 1}`, { level: 'warning' });
+									throw new ApplicationError(`VAT Rate is required for UAE region - item ${j + 1}`, { level: 'warning' });
 								}
 							}
 
@@ -1752,35 +1752,88 @@ export async function execute(this: IExecuteFunctions) {
 						const contactId = this.getNodeParameter('contact_id', i) as string;
 						const businessBranchId = this.getNodeParameter('business_branch_id', i) as string;
 						const sellerTaxId = this.getNodeParameter('seller_tax_id', i) as string;
+						const sellerEmail = this.getNodeParameter('seller_email', i) as string;
+						const sellerPhone = this.getNodeParameter('seller_phone', i) as string;
 						const notes = this.getNodeParameter('notes', i) as string;
 						const billingAddress = this.getNodeParameter('billing_address', i) as IDataObject;
 						const items = this.getNodeParameter('items.item', i, []) as IDataObject[];
 						const sameAddress = this.getNodeParameter('same_address', i) as boolean;
 						const currency = this.getNodeParameter('currency', i) as string;
-						const additionalFields = this.getNodeParameter('additionalFields', i, {}) as IDataObject;
+						const adjustAmount = this.getNodeParameter('adjust_amount', i) as string;
+						const reverseCharge = this.getNodeParameter('reverse_charge', i) as number;
+						const taxCreditType = this.getNodeParameter('tax_credit_type', i) as number;
+						const sellerInfo = this.getNodeParameter('seller_info', i, {}) as IDataObject;
+						const additionalFields = this.getNodeParameter('additional_fields', i, {}) as IDataObject;
 						const specialized_supply = this.getNodeParameter('specialized_supply', i) as string;
+
+						// Validate tax type based on region
+						if (isIndia && taxType === 'a') {
+							throw new ApplicationError('Tax Type "UAE VAT" is only available for UAE region', { level: 'warning' });
+						}
+						if (!isIndia && taxType !== 'a') {
+							throw new ApplicationError('Tax Type must be "UAE VAT" (a) for UAE region', { level: 'warning' });
+						}
 
 						// Validate required contact fields
 						if (!contactId || contactId === '') {
 							throw new ApplicationError('Contact ID is required for creating purchase invoice', { level: 'warning' });
 						}
 
+						// India specific validations
+						if (isIndia) {
+							if (!purchaseOrderId || purchaseOrderId === '') {
+								throw new ApplicationError('Purchase Order ID is required for India region', { level: 'warning' });
+							}
+							if (!sellerTaxId || sellerTaxId === '') {
+								throw new ApplicationError('Seller Tax ID is required for India region', { level: 'warning' });
+							}
+						}
+
+						// UAE specific validations
+						if (!isIndia) {
+							if (!sellerEmail || sellerEmail === '') {
+								throw new ApplicationError('Seller Email is required for UAE region', { level: 'warning' });
+							}
+							if (!sellerPhone || sellerPhone === '') {
+								throw new ApplicationError('Seller Phone is required for UAE region', { level: 'warning' });
+							}
+						}
+
+						// Build base body
 						const body: IDataObject = {
 							purchase_number: purchaseNumber,
-							purchase_order_id: purchaseOrderId,
 							due_date: dueDateString,
 							pur_inv_date: purchaseDateString,
 							tax_id1_type: taxType,
 							contact_id: contactId,
 							business_branch_id: businessBranchId,
 							notes: notes,
-							seller_tax_id: sellerTaxId,
-							status: 1,
 							type: 1,
-							data_source: 2,
 							currency: currency,
 						}
-						if(taxType === '1' || taxType === '2') {
+
+						// Region-specific base fields
+						if (isIndia) {
+							body.purchase_order_id = purchaseOrderId;
+							body.seller_tax_id = sellerTaxId;
+							body.status = 1;
+							body.data_source = 2;
+						} else {
+							body.seller_email = sellerEmail;
+							body.seller_phone = sellerPhone;
+							if (adjustAmount && adjustAmount !== '') {
+								body.adjust_amount = adjustAmount;
+							}
+							if (reverseCharge !== undefined) {
+								body.reverse_charge = reverseCharge;
+							}
+							if (taxCreditType !== undefined) {
+								body.tax_credit_type = taxCreditType;
+							}
+						}
+
+						// India-specific tax type handling
+						if (isIndia && (taxType === '1' || taxType === '2')) {
 							const pos = this.getNodeParameter('pos', i) as string;
 							const supplierState = this.getNodeParameter('supplier_state', i) as string;
 							body.business_info = {
@@ -1790,36 +1843,83 @@ export async function execute(this: IExecuteFunctions) {
 								supplier_state: supplierState,
 							}
 						}
-						body.billing_details = {
-							"bill_addr1": billingAddress.bill_addr1,
-							"bill_addr2": billingAddress.bill_addr2,
-							"bill_city": billingAddress.bill_city,
-							"bill_company": billingAddress.bill_company_name,
-							"bill_country": billingAddress.bill_country,
-							"bill_pincode": billingAddress.bill_pincode,
-							"bill_state": billingAddress.bill_state,
+
+						// UAE-specific seller_info
+						if (!isIndia && sellerInfo && Object.keys(sellerInfo).length > 0) {
+							body.seller_info = sellerInfo;
 						}
-						if(sameAddress) {
-							(body.billing_details as any).bill_ship_address_same = 1;
-							body.shipping_details = {
-								"ship_addr1": billingAddress.bill_addr1,
-								"ship_addr2": billingAddress.bill_addr2,
-								"ship_city": billingAddress.bill_city,
-								"ship_company": billingAddress.bill_company_name,
-								"ship_country": billingAddress.bill_country,
-								"ship_pincode": billingAddress.bill_pincode,
-								"ship_state": billingAddress.bill_state,
+
+						// Build billing_details based on region
+						if (isIndia) {
+							body.billing_details = {
+								"bill_addr1": billingAddress.bill_addr1 || '',
+								"bill_addr2": billingAddress.bill_addr2 || '',
+								"bill_city": billingAddress.bill_city || '',
+								"bill_company": billingAddress.bill_company_name || '',
+								"bill_country": billingAddress.bill_country || '',
+								"bill_pincode": billingAddress.bill_pincode || '',
+								"bill_state": billingAddress.bill_state || '',
+							}
+						} else {
+							body.billing_details = {
+								"bill_company": billingAddress.bill_company_name || '',
+								"bill_addr1": billingAddress.bill_addr1 || '',
+								"bill_addr2": billingAddress.bill_addr2 || '',
+								"bill_city": billingAddress.bill_city || '',
+								"bill_pincode": billingAddress.bill_pincode || '',
+								"bill_state": billingAddress.bill_state || '',
+								"bill_country": billingAddress.bill_country || '',
+							}
+							if (sameAddress) {
+								(body.billing_details as any).bill_ship_address_same = '1';
+							}
+						}
+
+						// Build shipping_details based on region
+						if (sameAddress) {
+							if (isIndia) {
+								body.shipping_details = {
+									"ship_addr1": billingAddress.bill_addr1 || '',
+									"ship_addr2": billingAddress.bill_addr2 || '',
+									"ship_city": billingAddress.bill_city || '',
+									"ship_company": billingAddress.bill_company_name || '',
+									"ship_country": billingAddress.bill_country || '',
+									"ship_pincode": billingAddress.bill_pincode || '',
+									"ship_state": billingAddress.bill_state || '',
+								}
+							} else {
+								body.shipping_details = {
+									"ship_company": billingAddress.bill_company_name || '',
+									"ship_addr1": billingAddress.bill_addr1 || '',
+									"ship_addr2": billingAddress.bill_addr2 || '',
+									"ship_city": billingAddress.bill_city || '',
+									"ship_pincode": billingAddress.bill_pincode || '',
+									"ship_state": billingAddress.bill_state || '',
+									"ship_country": billingAddress.bill_country || '',
+								}
 							}
 						} else {
 							const shippingAddress = this.getNodeParameter('shipping_address', i) as IDataObject;
-							body.shipping_details = {
-								"ship_addr1": shippingAddress.ship_addr1,
-								"ship_addr2": shippingAddress.ship_addr2,
-								"ship_city": shippingAddress.ship_city,
-								"ship_company": shippingAddress.ship_company_name,
-								"ship_country": shippingAddress.ship_country,
-								"ship_pincode": shippingAddress.ship_pincode,
-								"ship_state": shippingAddress.ship_state,
+							if (isIndia) {
+								body.shipping_details = {
+									"ship_addr1": shippingAddress.ship_addr1 || '',
+									"ship_addr2": shippingAddress.ship_addr2 || '',
+									"ship_city": shippingAddress.ship_city || '',
+									"ship_company": shippingAddress.ship_company_name || '',
+									"ship_country": shippingAddress.ship_country || '',
+									"ship_pincode": shippingAddress.ship_pincode || '',
+									"ship_state": shippingAddress.ship_state || '',
+								}
+							} else {
+								body.shipping_details = {
+									"ship_company": shippingAddress.ship_company_name || '',
+									"ship_addr1": shippingAddress.ship_addr1 || '',
+									"ship_addr2": shippingAddress.ship_addr2 || '',
+									"ship_city": shippingAddress.ship_city || '',
+									"ship_pincode": shippingAddress.ship_pincode || '',
+									"ship_state": shippingAddress.ship_state || '',
+									"ship_country": shippingAddress.ship_country || '',
+								}
 							}
 						}
 						// Validate required item fields
@@ -1827,24 +1927,28 @@ export async function execute(this: IExecuteFunctions) {
 							throw new ApplicationError('At least one item is required for creating purchase invoice', { level: 'warning' });
 						}
 
+						// Validate and transform items
 						for (let j = 0; j < items.length; j++) {
 							const item = items[j];
 							if (!item.item_name || item.item_name === '') {
 								throw new ApplicationError(`Item Name is required for item ${j + 1}`, { level: 'warning' });
 							}
-							if (!item.item_code || item.item_code === '') {
-								throw new ApplicationError(`SAC/HSN Code is required for item ${j + 1}`, { level: 'warning' });
-							}
 
-							// Validate numeric fields - must be integers and not empty
-							if (item.pid === '' || item.pid === null || item.pid === undefined) {
-								throw new ApplicationError(`Item ID (PID) is required for item ${j + 1}`, { level: 'warning' });
-							}
+						// Validate item code based on region
+						if (isIndia && (!item.item_code || item.item_code === '')) {
+							throw new ApplicationError(`HSN/SAC Code is required for item ${j + 1}`, { level: 'warning' });
+						}
+
+						// Validate item ID based on region
+						if (item.pid === '' || item.pid === null || item.pid === undefined) {
+							throw new ApplicationError(`Item ID (PID) is required for item ${j + 1}`, { level: 'warning' });
+						}
 							const pidValue = Number(item.pid);
 							if (!Number.isInteger(pidValue) || pidValue <= 0) {
 								throw new ApplicationError(`Item ID (PID) must be an integer > 0 for item ${j + 1}`, { level: 'warning' });
 							}
 
+							// Validate variant ID
 							if (item.vid === '' || item.vid === null || item.vid === undefined) {
 								throw new ApplicationError(`Variant ID is required for item ${j + 1}`, { level: 'warning' });
 							}
@@ -1853,104 +1957,183 @@ export async function execute(this: IExecuteFunctions) {
 								throw new ApplicationError(`Variant ID must be an integer > 0 for item ${j + 1}`, { level: 'warning' });
 							}
 
-							if (item.rate === '' || item.rate === null || item.rate === undefined) {
-								throw new ApplicationError(`Rate is required for item ${j + 1}`, { level: 'warning' });
-							}
-							const rateValue = Number(item.rate);
-							if (!Number.isInteger(rateValue) || rateValue < 0) {
-								throw new ApplicationError(`Rate must be an integer >= 0 for item ${j + 1}`, { level: 'warning' });
-							}
-
-							if (item.non_taxable_amount === '' || item.non_taxable_amount === null || item.non_taxable_amount === undefined) {
-								throw new ApplicationError(`Non Taxable Amount is required for item ${j + 1}`, { level: 'warning' });
-							}
-							const nonTaxableValue = Number(item.non_taxable_amount);
-							if (!Number.isInteger(nonTaxableValue) || nonTaxableValue < 0) {
-								throw new ApplicationError(`Non Taxable Amount must be an integer >= 0 for item ${j + 1}`, { level: 'warning' });
-							}
-
-							if (item.taxable_amount === '' || item.taxable_amount === null || item.taxable_amount === undefined) {
-								throw new ApplicationError(`Taxable Amount is required for item ${j + 1}`, { level: 'warning' });
-							}
-							const taxableValue = Number(item.taxable_amount);
-							if (!Number.isInteger(taxableValue) || taxableValue < 0) {
-								throw new ApplicationError(`Taxable Amount must be an integer >= 0 for item ${j + 1}`, { level: 'warning' });
-							}
-
-							// Validate that taxable_amount is equal to or less than rate
-							if (taxableValue > rateValue) {
-								throw new ApplicationError(`Taxable Amount cannot be greater than Rate for item ${j + 1}`, { level: 'warning' });
-							}
-
-							if(item.quantity === undefined || item.quantity === null || item.quantity === '') {
+							// Validate quantity (required for both)
+							if (item.quantity === undefined || item.quantity === null || item.quantity === '') {
 								throw new ApplicationError(`Quantity is required for item ${j + 1}`, { level: 'warning' });
 							}
-							if(!item.item_type || item.item_type === '') {
-								throw new ApplicationError(`Item Type is required for item ${j + 1}`, { level: 'warning' });
+
+							// Validate rate (optional for UAE, can override)
+							if (item.rate !== undefined && item.rate !== null && item.rate !== '') {
+								const rateValue = Number(item.rate);
+								if (!Number.isInteger(rateValue) && !Number.isFinite(rateValue) || rateValue < 0) {
+									throw new ApplicationError(`Rate must be a number >= 0 for item ${j + 1}`, { level: 'warning' });
+								}
 							}
 
-							if(item.price_type === undefined || item.price_type === null || item.price_type === '') {
-								throw new ApplicationError(`Price Type is required for item ${j + 1}`, { level: 'warning' });
+							// Validate discount (optional)
+							if (item.item_discount !== undefined && item.item_discount !== null && item.item_discount !== '') {
+								const discountValue = Number(item.item_discount);
+								if (!Number.isFinite(discountValue) || discountValue < 0) {
+									throw new ApplicationError(`Discount must be a number >= 0 for item ${j + 1}`, { level: 'warning' });
+								}
 							}
-							if(!item.gst_rate || item.gst_rate === '') {
+
+							// Validate non_taxable_amount (optional for UAE)
+							if (item.non_taxable_amount !== undefined && item.non_taxable_amount !== null && item.non_taxable_amount !== '') {
+								const nonTaxableValue = Number(item.non_taxable_amount);
+								if (!Number.isFinite(nonTaxableValue) || nonTaxableValue < 0) {
+									throw new ApplicationError(`Non Taxable Amount must be a number >= 0 for item ${j + 1}`, { level: 'warning' });
+								}
+								if (item.rate && Number(item.rate) < nonTaxableValue) {
+									throw new ApplicationError(`Non-Taxable Amount cannot be greater than Rate for item ${j + 1}`, { level: 'warning' });
+								}
+							}
+
+							// Validate taxable_amount (optional for UAE)
+							if (item.taxable_amount !== undefined && item.taxable_amount !== null && item.taxable_amount !== '') {
+								const taxableValue = Number(item.taxable_amount);
+								if (!Number.isFinite(taxableValue) || taxableValue < 0) {
+									throw new ApplicationError(`Taxable Amount must be a number >= 0 for item ${j + 1}`, { level: 'warning' });
+								}
+								if (item.rate && Number(item.rate) < taxableValue) {
+									throw new ApplicationError(`Taxable Amount cannot be greater than Rate for item ${j + 1}`, { level: 'warning' });
+								}
+							}
+
+							// Validate expense_id from coa_id (required for both)
+							let expenseId = null;
+							if (item.coa_id && item.coa_id !== '') {
+								try {
+									const parsed = typeof item.coa_id === 'string' ? JSON.parse(item.coa_id) : item.coa_id;
+									expenseId = parsed.id || parsed;
+								} catch {
+									expenseId = item.coa_id;
+								}
+							}
+							if (!expenseId || expenseId === '') {
+								throw new ApplicationError(`Expense ID (COA ID) is required for item ${j + 1}`, { level: 'warning' });
+							}
+
+							// Validate tax rate based on region
+							if (!item.gst_rate || item.gst_rate === '') {
 								throw new ApplicationError(`${isIndia ? 'GST' : 'VAT'} Rate is required for item ${j + 1}`, { level: 'warning' });
 							}
-							if(rateValue && nonTaxableValue) {
-								if(rateValue < nonTaxableValue) {
-									throw new ApplicationError(`Non-Taxable Amount cannot be greater than Rate for item ${j + 1}`, { level: 'warning' });
+
+							// UAE specific VAT rate validation
+							if (!isIndia && item.gst_rate) {
+								const vatRate = item.gst_rate;
+								if (vatRate !== 0 && vatRate !== 5 && vatRate !== '0' && vatRate !== '5' && vatRate !== 'Exempted Supply') {
+									throw new ApplicationError(`VAT Rate must be 0, 5, or Exempted Supply for item ${j + 1}`, { level: 'warning' });
 								}
 							}
 						}
 
+						// Build items array with region-specific transformations
 						body.items = [];
 						for(let j = 0; j < items.length; j++) {
 							const item = items[j];
-							const parsed = JSON.parse(item.coa_id as string);
-							var expense_id = parsed.id;
-							var expense_type = parsed.name;
-							(body.items as any[]).push({
-								"item_description": item.item_description ?? '',
-								"item_code": item.item_code ?? '',
-								"item_type": item.item_type ?? '',
+
+							// Get expense_id from coa_id
+							let expense_id = null;
+							if (item.coa_id && item.coa_id !== '') {
+								try {
+									const parsed = typeof item.coa_id === 'string' ? JSON.parse(item.coa_id) : item.coa_id;
+									expense_id = parsed.id || parsed;
+								} catch {
+									expense_id = item.coa_id;
+								}
+							}
+
+							if (isIndia) {
+								// India structure
+								const itemObj: any = {
+									"pid": item.pid,
+									"vid": item.vid,
+									"quantity": item.quantity ?? '',
+									"rate": item.rate ? parseFloat(item.rate as string) : '',
+									"discount": item.item_discount ?? '',
+									"expense_id": expense_id,
+								};
+
+								if (item.item_description) itemObj.item_description = item.item_description;
+								if (item.item_code) itemObj.item_code = item.item_code;
+								if (item.item_type) itemObj.item_type = item.item_type;
+								if (item.item_name) itemObj.item_name = item.item_name;
+								if (item.price_type !== undefined) itemObj.price_type = item.price_type;
+								if (item.cess_type) itemObj.cess_type = item.cess_type;
+								if (item.cess_per) itemObj.cess_per = item.cess_per;
+							if (item.taxable_amount !== undefined) itemObj.taxable_amt = item.taxable_amount;
+							if (item.gst_rate !== undefined) itemObj.gst_rate = parseInt(item.gst_rate as string);
+							if (item.non_taxable_amount !== undefined) itemObj.non_taxable_amt = parseInt(item.non_taxable_amount as string);
+
+							(body.items as any[]).push(itemObj);
+						} else {
+							// UAE structure
+							const itemObj: any = {
 								"pid": item.pid,
-								"item_name": item.item_name ?? '',
+								"vid": item.vid,
 								"quantity": item.quantity ?? '',
-								"price_type": item.price_type ?? '',
-								"rate": parseFloat(item.rate as string) ?? '',
-								"cess_type": item.cess_type ?? '',
-								"cess_per": item.cess_per ?? '',
-								"taxable_amt": item.taxable_amount ?? '',
-								"gst_rate": parseInt(item.gst_rate as string) ?? 5,
-								"non_taxable_amt": parseInt(item.non_taxable_amount as string) ?? 0,
 								"discount": item.item_discount ?? '',
-								"vid":item.vid,
 								"expense_id": expense_id,
-								"expense_type": expense_type,
-							})
+							};
+
+								// Rate is optional for UAE (can override)
+								if (item.rate !== undefined && item.rate !== null && item.rate !== '') {
+									itemObj.rate = parseFloat(item.rate as string);
+								}
+
+								// VAT rate (transform gst_rate to vat_rate for UAE)
+								if (item.gst_rate !== undefined) {
+									itemObj.vat_rate = typeof item.gst_rate === 'number' ? item.gst_rate : (item.gst_rate === 'Exempted Supply' ? 'Exempted Supply' : parseInt(item.gst_rate as string));
+								}
+
+								// Non-taxable amount (optional for UAE)
+								if (item.non_taxable_amount !== undefined && item.non_taxable_amount !== null && item.non_taxable_amount !== '') {
+									itemObj.non_taxable_amount = parseFloat(item.non_taxable_amount as string);
+								}
+
+								// Taxable amount (optional for UAE)
+								if (item.taxable_amount !== undefined && item.taxable_amount !== null && item.taxable_amount !== '') {
+									itemObj.taxable_amount = parseFloat(item.taxable_amount as string);
+								}
+
+								(body.items as any[]).push(itemObj);
+							}
 						}
+						// Handle additional fields
 						if(additionalFields.bill_number) {
 							body.bill_number = additionalFields.bill_number;
 						}
+
+						// Currency info - required for UAE when currency is not AED
 						if(additionalFields.currency_info) {
 							const currencyInfo = additionalFields.currency_info as IDataObject;
 							body.currency_info = {
-								currency_rate: parseFloat(currencyInfo.currency_rate as string) ?? 0,
-								currency_default_rate: parseFloat(currencyInfo.currency_default_rate as string) ?? 0,
-								converted_amount: parseFloat(currencyInfo.converted_amount as string) ?? 0,
+								currency_rate: currencyInfo.currency_rate ? parseFloat(currencyInfo.currency_rate as string) : 0,
+								currency_default_rate: currencyInfo.currency_default_rate ? parseFloat(currencyInfo.currency_default_rate as string) : 0,
+								converted_amount: currencyInfo.converted_amount ? parseFloat(currencyInfo.converted_amount as string) : 0,
 								from: currencyInfo.from as string,
 								to: currencyInfo.to as string,
 							}
+						} else if (!isIndia && currency !== 'AED') {
+							// For UAE, currency_info should be provided when currency is not AED
+							throw new ApplicationError('Currency Info is required when currency is not AED for UAE region', { level: 'warning' });
 						}
-						if(additionalFields.reverse_charge) {
+
+						// Reverse charge and tax credit type - already handled above for UAE, but also check additionalFields for backward compatibility
+						if (isIndia && additionalFields.reverse_charge !== undefined) {
 							body.reverse_charge = additionalFields.reverse_charge;
 						}
-						if(additionalFields.tax_credit_type) {
+						if (isIndia && additionalFields.tax_credit_type !== undefined) {
 							body.tax_credit_type = additionalFields.tax_credit_type;
 						}
+
 						if(additionalFields.terms_conditions) {
 							body.terms_conditions = additionalFields.terms_conditions;
 						}
-						if(specialized_supply) {
+
+						// Specialized supply - only for India
+						if (isIndia && specialized_supply) {
 							if(specialized_supply === '1') {
 								const export_bill_no = this.getNodeParameter('export_bill_no', i) as string;
 								const export_bill_date = this.getNodeParameter('export_bill_date', i) as string;
@@ -1981,6 +2164,7 @@ export async function execute(this: IExecuteFunctions) {
 						options.method = 'POST';
 						options.url = `${baseUrl}/purchase-invoice`;
 						options.body = body;
+						console.log(body);
 					} else if (operation === 'createVoucher') {
 						const branchId = this.getNodeParameter('branch_id', i) as string;
 						const voucherType = this.getNodeParameter('voucher_type', i) as string;

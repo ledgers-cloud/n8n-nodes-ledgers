@@ -96,8 +96,8 @@ export const purchaseOperations: INodeProperties[] = [
 		displayName: 'Purchase Order ID',
 		name: 'purchase_order_id',
 		type: 'string',
-		required: true,
 		default: '',
+		description: 'Required for India operations only',
 		displayOptions: {
 			show: {
 				resource: ['purchase'],
@@ -128,6 +128,7 @@ export const purchaseOperations: INodeProperties[] = [
 			{ name: 'No GST', value: '0' },
 			{ name: 'SGST/CGST', value: '1' },
 			{ name: 'IGST', value: '2' },
+			{ name: 'UAE VAT', value: 'a' },
 		],
 		default: '0',
 		displayOptions: {
@@ -277,8 +278,34 @@ export const purchaseOperations: INodeProperties[] = [
 		displayName: 'Seller Tax ID',
 		name: 'seller_tax_id',
 		type: 'string',
-		required: true,
 		default: '',
+		description: 'Required for India operations only',
+		displayOptions: {
+			show: {
+				resource: ['purchase'],
+				operation: ['createPurchaseInvoice'],
+			},
+		},
+	},
+	{
+		displayName: 'Seller Email',
+		name: 'seller_email',
+		type: 'string',
+		default: '',
+		description: 'Required for UAE operations',
+		displayOptions: {
+			show: {
+				resource: ['purchase'],
+				operation: ['createPurchaseInvoice'],
+			},
+		},
+	},
+	{
+		displayName: 'Seller Phone',
+		name: 'seller_phone',
+		type: 'string',
+		default: '',
+		description: 'Required for UAE operations',
 		displayOptions: {
 			show: {
 				resource: ['purchase'],
@@ -399,34 +426,13 @@ export const purchaseOperations: INodeProperties[] = [
 						name: 'coa_id',
 						type: 'options',
 						typeOptions: {
-							loadOptionsMethod: 'getCoaAccounts',
+							loadOptionsMethod: 'getExpenseAccounts',
 						},
 						default: '',
 						placeholder: 'Select Expense Type',
 						description: 'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
-					},
-          {
-            displayName: 'GST Rate',
-            name: 'gst_rate',
-            type: 'options',
 						required: true,
-            options: [
-              { name: '0.1%', value: 0.1 },
-              { name: '0.25%', value: 0.25 },
-              { name: '0%', value: 0 },
-              { name: '1.5%', value: 1.5 },
-              { name: '1%', value: 1 },
-              { name: '18%', value: 18 },
-              { name: '3%', value: 3 },
-              { name: '5%', value: 5 },
-              { name: '7.5%', value: 7.5 },
-              { name: 'Exempted Supply', value: 0 },
-              { name: 'Nil-Rated', value: 0 },
-              { name: 'Non-GST Supply', value: 0 },
-              { name: 'Zero-Rated', value: 0 },
-            ],
-            default: 5,
-          },
+					},
           { displayName: 'HSN/SAC Code', name: 'item_code', type: 'string', default: '' },
           { displayName: 'Item ID', name: 'pid', type: 'string', default: '', required: true },
           { displayName: 'Item Name', name: 'item_name', type: 'string', default: '', required: true },
@@ -442,6 +448,21 @@ export const purchaseOperations: INodeProperties[] = [
           { displayName: 'Quantity', name: 'quantity', type: 'number', default: 1, required: true },
           { displayName: 'Rate', name: 'rate', type: 'string', default: '', required: true },
 					{ displayName: 'SKU', name: 'sku', type: 'string', default: '' },
+          { displayName: 'Tax Rate', name: 'gst_rate', type: 'options', options: [
+              { name: '0.1%', value: 0.1 },
+              { name: '0.25%', value: 0.25 },
+              { name: '0%', value: 0 },
+              { name: '1.5%', value: 1.5 },
+              { name: '1%', value: 1 },
+              { name: '18%', value: 18 },
+              { name: '3%', value: 3 },
+              { name: '5%', value: 5 },
+              { name: '7.5%', value: 7.5 },
+              { name: 'Exempted Supply', value: 'Exempted Supply' },
+              { name: 'Nil-Rated', value: 0 },
+              { name: 'Non-GST Supply', value: 0 },
+              { name: 'Zero-Rated', value: 0 },
+            ], default: 5 },
           { displayName: 'Taxable Amount', name: 'taxable_amount', type: 'number', default: 0 },
           { displayName: 'Variant ID', name: 'vid', type: 'string', default: '', required: true },
         ],
@@ -618,6 +639,77 @@ export const purchaseOperations: INodeProperties[] = [
 			{ name: 'ZWL - Zimbabwean Dollar', value: 'ZWL' },
 		],
 		default: 'INR',
+		displayOptions: {
+			show: {
+				resource: ['purchase'],
+				operation: ['createPurchaseInvoice'],
+			},
+		},
+	},
+	{
+		displayName: 'Adjust Amount',
+		name: 'adjust_amount',
+		type: 'string',
+		default: '',
+		description: 'Adjustment amount for the purchase invoice',
+		displayOptions: {
+			show: {
+				resource: ['purchase'],
+				operation: ['createPurchaseInvoice'],
+			},
+		},
+	},
+	{
+		displayName: 'Reverse Charge',
+		name: 'reverse_charge',
+		type: 'options',
+		options: [
+			{ name: 'Yes', value: 1 },
+			{ name: 'No', value: 0 },
+		],
+		default: 0,
+		description: 'Default: 0 (No)',
+		displayOptions: {
+			show: {
+				resource: ['purchase'],
+				operation: ['createPurchaseInvoice'],
+			},
+		},
+	},
+	{
+		displayName: 'Tax Credit Type (ITC)',
+		name: 'tax_credit_type',
+		type: 'options',
+		options: [
+			{ name: 'Yes', value: 1 },
+			{ name: 'No', value: 0 },
+		],
+		default: 0,
+		description: 'Default: 0 (No)',
+		displayOptions: {
+			show: {
+				resource: ['purchase'],
+				operation: ['createPurchaseInvoice'],
+			},
+		},
+	},
+	{
+		displayName: 'Seller Info',
+		name: 'seller_info',
+		type: 'collection',
+		typeOptions: { multipleValues: false },
+		default: {},
+		description: 'Supplier information for UAE operations',
+		options: [
+			{ displayName: 'Business Country', name: 'business_country', type: 'string', default: '' },
+			{ displayName: 'Supplier Address Line 1', name: 'supplier_addr1', type: 'string', default: '' },
+			{ displayName: 'Supplier Address Line 2', name: 'supplier_addr2', type: 'string', default: '' },
+			{ displayName: 'Supplier Business Name', name: 'supplier_business_name', type: 'string', default: '' },
+			{ displayName: 'Supplier City', name: 'supplier_city', type: 'string', default: '' },
+			{ displayName: 'Supplier Country', name: 'supplier_country', type: 'string', default: '' },
+			{ displayName: 'Supplier Pincode', name: 'supplier_pincode', type: 'string', default: '' },
+			{ displayName: 'Supplier State', name: 'supplier_state', type: 'string', default: '' },
+		],
 		displayOptions: {
 			show: {
 				resource: ['purchase'],
