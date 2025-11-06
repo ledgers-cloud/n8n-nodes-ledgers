@@ -442,8 +442,8 @@ export const purchaseOperations: INodeProperties[] = [
           ], default: '1' },
           { displayName: 'Non Taxable Amount', name: 'non_taxable_amount', type: 'number', default: 0 },
           { displayName: 'Price Type', name: 'price_type', required: true, type: 'options', options: [
-            { name: 'Inclusive of GST', value: 0 },
-            { name: 'Exclusive of GST', value: 1 },
+            { name: 'Inclusive of Tax', value: 0 },
+            { name: 'Exclusive of Tax', value: 1 },
           ], default: 0 },
           { displayName: 'Quantity', name: 'quantity', type: 'number', default: 1, required: true },
           { displayName: 'Rate', name: 'rate', type: 'string', default: '', required: true },
