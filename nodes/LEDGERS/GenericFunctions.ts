@@ -2737,6 +2737,304 @@ export async function execute(this: IExecuteFunctions) {
 						options.body = {
 							gstin,
 						}
+					} else if (operation === 'createBranch') {
+						const branchName = this.getNodeParameter('branchName', i) as string;
+						const addressFields = this.getNodeParameter('addressFields', i) as IDataObject;
+						const address1 = addressFields.address1;
+						const address2 = addressFields.address2;
+						const city = addressFields.city;
+						const state = addressFields.state;
+						const country = addressFields.country;
+						const postalCode = addressFields.postalCode;
+						const taxNumber = this.getNodeParameter('taxNumber', i) as string;
+						const phone = this.getNodeParameter('phone', i) as string;
+						const email = this.getNodeParameter('email', i) as string;
+						const status = this.getNodeParameter('status', i) as string;
+						const primaryBranch = addressFields.primaryBranch ? parseInt(addressFields.primaryBranch as string) : 0;
+
+						if(!branchName || branchName.trim() === '') {
+							throw new ApplicationError('Branch Name is required', { level: 'warning' });
+						}
+						if(!address1 || address1 === '') {
+							throw new ApplicationError('Address Line 1 is required', { level: 'warning' });
+						}
+						if(!city || city === '') {
+							throw new ApplicationError('City is required', { level: 'warning' });
+						}
+						if(!state || state === '') {
+							throw new ApplicationError('State is required', { level: 'warning' });
+						}
+						if(!country || country === '') {
+							throw new ApplicationError('Country is required', { level: 'warning' });
+						}
+						if(!postalCode || postalCode === '') {
+							throw new ApplicationError('Postal Code is required', { level: 'warning' });
+						}
+						if(!taxNumber || taxNumber.trim() === '') {
+							throw new ApplicationError('Tax Number is required', { level: 'warning' });
+						}
+						if(!phone || phone.trim() === '') {
+							throw new ApplicationError('Phone is required', { level: 'warning' });
+						}
+						if(!email || email.trim() === '') {
+							throw new ApplicationError('Email is required', { level: 'warning' });
+						}
+						if(!status || status.trim() === '') {
+							throw new ApplicationError('Status is required', { level: 'warning' });
+						}
+
+						let body: IDataObject = {};
+						if(isIndia) {
+							body = {
+								branch_name: branchName,
+								gstin: taxNumber,
+								email: email,
+								phone: phone,
+								address: {
+									line1: address1,
+									line2: address2,
+									city: city,
+									state: state,
+									country: country,
+									pincode: postalCode,
+								},
+								status: status,
+								primary: primaryBranch ?? 0,
+							}
+						}
+						else {
+							body = {
+								branch_name: branchName,
+								email: email,
+								phone: phone,
+								address: {
+									building_name: address1+', '+address2,
+									street_name: city,
+									emirate: state,
+									po_box: postalCode,
+									country: country,
+								},
+								status: status,
+								primary_branch: primaryBranch ?? 0,
+							}
+						}
+
+						options.method = 'POST';
+						options.url = `${baseUrl}/business/branch`;
+						options.body = body;
+					}
+					else if (operation === 'updateBranch') {
+						// Get selected branch ID from branchDetailsLoader
+						// In getBranchDetails, the value is stored as JSON.stringify(branch.branch_id)
+						let selectedBranchId: string = '';
+						try {
+							const branchDetailsLoader = this.getNodeParameter('branchDetailsLoader', i) as string;
+							if (branchDetailsLoader && branchDetailsLoader.trim() !== '') {
+								// Parse the JSON string to get the branch_id
+								const parsedValue = JSON.parse(branchDetailsLoader);
+								console.log("parsedValue", parsedValue);
+								// The parsed value is the branch_id directly (string or number)
+								selectedBranchId = String(parsedValue);
+							}
+						} catch (error) {
+							// If parsing fails, try to get from branchId field
+							selectedBranchId = this.getNodeParameter('branchId', i) as string;
+						}
+
+						// Fallback to branchId field if branchDetailsLoader is not available
+						if (!selectedBranchId || selectedBranchId.trim() === '') {
+							selectedBranchId = this.getNodeParameter('branchId', i) as string;
+						}
+
+						if(!selectedBranchId || selectedBranchId.trim() === '') {
+							throw new ApplicationError('Branch ID is required', { level: 'warning' });
+						}
+
+						// Fetch current branch data from API
+						let currentBranchData: any = null;
+						try {
+							const fetchOptions: IHttpRequestOptions = {
+								method: 'GET',
+								url: `${apiUrl}`+(String(credentials.apiUrl).includes('in-api.ledgers.cloud') ? '/v3/business/branch/' : '/business/branch/') + selectedBranchId,
+								headers: {
+									'Content-Type': 'application/json',
+									'x-api-key': xApiKey,
+									'api-token': apiToken,
+								},
+								json: true,
+							};
+
+							const fetchResponse = await this.helpers.request(fetchOptions);
+							if (fetchResponse.status === 200 && fetchResponse.data && Array.isArray(fetchResponse.data) && fetchResponse.data.length > 0) {
+								currentBranchData = fetchResponse.data[0];
+							} else {
+								throw new ApplicationError('Failed to fetch current branch data', { level: 'warning' });
+							}
+						} catch (error) {
+							throw new ApplicationError('Failed to fetch current branch data. Please check the branch ID.', { level: 'warning' });
+						}
+
+						// Get user-provided values
+						const updateFields = this.getNodeParameter('updateBranchFields', i) as IDataObject;
+						const userBranchName = updateFields?.branchName as string;
+						const addressFields = updateFields?.addressFields as any;
+						const userAddress1 = addressFields?.address1 as string;
+						const userAddress2 = addressFields?.address2 as string;
+						const userCity = addressFields?.city as string;
+						const userState = addressFields?.state as string;
+						const userCountry = addressFields?.country as string;
+						const userPostalCode = addressFields?.postalCode as string;
+						const userTaxNumber = updateFields?.taxNumber as string;
+						const userPhone = updateFields?.phone as string;
+						const userEmail = updateFields?.email as string;
+						const userStatus = updateFields?.status as string;
+						const userPrimaryBranch = updateFields?.primaryBranch ? parseInt(updateFields.primaryBranch as string) : undefined;
+
+						// Merge: Use new values if provided and different, otherwise keep old values
+						// Branch Name
+						const finalBranchName = (userBranchName && userBranchName.trim() !== '')
+							? userBranchName
+							: (currentBranchData.branch_name || '');
+
+						// Email
+						const finalEmail = (userEmail && userEmail.trim() !== '')
+							? userEmail
+							: (currentBranchData.email || '');
+
+						// Phone
+						const finalPhone = (userPhone && userPhone.trim() !== '')
+							? userPhone
+							: (String(currentBranchData.phone) || '');
+
+						// Tax Number (GSTIN)
+						const finalTaxNumber = (userTaxNumber && userTaxNumber.trim() !== '')
+							? userTaxNumber
+							: (currentBranchData.gstin || currentBranchData.tax_number || '');
+
+						// Status
+						let finalStatus = '';
+						if (userStatus && userStatus.trim() !== '') {
+							finalStatus = userStatus;
+						} else if (currentBranchData.status) {
+							finalStatus = (currentBranchData.status === 1 || currentBranchData.status === '1' || currentBranchData.status === 'Active' || currentBranchData.status === 'active') ? 'active' : 'inactive';
+						} else {
+							finalStatus = 'active';
+						}
+
+						// Primary Branch
+						let finalPrimaryBranch = 0;
+						if (userPrimaryBranch !== undefined) {
+							finalPrimaryBranch = userPrimaryBranch;
+						} else if (currentBranchData.primary !== undefined) {
+							finalPrimaryBranch = (currentBranchData.primary === 1 || currentBranchData.primary === '1') ? 1 : 0;
+						} else if (currentBranchData.primary_branch !== undefined) {
+							finalPrimaryBranch = (currentBranchData.primary_branch === 1 || currentBranchData.primary_branch === '1') ? 1 : 0;
+						}
+
+						// Address fields - handle both India and UAE formats
+						let finalAddress1 = '';
+						let finalAddress2 = '';
+						let finalCity = '';
+						let finalState = '';
+						let finalCountry = '';
+						let finalPostalCode = '';
+
+						if (isIndia) {
+							// India format
+							finalAddress1 = (userAddress1 && userAddress1.trim() !== '')
+								? userAddress1
+								: (currentBranchData.address?.line1 || '');
+
+							finalAddress2 = (userAddress2 && userAddress2.trim() !== '')
+								? userAddress2
+								: (currentBranchData.address?.line2 || '');
+
+							finalCity = (userCity && userCity.trim() !== '')
+								? userCity
+								: (currentBranchData.address?.city || '');
+
+							finalState = (userState && userState.trim() !== '')
+								? userState
+								: (currentBranchData.address?.state || '');
+
+							finalCountry = (userCountry && userCountry.trim() !== '')
+								? userCountry
+								: (currentBranchData.address?.country || '');
+
+							finalPostalCode = (userPostalCode && userPostalCode.trim() !== '')
+								? userPostalCode
+								: (currentBranchData.address?.pincode || '');
+						} else {
+							// UAE format
+							const currentBuildingName = currentBranchData.address?.building_name || '';
+							const buildingParts = currentBuildingName.split(',');
+
+							finalAddress1 = (userAddress1 && userAddress1.trim() !== '')
+								? userAddress1
+								: (buildingParts[0] || '');
+
+							finalAddress2 = (userAddress2 && userAddress2.trim() !== '')
+								? userAddress2
+								: (buildingParts.slice(1).join(',') || '');
+
+							finalCity = (userCity && userCity.trim() !== '')
+								? userCity
+								: (currentBranchData.address?.street_name || '');
+
+							finalState = (userState && userState.trim() !== '')
+								? userState
+								: (currentBranchData.address?.emirate || '');
+
+							finalCountry = (userCountry && userCountry.trim() !== '')
+								? userCountry
+								: (currentBranchData.address?.country || '');
+
+							finalPostalCode = (userPostalCode && userPostalCode.trim() !== '')
+								? userPostalCode
+								: (currentBranchData.address?.po_box || '');
+						}
+
+						// Build update body with merged data
+						let body: IDataObject = {};
+						if(isIndia) {
+							body = {
+								branch_id: selectedBranchId,
+								branch_name: finalBranchName,
+								gstin: finalTaxNumber,
+								email: finalEmail,
+								phone: finalPhone,
+								address: {
+									line1: finalAddress1,
+									line2: finalAddress2,
+									city: finalCity,
+									state: finalState,
+									country: finalCountry,
+									pincode: finalPostalCode,
+								},
+								status: finalStatus,
+								primary: finalPrimaryBranch,
+							};
+						} else {
+							body = {
+								branch_id: selectedBranchId,
+								branch_name: finalBranchName,
+								email: finalEmail,
+								phone: finalPhone,
+								address: {
+									building_name: finalAddress1 + (finalAddress2 ? ', ' + finalAddress2 : ''),
+									street_name: finalCity,
+									emirate: finalState,
+									po_box: finalPostalCode,
+									country: finalCountry,
+								},
+								status: finalStatus,
+								primary_branch: finalPrimaryBranch,
+							};
+						}
+
+						options.method = 'PUT';
+						options.url = `${baseUrl}/business/branch`;
+						options.body = body;
 					}
 					const result = await this.helpers.request(options);
 					returnData.push({ json: result, pairedItem: { item: i } });

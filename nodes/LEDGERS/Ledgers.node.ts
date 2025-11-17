@@ -42,6 +42,7 @@ export class Ledgers implements INodeType {
 				noDataExpression: true,
 				options: [
 					{ name: 'Banking Operation (India)', value: 'banking' },
+					{ name: 'Branch Operation', value: 'branch' },
 					{ name: 'Catalog Operation', value: 'catalog' },
 					{ name: 'Contact Operation', value: 'contact' },
 					{ name: 'HRMS Operation (India)', value: 'hrms' },
@@ -59,6 +60,8 @@ export class Ledgers implements INodeType {
 			...descriptions.contactOperations,
 			// HRMS Operations
 			...descriptions.hrmsOperations,
+			// Branch Operations
+			...descriptions.branchOperations,
 			// Banking Operations
 			...descriptions.bankingOperations,
 			// Tax Operations
@@ -598,6 +601,115 @@ export class Ledgers implements INodeType {
 					];
 				} catch (error) {
 					if (continueOnFail) return [];
+					throw error;
+				}
+			},
+			async getBranchDetails(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+				const continueOnFail = this.getNode().continueOnFail;
+				try {
+
+					const credentials = await this.getCredentials('ledgersApi');
+					const { xApiKey, email, password, apiUrl } = credentials;
+
+					// Authenticate to get api_token
+					const loginOptions: IHttpRequestOptions = {
+						method: 'POST',
+						url: `${apiUrl}/login`,
+						headers: {
+							'Content-Type': 'application/json',
+							'x-api-key': xApiKey,
+						},
+						body: { email, password },
+						json: true,
+					};
+
+					const loginResponse = await this.helpers.request(loginOptions);
+					if (loginResponse.status !== 200 || !loginResponse.api_token) {
+						throw new ApplicationError('Authentication failed. Check your credentials.', { level: 'warning' });
+					}
+
+					const apiToken = loginResponse.api_token;
+					const options: IHttpRequestOptions = {
+						method: 'GET',
+						url: `${apiUrl}`+(String(credentials.apiUrl).includes('in-api.ledgers.cloud') ? '/v3/business/branch/' : '/business/branch/'),
+						headers: {
+							'Content-Type': 'application/json',
+							'x-api-key': xApiKey,
+							'api-token': apiToken,
+						},
+						json: true,
+					};
+
+					const response = await this.helpers.request(options);
+					console.log(response);
+					if (!response.data || !Array.isArray(response.data)) {
+						return []; // No addresses of the selected type
+					}
+					if (response.status == 200 && response.data && Array.isArray(response.data) && response.data.length > 0) {
+						return response.data.map((branch: any, index: number) => {
+							// Build a readable display string with available fields
+							const displayParts = [];
+
+							// Add branch_name if available
+							if (branch.branch_name) {
+								displayParts.push(branch.branch_name);
+							}
+
+							// Add email if available
+							if (branch.email) {
+								displayParts.push(`Email: ${branch.email}`);
+							}
+
+							// Add phone if available
+							if (branch.phone) {
+								displayParts.push(`Phone: ${branch.phone}`);
+							}
+
+							// Add gstin if available
+							if (branch.gstin) {
+								displayParts.push(`GSTIN: ${branch.gstin}`);
+							}
+
+							// Add address if available
+							if (branch.address) {
+								const addressParts: string[] = [];
+								const addr = branch.address;
+
+								// Check for India format address fields
+								if (addr.line1) addressParts.push(addr.line1);
+								if (addr.line2) addressParts.push(addr.line2);
+								if (addr.city) addressParts.push(addr.city);
+								if (addr.state) addressParts.push(addr.state);
+								if (addr.country) addressParts.push(addr.country);
+								if (addr.pincode) addressParts.push(addr.pincode);
+
+								// Check for non-India format address fields
+								if (addr.building_name) addressParts.push(addr.building_name);
+								if (addr.street_name) addressParts.push(addr.street_name);
+								if (addr.emirate) addressParts.push(addr.emirate);
+								if (addr.po_box) addressParts.push(addr.po_box);
+
+								if (addressParts.length > 0) {
+									displayParts.push(`Address: ${addressParts.join(', ')}`);
+								}
+							}
+
+							const displayName = displayParts.length > 0
+								? displayParts.join(', ')
+								: 'Branch Details';
+
+							// Return branch data as a single option with JSON value that frontend can parse
+							return {
+								name: displayName,
+								value: JSON.stringify(branch.branch_id),
+							};
+						});
+					}
+					return [];
+				} catch (error) {
+					if (continueOnFail) {
+						return [];
+					}
 					throw error;
 				}
 			},
