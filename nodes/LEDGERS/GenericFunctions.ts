@@ -2822,8 +2822,7 @@ export async function execute(this: IExecuteFunctions) {
 						options.method = 'POST';
 						options.url = `${baseUrl}/business/branch`;
 						options.body = body;
-					}
-					else if (operation === 'updateBranch') {
+					} else if (operation === 'updateBranch') {
 						// Get selected branch ID from branchDetailsLoader
 						// In getBranchDetails, the value is stored as JSON.stringify(branch.branch_id)
 						let selectedBranchId: string = '';
@@ -2855,7 +2854,7 @@ export async function execute(this: IExecuteFunctions) {
 						try {
 							const fetchOptions: IHttpRequestOptions = {
 								method: 'GET',
-								url: `${apiUrl}`+(String(credentials.apiUrl).includes('in-api.ledgers.cloud') ? '/v3/business/branch/' : '/business/branch/') + selectedBranchId,
+								url: `${baseUrl}`+(isIndia ? '/v3/business/branch/' : '/business/branch/') + selectedBranchId,
 								headers: {
 									'Content-Type': 'application/json',
 									'x-api-key': xApiKey,
@@ -3034,13 +3033,11 @@ export async function execute(this: IExecuteFunctions) {
 						options.method = 'PUT';
 						options.url = `${baseUrl}/business/branch`;
 						options.body = body;
-					}
-					else if (operation === 'getBranchDetails') {
+					} else if (operation === 'getBranchDetails') {
 						const branchId = this.getNodeParameter('branchId', i) as string;
 						options.method = 'GET';
 						options.url = `${baseUrl}/business/branch/${branchId}`;
-					}
-					else if (operation === 'listBranches') {
+					} else if (operation === 'listBranches') {
 						options.method = 'GET';
 						options.url = `${baseUrl}/business/branch`;
 					}
