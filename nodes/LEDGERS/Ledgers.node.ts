@@ -607,9 +607,9 @@ export class Ledgers implements INodeType {
 			async getBranchDetails(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
 				const continueOnFail = this.getNode().continueOnFail;
 				try {
-
 					const credentials = await this.getCredentials('ledgersApi');
 					const { xApiKey, email, password, apiUrl } = credentials;
+					const isIndia = String(apiUrl).includes('in-api.ledgers.cloud');
 
 					// Authenticate to get api_token
 					const loginOptions: IHttpRequestOptions = {
@@ -631,7 +631,7 @@ export class Ledgers implements INodeType {
 					const apiToken = loginResponse.api_token;
 					const options: IHttpRequestOptions = {
 						method: 'GET',
-						url: `${apiUrl}`+(String(credentials.apiUrl).includes('in-api.ledgers.cloud') ? '/v3/business/branch/' : '/business/branch/'),
+						url: `${apiUrl}`+(isIndia ? '/v3/business/branch/' : '/business/branch/'),
 						headers: {
 							'Content-Type': 'application/json',
 							'x-api-key': xApiKey,
@@ -641,71 +641,109 @@ export class Ledgers implements INodeType {
 					};
 
 					const response = await this.helpers.request(options);
-					console.log(response);
-					if (!response.data || !Array.isArray(response.data)) {
-						return []; // No addresses of the selected type
+
+					// Handle different response structures for India vs AE
+					let branches: any[] = [];
+					if (isIndia) {
+						// India format: response.data is an array
+						if (response.status === 200 && response.data && Array.isArray(response.data) && response.data.length > 0) {
+							branches = response.data;
+						}
+					} else {
+						// AE format: response.data might be an object or array
+							console.log(response, 'response.data')
+						if (response.status === 'success' && response.data) {
+							if (Array.isArray(response.data)) {
+								branches = response.data;
+							} else if (typeof response.data === 'object') {
+								// If data is an object, convert to array
+								branches = [response.data];
+							}
+						}
 					}
-					if (response.status == 200 && response.data && Array.isArray(response.data) && response.data.length > 0) {
-						return response.data.map((branch: any, index: number) => {
-							// Build a readable display string with available fields
-							const displayParts = [];
 
-							// Add branch_name if available
-							if (branch.branch_name) {
-								displayParts.push(branch.branch_name);
-							}
+					console.log(branches, 'branches')
 
-							// Add email if available
-							if (branch.email) {
-								displayParts.push(`Email: ${branch.email}`);
-							}
+					if (branches.length === 0) {
+						return [];
+					}
 
-							// Add phone if available
-							if (branch.phone) {
-								displayParts.push(`Phone: ${branch.phone}`);
-							}
+					return branches.map((branch: any) => {
+						// Build a readable display string with available fields
+						const displayParts = [];
 
-							// Add gstin if available
-							if (branch.gstin) {
-								displayParts.push(`GSTIN: ${branch.gstin}`);
-							}
+						// Add branch_name or name if available (AE might use 'name' instead of 'branch_name')
+						const branchName = branch.branch_name || branch.name;
+						if (branchName) {
+							displayParts.push(branchName);
+						}
 
-							// Add address if available
+						// Add email if available
+						if (branch.email) {
+							displayParts.push(`Email: ${branch.email}`);
+						}
+
+						// Add phone if available
+						if (branch.phone) {
+							displayParts.push(`Phone: ${branch.phone}`);
+						}
+
+						// Add gstin if available (AE might not have this)
+						if (branch.gstin) {
+							displayParts.push(`GSTIN: ${branch.gstin}`);
+						}
+
+						// Add address if available
+						const addressParts: string[] = [];
+
+						if (isIndia) {
+							// India format: address is nested in address object
 							if (branch.address) {
-								const addressParts: string[] = [];
 								const addr = branch.address;
-
-								// Check for India format address fields
 								if (addr.line1) addressParts.push(addr.line1);
 								if (addr.line2) addressParts.push(addr.line2);
 								if (addr.city) addressParts.push(addr.city);
 								if (addr.state) addressParts.push(addr.state);
 								if (addr.country) addressParts.push(addr.country);
 								if (addr.pincode) addressParts.push(addr.pincode);
-
-								// Check for non-India format address fields
+							}
+						} else {
+							// AE format: address fields might be at root level or nested
+							if (branch.address_details) {
+								const addr = JSON.parse(branch.address_details);
+								// console.log(JSON.parse(addr), 'addr')
+								// Check nested address object
 								if (addr.building_name) addressParts.push(addr.building_name);
 								if (addr.street_name) addressParts.push(addr.street_name);
 								if (addr.emirate) addressParts.push(addr.emirate);
 								if (addr.po_box) addressParts.push(addr.po_box);
-
-								if (addressParts.length > 0) {
-									displayParts.push(`Address: ${addressParts.join(', ')}`);
-								}
+								if (addr.country) addressParts.push(addr.country);
 							}
+							// Also check if address fields are at root level (AE format)
+							if (branch.building_name) addressParts.push(branch.building_name);
+							if (branch.street_name) addressParts.push(branch.street_name);
+							if (branch.emirate) addressParts.push(branch.emirate);
+							if (branch.po_box) addressParts.push(branch.po_box);
+							if (branch.country && !addressParts.includes(branch.country)) addressParts.push(branch.country);
+						}
 
-							const displayName = displayParts.length > 0
-								? displayParts.join(', ')
-								: 'Branch Details';
+						if (addressParts.length > 0) {
+							displayParts.push(`Address: ${addressParts.join(', ')}`);
+						}
 
-							// Return branch data as a single option with JSON value that frontend can parse
-							return {
-								name: displayName,
-								value: JSON.stringify(branch.branch_id),
-							};
-						});
-					}
-					return [];
+						const displayName = displayParts.length > 0
+							? displayParts.join(', ')
+							: 'Branch Details';
+
+						// Get branch_id - handle both 'branch_id' and 'id' field names
+						const branchId = branch.branch_id || branch.id;
+
+						// Return branch data as a single option with JSON value that frontend can parse
+						return {
+							name: displayName,
+							value: JSON.stringify(branchId),
+						};
+					});
 				} catch (error) {
 					if (continueOnFail) {
 						return [];

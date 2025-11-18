@@ -2750,7 +2750,7 @@ export async function execute(this: IExecuteFunctions) {
 						const phone = this.getNodeParameter('phone', i) as string;
 						const email = this.getNodeParameter('email', i) as string;
 						const status = this.getNodeParameter('status', i) as string;
-						const primaryBranch = addressFields.primaryBranch ? parseInt(addressFields.primaryBranch as string) : 0;
+						const primaryBranch = addressFields.primaryBranch ? addressFields.primaryBranch as string : 'no';
 
 						if(!branchName || branchName.trim() === '') {
 							throw new ApplicationError('Branch Name is required', { level: 'warning' });
@@ -2770,8 +2770,10 @@ export async function execute(this: IExecuteFunctions) {
 						if(!postalCode || postalCode === '') {
 							throw new ApplicationError('Postal Code is required', { level: 'warning' });
 						}
-						if(!taxNumber || taxNumber.trim() === '') {
-							throw new ApplicationError('Tax Number is required', { level: 'warning' });
+						if(isIndia) {
+							if(!taxNumber || taxNumber.trim() === '') {
+								throw new ApplicationError('Tax Number is required for India operations', { level: 'warning' });
+							}
 						}
 						if(!phone || phone.trim() === '') {
 							throw new ApplicationError('Phone is required', { level: 'warning' });
@@ -2786,20 +2788,18 @@ export async function execute(this: IExecuteFunctions) {
 						let body: IDataObject = {};
 						if(isIndia) {
 							body = {
-								branch_name: branchName,
+								name: branchName,
 								gstin: taxNumber,
 								email: email,
 								phone: phone,
-								address: {
-									line1: address1,
-									line2: address2,
-									city: city,
-									state: state,
-									country: country,
-									pincode: postalCode,
-								},
+								line1: address1,
+								line2: address2,
+								city: city,
+								state: state,
+								country: country,
+								pincode: postalCode,
 								status: status,
-								primary: primaryBranch ?? 0,
+								is_primary: primaryBranch,
 							}
 						}
 						else {
@@ -2888,7 +2888,7 @@ export async function execute(this: IExecuteFunctions) {
 						const userPhone = updateFields?.phone as string;
 						const userEmail = updateFields?.email as string;
 						const userStatus = updateFields?.status as string;
-						const userPrimaryBranch = updateFields?.primaryBranch ? parseInt(updateFields.primaryBranch as string) : undefined;
+						const userPrimaryBranch = updateFields?.primaryBranch ? updateFields.primaryBranch as string : '';
 
 						// Merge: Use new values if provided and different, otherwise keep old values
 						// Branch Name
@@ -2916,21 +2916,22 @@ export async function execute(this: IExecuteFunctions) {
 						if (userStatus && userStatus.trim() !== '') {
 							finalStatus = userStatus;
 						} else if (currentBranchData.status) {
-							finalStatus = (currentBranchData.status === 1 || currentBranchData.status === '1' || currentBranchData.status === 'Active' || currentBranchData.status === 'active') ? 'active' : 'inactive';
+							finalStatus = (currentBranchData.status === 1 || currentBranchData.status === '1' || currentBranchData.status === 'Active' || currentBranchData.status === 'active') ? 'Active' : 'Inactive';
 						} else {
-							finalStatus = 'active';
+							finalStatus = 'Active';
 						}
 
 						// Primary Branch
-						let finalPrimaryBranch = 0;
-						if (userPrimaryBranch !== undefined) {
+						let finalPrimaryBranch = '';
+						if(userPrimaryBranch && userPrimaryBranch !== '' && userPrimaryBranch !== null && userPrimaryBranch !== undefined) {
 							finalPrimaryBranch = userPrimaryBranch;
-						} else if (currentBranchData.primary !== undefined) {
-							finalPrimaryBranch = (currentBranchData.primary === 1 || currentBranchData.primary === '1') ? 1 : 0;
-						} else if (currentBranchData.primary_branch !== undefined) {
-							finalPrimaryBranch = (currentBranchData.primary_branch === 1 || currentBranchData.primary_branch === '1') ? 1 : 0;
+						} else {
+							if(isIndia) {
+								finalPrimaryBranch = (currentBranchData.primary === 1 || currentBranchData.primary === '1' || currentBranchData.primary === 'yes' || currentBranchData.primary === 'Yes') ? 'yes' : 'no';
+							} else {
+								finalPrimaryBranch = (currentBranchData.primary_branch === 1 || currentBranchData.primary_branch === '1' || currentBranchData.primary_branch === 'yes' || currentBranchData.primary_branch === 'Yes') ? 'yes' : 'no';
+							}
 						}
-
 						// Address fields - handle both India and UAE formats
 						let finalAddress1 = '';
 						let finalAddress2 = '';
@@ -2998,21 +2999,19 @@ export async function execute(this: IExecuteFunctions) {
 						let body: IDataObject = {};
 						if(isIndia) {
 							body = {
-								branch_id: selectedBranchId,
-								branch_name: finalBranchName,
+								id: selectedBranchId,
+								name: finalBranchName,
 								gstin: finalTaxNumber,
 								email: finalEmail,
 								phone: finalPhone,
-								address: {
-									line1: finalAddress1,
-									line2: finalAddress2,
-									city: finalCity,
-									state: finalState,
-									country: finalCountry,
-									pincode: finalPostalCode,
-								},
+								line1: finalAddress1,
+								line2: finalAddress2,
+								city: finalCity,
+								state: finalState,
+								country: finalCountry,
+								pincode: finalPostalCode,
 								status: finalStatus,
-								primary: finalPrimaryBranch,
+								is_primary: finalPrimaryBranch,
 							};
 						} else {
 							body = {
@@ -3035,6 +3034,15 @@ export async function execute(this: IExecuteFunctions) {
 						options.method = 'PUT';
 						options.url = `${baseUrl}/business/branch`;
 						options.body = body;
+					}
+					else if (operation === 'getBranchDetails') {
+						const branchId = this.getNodeParameter('branchId', i) as string;
+						options.method = 'GET';
+						options.url = `${baseUrl}/business/branch/${branchId}`;
+					}
+					else if (operation === 'listBranches') {
+						options.method = 'GET';
+						options.url = `${baseUrl}/business/branch`;
 					}
 					const result = await this.helpers.request(options);
 					returnData.push({ json: result, pairedItem: { item: i } });
