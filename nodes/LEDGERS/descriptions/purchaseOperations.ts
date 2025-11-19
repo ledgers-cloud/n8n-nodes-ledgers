@@ -1380,16 +1380,12 @@ export const purchaseOperations: INodeProperties[] = [
 		},
 	},
 	{
-		displayName: 'Payment Method Name or ID',
+		displayName: 'Payment Method',
 		name: 'payment_mode',
-		type: 'options',
+		type: 'string',
 		default: '',
-		typeOptions: {
-			loadOptionsMethod: 'getPaymentMethodsPurchase',
-		},
 		required: true,
-		placeholder: 'Select Payment Method',
-		description: 'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
+		placeholder: 'Enter Payment Method',
 		displayOptions: {
 			show: {
 				resource: ['purchase'],

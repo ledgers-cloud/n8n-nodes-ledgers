@@ -61,7 +61,7 @@ export async function execute(this: IExecuteFunctions) {
 	const baseUrl = isIndia ? `${apiUrl}/v3` : apiUrl;
 
 	// Validate operation-country match
-	const indiaOnlyOps = ['hrms', 'banking', 'getBankStatement', 'getAllEmployees', 'addEmployee', 'updateEmployee', 'getEmployee', 'listPurchaseInvoices', 'viewPurchaseInvoice', 'createPurchaseOrder', 'listPurchaseOrders', 'viewPurchaseOrder', 'createVoucher', 'listVouchers', 'viewVoucher', 'getGSTReturnStatus', 'getGSTSearch'];
+	const indiaOnlyOps = ['hrms', 'banking', 'getBankStatement', 'getAllEmployees', 'addEmployee', 'updateEmployee', 'getEmployee', 'createPurchaseOrder', 'listPurchaseOrders', 'viewPurchaseOrder', 'createVoucher', 'listVouchers', 'viewVoucher', 'getGSTReturnStatus', 'getGSTSearch','getPaymentMethods','addPaymentMethod'];
 
 	for (let i = 0; i < items.length; i++) {
 		const operation = this.getNodeParameter('operation', i);
@@ -3110,6 +3110,26 @@ export async function execute(this: IExecuteFunctions) {
 					} else if (operation === 'listBranches') {
 						options.method = 'GET';
 						options.url = `${baseUrl}/business/branch`;
+					} else if (operation === 'addPaymentMethod') {
+						const paymentMethodName = this.getNodeParameter('paymentMethodName', i) as string;
+						let currentPaymentMethodData: any = null;
+						try {
+							const fetchOptions: IHttpRequestOptions = {
+								method: 'GET',
+								url: `${baseUrl}/settings/paymentsmode`,
+								headers: options.headers,
+								json: true,
+							};
+							const fetchResponse = await this.helpers.request(fetchOptions);
+							if(fetchResponse.status == 200 && fetchResponse.data){
+								currentPaymentMethodData = fetchResponse.data;
+							} else {
+								throw new ApplicationError('Failed to fetch current payment method data '+ fetchResponse, { level: 'warning' });
+							}
+						} catch (error) {
+							throw new ApplicationError('Failed to fetch current payment method data. '+ error, { level: 'warning' });
+						}
+
 					}
 					const result = await this.helpers.request(options);
 					returnData.push({ json: result, pairedItem: { item: i } });

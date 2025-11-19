@@ -1,38 +1,52 @@
 import type { INodeProperties } from 'n8n-workflow';
 
-export const branchOperations: INodeProperties[] = [
+export const commonOperations: INodeProperties[] = [
 	{
 		displayName: 'Operation',
 		noDataExpression: true,
 		name: 'operation',
 		type: 'options',
 		options: [
-			{ name: 'Get Branches', value: 'getBranchDetails', action: 'Get branches' },
+			{ name: 'Add Payment Method', value: 'addPaymentMethod', action: 'Add a payment method' },
 			{ name: 'Create Branch', value: 'createBranch', action: 'Create a branch' },
-			{ name: 'Update Branch', value: 'updateBranch', action: 'Update a branch' },
+			{ name: 'Get Branch Details', value: 'getBranchDetails', action: 'Get branch details' },
 			{ name: 'List Branches', value: 'listBranches', action: 'List branches' },
+			{ name: 'List Payment Methods', value: 'listPaymentMethods', action: 'List payment methods' },
+			{ name: 'Update Branch', value: 'updateBranch', action: 'Update a branch' },
 		],
-		default: 'getBranchDetails',
+		default: 'createBranch',
+	},
+
+	// Payment Method Fields
+	{
+		displayName: 'Payment Method Name',
+		name: 'paymentMethodName',
+		type: 'string',
+		required: true,
+		default: '',
 		displayOptions: {
-			show: { resource: ['branch'] },
+			show: {
+				resource: ['common'],
+				operation: ['addPaymentMethod', 'updatePaymentMethod'],
+			},
 		},
 	},
 
-
+	// Branch Fields
 	{
 		displayName: 'Branch ID',
 		name: 'branchId',
 		type: 'string',
 		required: true,
 		default: '',
-		displayOptions: { show: { resource: ['branch'], operation: ['getBranchDetails'] } },
+		displayOptions: { show: { resource: ['common'], operation: ['getBranchDetails'] } },
 	},
 	{
 		displayName: 'Branch Details Name or ID',
 		name: 'branchDetailsLoader',
 		type: 'options',
 		default: '',
-		displayOptions: { show: { resource: ['branch'], operation: ['updateBranch'] } },
+		displayOptions: { show: { resource: ['common'], operation: ['updateBranch'] } },
 		typeOptions: {
 			loadOptionsMethod: 'getBranchDetails',
 		},
@@ -44,7 +58,7 @@ export const branchOperations: INodeProperties[] = [
 		type: 'string',
 		required: true,
 		default: '',
-		displayOptions: { show: { resource: ['branch'], operation: ['createBranch'] } },
+		displayOptions: { show: { resource: ['common'], operation: ['createBranch'] } },
 		description: 'The name of the branch',
 	},
 	{
@@ -52,7 +66,7 @@ export const branchOperations: INodeProperties[] = [
 		name: 'taxNumber',
 		type: 'string',
 		default: '',
-		displayOptions: { show: { resource: ['branch'], operation: ['createBranch'] } },
+		displayOptions: { show: { resource: ['common'], operation: ['createBranch'] } },
 		description: 'Mandatory for India operations only',
 	},
 	{
@@ -61,7 +75,7 @@ export const branchOperations: INodeProperties[] = [
 		type: 'string',
 		required: true,
 		default: '',
-		displayOptions: { show: { resource: ['branch'], operation: ['createBranch'] } },
+		displayOptions: { show: { resource: ['common'], operation: ['createBranch'] } },
 	},
 	{
 		displayName: 'Email',
@@ -69,7 +83,7 @@ export const branchOperations: INodeProperties[] = [
 		type: 'string',
 		required: true,
 		default: '',
-		displayOptions: { show: { resource: ['branch'], operation: ['createBranch'] } },
+		displayOptions: { show: { resource: ['common'], operation: ['createBranch'] } },
 		placeholder: 'name@email.com',
 	},
 	{
@@ -81,7 +95,7 @@ export const branchOperations: INodeProperties[] = [
 			{ name: 'Inactive', value: 'Inactive' },
 		],
 		default: 'Active',
-		displayOptions: { show: { resource: ['branch'], operation: ['createBranch'] } },
+		displayOptions: { show: { resource: ['common'], operation: ['createBranch'] } },
 	},
 
 	{
@@ -90,7 +104,7 @@ export const branchOperations: INodeProperties[] = [
 		type: 'collection',
 		placeholder: 'Add Address Field',
 		default: {},
-		displayOptions: { show: { resource: ['branch'], operation: ['createBranch'] } },
+		displayOptions: { show: { resource: ['common'], operation: ['createBranch'] } },
 		options: [
 			{
 				displayName: 'Address Line 1',
@@ -137,7 +151,7 @@ export const branchOperations: INodeProperties[] = [
 		type: 'collection',
 		placeholder: 'Add Additional Field',
 		default: {},
-		displayOptions: { show: { resource: ['branch'], operation: ['createBranch'] } },
+		displayOptions: { show: { resource: ['common'], operation: ['createBranch'] } },
 		options: [
 			{
 				displayName: 'Primary Branch',
@@ -157,7 +171,7 @@ export const branchOperations: INodeProperties[] = [
 		type: 'collection',
 		placeholder: 'Add Field',
 		default: {},
-		displayOptions: { show: { resource: ['branch'], operation: ['updateBranch'] } },
+		displayOptions: { show: { resource: ['common'], operation: ['updateBranch'] } },
 		options: [
 			{
 				displayName: 'Address Fields',
