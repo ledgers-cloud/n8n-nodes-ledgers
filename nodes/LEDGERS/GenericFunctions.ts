@@ -2825,7 +2825,7 @@ export async function execute(this: IExecuteFunctions) {
 					} else if (operation === 'updateBranch') {
 						// Get selected branch ID from branchDetailsLoader
 						// In getBranchDetails, the value is stored as JSON.stringify(branch.branch_id)
-						let selectedBranchId: string = '';
+						let selectedBranchId = '';
 						try {
 							const branchDetailsLoader = this.getNodeParameter('branchDetailsLoader', i) as string;
 							if (branchDetailsLoader && branchDetailsLoader.trim() !== '') {
@@ -2833,7 +2833,7 @@ export async function execute(this: IExecuteFunctions) {
 								const parsedValue = JSON.parse(branchDetailsLoader);
 								console.log("parsedValue", parsedValue);
 								// The parsed value is the branch_id directly (string or number)
-								selectedBranchId = String(parsedValue);
+								selectedBranchId = parsedValue;
 							}
 						} catch (error) {
 							// If parsing fails, try to get from branchId field
@@ -2841,11 +2841,11 @@ export async function execute(this: IExecuteFunctions) {
 						}
 
 						// Fallback to branchId field if branchDetailsLoader is not available
-						if (!selectedBranchId || selectedBranchId.trim() === '') {
+						if (!selectedBranchId) {
 							selectedBranchId = this.getNodeParameter('branchId', i) as string;
 						}
 
-						if(!selectedBranchId || selectedBranchId.trim() === '') {
+						if(!selectedBranchId) {
 							throw new ApplicationError('Branch ID is required', { level: 'warning' });
 						}
 
@@ -2854,23 +2854,26 @@ export async function execute(this: IExecuteFunctions) {
 						try {
 							const fetchOptions: IHttpRequestOptions = {
 								method: 'GET',
-								url: `${baseUrl}`+(isIndia ? '/v3/business/branch/' : '/business/branch/') + selectedBranchId,
-								headers: {
-									'Content-Type': 'application/json',
-									'x-api-key': xApiKey,
-									'api-token': apiToken,
-								},
+								url: `${baseUrl}`+(isIndia ? '/business/branch/' : '/business/branch/') + selectedBranchId,
+								headers: options.headers,
 								json: true,
 							};
-
 							const fetchResponse = await this.helpers.request(fetchOptions);
-							if (fetchResponse.status === 200 && fetchResponse.data && Array.isArray(fetchResponse.data) && fetchResponse.data.length > 0) {
-								currentBranchData = fetchResponse.data[0];
+							if(isIndia) {
+								if (fetchResponse.status === 200 && fetchResponse.data && Array.isArray(fetchResponse.data) && fetchResponse.data.length > 0) {
+									currentBranchData = fetchResponse.data[0];
+								} else {
+									throw new ApplicationError('Failed to fetch current branch data '+ fetchResponse, { level: 'warning' });
+								}
 							} else {
-								throw new ApplicationError('Failed to fetch current branch data', { level: 'warning' });
+								if (fetchResponse.status === 'success' && fetchResponse.data) {
+									currentBranchData = fetchResponse.data;
+								} else {
+									throw new ApplicationError('Failed to fetch current branch data '+ fetchResponse, { level: 'warning' });
+								}
 							}
 						} catch (error) {
-							throw new ApplicationError('Failed to fetch current branch data. Please check the branch ID.', { level: 'warning' });
+							throw new ApplicationError('Failed to fetch current branch data. Please check the branch ID. '+ error, { level: 'warning' });
 						}
 
 						// Get user-provided values
@@ -2910,25 +2913,48 @@ export async function execute(this: IExecuteFunctions) {
 							? userTaxNumber
 							: (currentBranchData.gstin || currentBranchData.tax_number || '');
 
-						// Status
-						let finalStatus = '';
+						// Status - India uses string, AE uses integer
+						let finalStatus: string | number = '';
 						if (userStatus && userStatus.trim() !== '') {
-							finalStatus = userStatus;
+							if (isIndia) {
+								finalStatus = userStatus;
+							} else {
+								// AE: Convert user input to integer (1 for active, 0 for inactive)
+								const userStatusLower = userStatus.toLowerCase();
+								finalStatus = (userStatusLower === 'active' || userStatus === '1' || Number(userStatus) === 1) ? 1 : 0;
+							}
 						} else if (currentBranchData.status) {
-							finalStatus = (currentBranchData.status === 1 || currentBranchData.status === '1' || currentBranchData.status === 'Active' || currentBranchData.status === 'active') ? 'Active' : 'Inactive';
+							if(isIndia) {
+								finalStatus = (currentBranchData.status === 1 || currentBranchData.status === '1' || currentBranchData.status === 'Active' || currentBranchData.status === 'active') ? 'Active' : 'Inactive';
+							} else {
+								finalStatus = (currentBranchData.status === 1 || currentBranchData.status === '1' || currentBranchData.status === 'Active' || currentBranchData.status === 'active') ? 1 : 0;
+							}
 						} else {
-							finalStatus = 'Active';
+							finalStatus = isIndia ? 'Active' : 1;
 						}
 
-						// Primary Branch
-						let finalPrimaryBranch = '';
+						// Primary Branch - India uses string, AE uses integer
+						let finalPrimaryBranch: string | number = '';
 						if(userPrimaryBranch && userPrimaryBranch !== '' && userPrimaryBranch !== null && userPrimaryBranch !== undefined) {
-							finalPrimaryBranch = userPrimaryBranch;
+							if (isIndia) {
+								finalPrimaryBranch = String(userPrimaryBranch).toLowerCase();
+							} else {
+								// AE: Convert user input to integer (1 for yes, 0 for no)
+								const userPrimaryBranchStr = String(userPrimaryBranch).toLowerCase();
+								finalPrimaryBranch = (userPrimaryBranchStr === 'yes' || userPrimaryBranch === '1' || Number(userPrimaryBranch) === 1) ? 1 : 0;
+							}
 						} else {
 							if(isIndia) {
 								finalPrimaryBranch = (currentBranchData.primary === 1 || currentBranchData.primary === '1' || currentBranchData.primary === 'yes' || currentBranchData.primary === 'Yes') ? 'yes' : 'no';
 							} else {
-								finalPrimaryBranch = (currentBranchData.primary_branch === 1 || currentBranchData.primary_branch === '1' || currentBranchData.primary_branch === 'yes' || currentBranchData.primary_branch === 'Yes') ? 'yes' : 'no';
+								// AE: Use integer (1 or 0)
+								if (currentBranchData.primary !== undefined && currentBranchData.primary !== null) {
+									finalPrimaryBranch = (currentBranchData.primary === 1 || currentBranchData.primary === '1' || String(currentBranchData.primary).toLowerCase() === 'yes') ? 1 : 0;
+								} else if (currentBranchData.primary_branch !== undefined && currentBranchData.primary_branch !== null) {
+									finalPrimaryBranch = (currentBranchData.primary_branch === 1 || currentBranchData.primary_branch === '1' || String(currentBranchData.primary_branch).toLowerCase() === 'yes') ? 1 : 0;
+								} else {
+									finalPrimaryBranch = 0;
+								}
 							}
 						}
 						// Address fields - handle both India and UAE formats
@@ -2940,7 +2966,7 @@ export async function execute(this: IExecuteFunctions) {
 						let finalPostalCode = '';
 
 						if (isIndia) {
-							// India format
+							// India format: address is nested in address object
 							finalAddress1 = (userAddress1 && userAddress1.trim() !== '')
 								? userAddress1
 								: (currentBranchData.address?.line1 || '');
@@ -2965,8 +2991,27 @@ export async function execute(this: IExecuteFunctions) {
 								? userPostalCode
 								: (currentBranchData.address?.pincode || '');
 						} else {
-							// UAE format
-							const currentBuildingName = currentBranchData.address?.building_name || '';
+							// UAE format: address_details is a JSON string that needs to be parsed
+							// Also check root level fields and nested address object
+							let aeAddress: any = null;
+
+							// Try to parse address_details (JSON string)
+							if (currentBranchData.address_details) {
+								try {
+									aeAddress = typeof currentBranchData.address_details === 'string'
+										? JSON.parse(currentBranchData.address_details)
+										: currentBranchData.address_details;
+								} catch (error) {
+									// If parsing fails, use as is
+									aeAddress = currentBranchData.address_details;
+								}
+							}
+
+							// Get building_name from address_details, address object, or root level
+							const currentBuildingName = aeAddress?.building_name
+								|| currentBranchData.address?.building_name
+								|| currentBranchData.building_name
+								|| '';
 							const buildingParts = currentBuildingName.split(',');
 
 							finalAddress1 = (userAddress1 && userAddress1.trim() !== '')
@@ -2977,21 +3022,37 @@ export async function execute(this: IExecuteFunctions) {
 								? userAddress2
 								: (buildingParts.slice(1).join(',') || '');
 
+							// Get street_name from address_details, address object, or root level
 							finalCity = (userCity && userCity.trim() !== '')
 								? userCity
-								: (currentBranchData.address?.street_name || '');
+								: (aeAddress?.street_name
+									|| currentBranchData.address?.street_name
+									|| currentBranchData.street_name
+									|| '');
 
+							// Get emirate from address_details, address object, or root level
 							finalState = (userState && userState.trim() !== '')
 								? userState
-								: (currentBranchData.address?.emirate || '');
+								: (aeAddress?.emirate
+									|| currentBranchData.address?.emirate
+									|| currentBranchData.emirate
+									|| '');
 
+							// Get country from address_details, address object, or root level
 							finalCountry = (userCountry && userCountry.trim() !== '')
 								? userCountry
-								: (currentBranchData.address?.country || '');
+								: (aeAddress?.country
+									|| currentBranchData.address?.country
+									|| currentBranchData.country
+									|| '');
 
+							// Get po_box from address_details, address object, or root level
 							finalPostalCode = (userPostalCode && userPostalCode.trim() !== '')
 								? userPostalCode
-								: (currentBranchData.address?.po_box || '');
+								: (aeAddress?.po_box
+									|| currentBranchData.address?.po_box
+									|| currentBranchData.po_box
+									|| '');
 						}
 
 						// Build update body with merged data
@@ -3033,6 +3094,7 @@ export async function execute(this: IExecuteFunctions) {
 						options.method = 'PUT';
 						options.url = `${baseUrl}/business/branch`;
 						options.body = body;
+						console.log("body", options.body);
 					} else if (operation === 'getBranchDetails') {
 						const branchId = this.getNodeParameter('branchId', i) as string;
 						options.method = 'GET';
