@@ -7,12 +7,12 @@ export const branchOperations: INodeProperties[] = [
 		name: 'operation',
 		type: 'options',
 		options: [
-			{ name: 'Get Branches', value: 'getBranches', action: 'Get branches' },
+			{ name: 'Get Branches', value: 'getBranchDetails', action: 'Get branches' },
 			{ name: 'Create Branch', value: 'createBranch', action: 'Create a branch' },
 			{ name: 'Update Branch', value: 'updateBranch', action: 'Update a branch' },
 			{ name: 'List Branches', value: 'listBranches', action: 'List branches' },
 		],
-		default: 'getBranches',
+		default: 'getBranchDetails',
 		displayOptions: {
 			show: { resource: ['branch'] },
 		},
@@ -25,7 +25,7 @@ export const branchOperations: INodeProperties[] = [
 		type: 'string',
 		required: true,
 		default: '',
-		displayOptions: { show: { resource: ['branch'], operation: ['getBranches'] } },
+		displayOptions: { show: { resource: ['branch'], operation: ['getBranchDetails'] } },
 	},
 	{
 		displayName: 'Branch Details Name or ID',
@@ -251,17 +251,4 @@ export const branchOperations: INodeProperties[] = [
 			},
 		],
 	},
-	{
-    displayName: 'Limit',
-    name: 'page_size',
-    required: true,
-    displayOptions: {
-      show: {
-        resource: ['branch'],
-        operation: ['listBranches'],
-      },
-    },
-    type: 'number',
-    default: 5,
-  },
 ];

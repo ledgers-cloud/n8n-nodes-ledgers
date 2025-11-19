@@ -1432,7 +1432,6 @@ export async function execute(this: IExecuteFunctions) {
 						options.method = 'POST';
 						options.url = `${baseUrl}/estimate`;
 						options.body = body;
-						console.log('body', body);
 					} else if (operation === 'viewQuote') {
 						const quoteId = this.getNodeParameter('quoteId', i) as string;
 						options.method = 'GET';
@@ -1696,7 +1695,6 @@ export async function execute(this: IExecuteFunctions) {
 						options.method = 'POST';
 						options.url = `${baseUrl}/receipt`;
 						options.body = body;
-						console.log('body', body);
 					} else if (operation === 'listReceipts') {
 						const filters = this.getNodeParameter('filters', i) as IDataObject;
 						const pageSize = this.getNodeParameter('page_size', i) as number;
@@ -1734,7 +1732,6 @@ export async function execute(this: IExecuteFunctions) {
 						const contactIdFilter = isIndia ? `&filter.contact_id=${filters.contact_id ?? ''}` : '';
 						const reconStatusFilter = isIndia ? `&filter.recon_status=${filters.recon_status ?? ''}` : '';
 						options.url = `${baseUrl}/receipt?page_size=${pageSize ?? 5}&${dateFromKey}=${filters.date_from ?? ''}&${dateToKey}=${filters.date_to ?? ''}${reconStatusFilter}${contactIdFilter}&filter.search=${filters.search ?? ''}`;
-						console.log('options.url', options.url);
 					} else if (operation === 'viewReceipt') {
 						const receiptId = this.getNodeParameter('receiptId', i) as string;
 						options.method = 'GET';
@@ -2164,7 +2161,6 @@ export async function execute(this: IExecuteFunctions) {
 						options.method = 'POST';
 						options.url = `${baseUrl}/purchase-invoice`;
 						options.body = body;
-						console.log(body);
 					} else if (operation === 'createVoucher') {
 						const branchId = this.getNodeParameter('branch_id', i) as string;
 						const voucherType = this.getNodeParameter('voucher_type', i) as string;
@@ -2758,9 +2754,12 @@ export async function execute(this: IExecuteFunctions) {
 						if(!address1 || address1 === '') {
 							throw new ApplicationError('Address Line 1 is required', { level: 'warning' });
 						}
-						if(!city || city === '') {
-							throw new ApplicationError('City is required', { level: 'warning' });
+						if(isIndia) {
+							if(!city || city === '') {
+								throw new ApplicationError('City is required', { level: 'warning' });
+							}
 						}
+
 						if(!state || state === '') {
 							throw new ApplicationError('State is required', { level: 'warning' });
 						}
@@ -2785,6 +2784,17 @@ export async function execute(this: IExecuteFunctions) {
 							throw new ApplicationError('Status is required', { level: 'warning' });
 						}
 
+						let primary_value: string | number = '';
+						let status_value: string | number = '';
+						if(isIndia) {
+							primary_value = primaryBranch;
+							status_value = status;
+						}
+						else{
+							primary_value = primaryBranch === 'yes' ? 1 : 0;
+							status_value = status === 'Active' ? 1 : 0;
+						}
+
 						let body: IDataObject = {};
 						if(isIndia) {
 							body = {
@@ -2798,8 +2808,8 @@ export async function execute(this: IExecuteFunctions) {
 								state: state,
 								country: country,
 								pincode: postalCode,
-								status: status,
-								is_primary: primaryBranch,
+								status: status_value,
+								is_primary: primary_value,
 							}
 						}
 						else {
@@ -2808,14 +2818,14 @@ export async function execute(this: IExecuteFunctions) {
 								email: email,
 								phone: phone,
 								address: {
-									building_name: address1+', '+address2,
-									street_name: city,
+									building_name: address1,
+									street_name: address2 +', '+ city,
 									emirate: state,
 									po_box: postalCode,
 									country: country,
 								},
-								status: status,
-								primary_branch: primaryBranch ?? 0,
+								status: status_value,
+								primary_branch: primary_value,
 							}
 						}
 
@@ -2831,7 +2841,6 @@ export async function execute(this: IExecuteFunctions) {
 							if (branchDetailsLoader && branchDetailsLoader.trim() !== '') {
 								// Parse the JSON string to get the branch_id
 								const parsedValue = JSON.parse(branchDetailsLoader);
-								console.log("parsedValue", parsedValue);
 								// The parsed value is the branch_id directly (string or number)
 								selectedBranchId = parsedValue;
 							}
@@ -3075,7 +3084,7 @@ export async function execute(this: IExecuteFunctions) {
 							};
 						} else {
 							body = {
-								branch_id: selectedBranchId,
+								id: selectedBranchId,
 								branch_name: finalBranchName,
 								email: finalEmail,
 								phone: finalPhone,
@@ -3094,7 +3103,6 @@ export async function execute(this: IExecuteFunctions) {
 						options.method = 'PUT';
 						options.url = `${baseUrl}/business/branch`;
 						options.body = body;
-						console.log("body", options.body);
 					} else if (operation === 'getBranchDetails') {
 						const branchId = this.getNodeParameter('branchId', i) as string;
 						options.method = 'GET';

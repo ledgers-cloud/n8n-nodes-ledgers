@@ -651,7 +651,6 @@ export class Ledgers implements INodeType {
 						}
 					} else {
 						// AE format: response.data might be an object or array
-							console.log(response, 'response.data')
 						if (response.status === 'success' && response.data) {
 							if (Array.isArray(response.data)) {
 								branches = response.data;
@@ -661,8 +660,6 @@ export class Ledgers implements INodeType {
 							}
 						}
 					}
-
-					console.log(branches, 'branches')
 
 					if (branches.length === 0) {
 						return [];
@@ -711,7 +708,6 @@ export class Ledgers implements INodeType {
 							// AE format: address fields might be at root level or nested
 							if (branch.address_details) {
 								const addr = JSON.parse(branch.address_details);
-								// console.log(JSON.parse(addr), 'addr')
 								// Check nested address object
 								if (addr.building_name) addressParts.push(addr.building_name);
 								if (addr.street_name) addressParts.push(addr.street_name);
