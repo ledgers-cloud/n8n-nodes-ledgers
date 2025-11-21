@@ -41,7 +41,6 @@ export class Ledgers implements INodeType {
 				type: 'options',
 				noDataExpression: true,
 				options: [
-					{ name: 'Banking Operation (India)', value: 'banking' },
 					{ name: 'Catalog Operation', value: 'catalog' },
 					{ name: 'Common Operation', value: 'common' },
 					{ name: 'Contact Operation', value: 'contact' },
@@ -52,19 +51,12 @@ export class Ledgers implements INodeType {
 				],
 				default: 'contact',
 			},
-			// Sales, Purchase, and Catalog operations
-			...descriptions.salesOperations,
-			...descriptions.purchaseOperations,
 			...descriptions.catalogOperations,
-			// Contact Operations
-			...descriptions.contactOperations,
-			// HRMS Operations
-			...descriptions.hrmsOperations,
-			// Common Operations
 			...descriptions.commonOperations,
-			// Banking Operations
-			...descriptions.bankingOperations,
-			// Tax Operations
+			...descriptions.contactOperations,
+			...descriptions.hrmsOperations,
+			...descriptions.purchaseOperations,
+			...descriptions.salesOperations,
 			...descriptions.taxOperations,
 		],
 	};
@@ -467,7 +459,7 @@ export class Ledgers implements INodeType {
 
 					// Fetch bank accounts
 					const bankOptions: IHttpRequestOptions = {
-						method: 'POST',
+						method: 'GET',
 						url: `${baseUrl}/banking/${bank}`,
 						headers: {
 							'Content-Type': 'application/json',
@@ -479,7 +471,7 @@ export class Ledgers implements INodeType {
 					};
 
 					const bankResponse = await this.helpers.request(bankOptions);
-
+					console.log('bankResponse', bankResponse);
 					if (Array.isArray(bankResponse)) {
 						const activeAccounts = bankResponse.filter((account: any) => account.status === 1);
 

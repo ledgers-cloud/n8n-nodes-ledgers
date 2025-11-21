@@ -23,7 +23,7 @@ export const bankingOperations: INodeProperties[] = [
 			{ name: 'ICICI Bank', value: 'icici' },
 			{ name: 'Axis Bank', value: 'axis' },
 		],
-		default: 'selectBank',
+		default: 'icici',
 		displayOptions: {
 			show: {
 				resource: ['banking'],
@@ -39,11 +39,13 @@ export const bankingOperations: INodeProperties[] = [
 		required: true,
 		typeOptions: {
 			loadOptionsMethod: 'getBankAccounts',
+			dependsOn: ['bank'],
 		},
 		displayOptions: {
 			show: {
 				resource: ['banking'],
-				operation: ['getBankStatement']
+				operation: ['getBankStatement'],
+				bank: ['icici', 'axis'],
 			},
 		},
 		description: 'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',

@@ -15,9 +15,11 @@ export const commonOperations: INodeProperties[] = [
 			{ name: 'Update Branch', value: 'updateBranch', action: 'Update a branch' },
 		],
 		default: 'createBranch',
+		displayOptions: {
+			show: { resource: ['common'] },
+		},
 	},
 
-	// Payment Method Fields
 	{
 		displayName: 'Payment Method Name',
 		name: 'paymentMethodName',
@@ -32,7 +34,6 @@ export const commonOperations: INodeProperties[] = [
 		},
 	},
 
-	// Branch Fields
 	{
 		displayName: 'Branch ID',
 		name: 'branchId',

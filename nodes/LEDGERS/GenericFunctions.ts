@@ -3112,6 +3112,11 @@ export async function execute(this: IExecuteFunctions) {
 						options.url = `${baseUrl}/business/branch`;
 					} else if (operation === 'addPaymentMethod') {
 						const paymentMethodName = this.getNodeParameter('paymentMethodName', i) as string;
+
+						if (!paymentMethodName || paymentMethodName.trim() === '') {
+							throw new ApplicationError('Payment Method Name is required', { level: 'warning' });
+						}
+
 						let currentPaymentMethodData: any = null;
 						try {
 							const fetchOptions: IHttpRequestOptions = {
@@ -3123,13 +3128,87 @@ export async function execute(this: IExecuteFunctions) {
 							const fetchResponse = await this.helpers.request(fetchOptions);
 							if(fetchResponse.status == 200 && fetchResponse.data){
 								currentPaymentMethodData = fetchResponse.data;
-							} else {
-								throw new ApplicationError('Failed to fetch current payment method data '+ fetchResponse, { level: 'warning' });
 							}
 						} catch (error) {
-							throw new ApplicationError('Failed to fetch current payment method data. '+ error, { level: 'warning' });
+							// If fetch fails, continue with empty data (will create new)
+							currentPaymentMethodData = null;
 						}
 
+						// Get current date in ISO format
+						const currentDate = new Date().toISOString();
+
+						let payload: IDataObject = {};
+
+						if (currentPaymentMethodData && Array.isArray(currentPaymentMethodData) && currentPaymentMethodData.length > 0) {
+							// Find the payment_methods object in the data array
+							const paymentMethodsData = currentPaymentMethodData.find((item: any) => item.type === 'payment_methods');
+
+							if (paymentMethodsData && paymentMethodsData.settings && Array.isArray(paymentMethodsData.settings)) {
+								// Get existing settings
+								const existingSettings = paymentMethodsData.settings;
+
+								// Find the maximum ID in the settings array
+								let maxId = 0;
+								for (const setting of existingSettings) {
+									if (setting.id && Number(setting.id) > maxId) {
+										maxId = Number(setting.id);
+									}
+								}
+
+								// Next ID is maxId + 1
+								const nextId = maxId + 1;
+
+								// Create new settings array with existing + new payment method
+								const newSettings = [...existingSettings, {
+									id: nextId,
+									value: paymentMethodName,
+									status: 1,
+									added_by: 'N8N',
+									added_on: currentDate,
+									extra_field: ''
+								}];
+
+								payload = {
+									id: paymentMethodsData.id,
+									key: 'payment_methods',
+									value: newSettings
+								};
+							} else {
+								// If structure is different, create new with id: 1
+								payload = {
+									key: 'payment_methods',
+									value: [{
+										id: 1,
+										value: paymentMethodName,
+										status: 1,
+										added_by: 'N8N',
+										added_on: currentDate,
+										extra_field: ''
+									}]
+								};
+							}
+						} else {
+							// No existing data, create new with id: 1
+							payload = {
+								key: 'payment_methods',
+								value: [{
+									id: 1,
+									value: paymentMethodName,
+									status: 1,
+									added_by: 'N8N',
+									added_on: currentDate,
+									extra_field: ''
+								}]
+							};
+						}
+
+						options.method = 'POST';
+						options.url = `${baseUrl}/settings/paymentsmode`;
+						options.body = payload;
+						console.log(options.body);
+					} else if (operation === 'listPaymentMethods') {
+						options.method = 'GET';
+						options.url = `${baseUrl}/settings/paymentsmode`;
 					}
 					const result = await this.helpers.request(options);
 					returnData.push({ json: result, pairedItem: { item: i } });
