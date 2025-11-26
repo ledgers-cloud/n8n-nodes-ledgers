@@ -61,7 +61,7 @@ export async function execute(this: IExecuteFunctions) {
 	const baseUrl = isIndia ? `${apiUrl}/v3` : apiUrl;
 
 	// Validate operation-country match
-	const indiaOnlyOps = ['hrms', 'banking', 'getBankStatement', 'getAllEmployees', 'addEmployee', 'updateEmployee', 'getEmployee', 'createPurchaseOrder', 'listPurchaseOrders', 'viewPurchaseOrder', 'createVoucher', 'listVouchers', 'viewVoucher', 'getGSTReturnStatus', 'getGSTSearch','getPaymentMethods','addPaymentMethod'];
+	const indiaOnlyOps = ['hrms', 'banking', 'getBankStatement', 'getAllEmployees', 'addEmployee', 'updateEmployee', 'getEmployee', 'createPurchaseOrder', 'listPurchaseOrders', 'viewPurchaseOrder', 'getGSTReturnStatus', 'getGSTSearch','getPaymentMethods','addPaymentMethod'];
 
 	for (let i = 0; i < items.length; i++) {
 		const operation = this.getNodeParameter('operation', i);
@@ -89,7 +89,7 @@ export async function execute(this: IExecuteFunctions) {
 			json: true,
 		};
 
-		const loginResponse = await this.helpers.request(loginOptions);
+		const loginResponse = await this.helpers.httpRequest(loginOptions);
 
 		if (loginResponse.status !== 200 || !loginResponse.api_token) {
 			const errorMsg = loginResponse.errorMessage || 'Authentication failed. Check your credentials.';
@@ -370,7 +370,7 @@ export async function execute(this: IExecuteFunctions) {
 							headers: options.headers,
 							json: true,
 						};
-						const contactResponse = await this.helpers.request(getContactOptions);
+						const contactResponse = await this.helpers.httpRequest(getContactOptions);
 						if (!contactResponse.data) {
 							throw new ApplicationError(`Contact with ID ${contactId} not found.`, { itemIndex: i });
 						}
@@ -432,7 +432,7 @@ export async function execute(this: IExecuteFunctions) {
 							headers: options.headers,
 							json: true,
 						};
-						const contactResponse = await this.helpers.request(getContactOptions);
+						const contactResponse = await this.helpers.httpRequest(getContactOptions);
 
 						if (!contactResponse.data) {
 							throw new ApplicationError(`Contact with ID ${contactId} not found.`, { itemIndex: i });
@@ -843,7 +843,7 @@ export async function execute(this: IExecuteFunctions) {
 							},
 							json: true,
 						};
-						const catalogResponse = await this.helpers.request(getOptions);
+						const catalogResponse = await this.helpers.httpRequest(getOptions);
 						const variants = (catalogResponse.data && catalogResponse.data[0] && Array.isArray(catalogResponse.data[0].product_variants)) ? catalogResponse.data[0].product_variants : [];
 
 						// 2. Find max id
@@ -1623,7 +1623,7 @@ export async function execute(this: IExecuteFunctions) {
 									json: true,
 								};
 
-								const branchResponse = await this.helpers.request(branchOptions);
+								const branchResponse = await this.helpers.httpRequest(branchOptions);
 								if (branchResponse.status === 200 && branchResponse.data && Array.isArray(branchResponse.data) && branchResponse.data.length > 0) {
 									const branchData = branchResponse.data[0];
 									// Add seller_info with branch data
@@ -2166,20 +2166,33 @@ export async function execute(this: IExecuteFunctions) {
 						const voucherType = this.getNodeParameter('voucher_type', i) as string;
 						const paymentDateRaw = this.getNodeParameter('payment_date', i) as string;
 						const currency = this.getNodeParameter('currency', i) as string;
-						const paymentMode = this.getNodeParameter('payment_mode', i) as string;
+						const payment_mode = this.getNodeParameter('payment_mode', i) as IDataObject;
 						const additionalFields = this.getNodeParameter('additionalFields', i, {}) as IDataObject;
 						const paymentDate = new Date(paymentDateRaw as string);
 						const paymentDateString = paymentDate.toISOString().split('T')[0];
-						var payment_mode = JSON.parse(paymentMode as string);
-						const body: IDataObject = {
-							branch_id: branchId,
-							voucher_type: voucherType,
-							payment_date: paymentDateString,
-							currency: currency,
-							payment_mode: payment_mode.name,
-						};
+						var body: IDataObject = {};
 						if(voucherType === '1') {
 							const expenseType = this.getNodeParameter('expense_type', i) as string;
+							if(!isIndia && expenseType === 'single') {
+								throw new ApplicationError('Expense Voucher single account is only available for India region', { level: 'warning' });
+							}
+							if(isIndia){
+								body = {
+									branch_id: branchId,
+									voucher_type: voucherType,
+									payment_date: paymentDateString,
+									currency: currency,
+									payment_mode: payment_mode,
+								}
+							} else {
+								body = {
+									business_branch_id: branchId,
+									type: 2,
+									pur_inv_date: paymentDateString,
+									currency: currency,
+									payment_mode: payment_mode,
+								}
+							}
 							if(expenseType === 'single') {
 								const expenseHeadRaw = this.getNodeParameter('expense_head', i) as string;
 								const amount = this.getNodeParameter('amount', i) as string;
@@ -2202,7 +2215,34 @@ export async function execute(this: IExecuteFunctions) {
 								body.tax_rate = parseInt(taxRate as string) ?? 5;
 							} else if(expenseType === 'multiple') {
 								const multipleAccounts = this.getNodeParameter('multiple_accounts.expense_head', i, []) as IDataObject[];
-								body.multiple_expense = [];
+								if(!additionalFields.contact_id) {
+									throw new ApplicationError('Contact ID is required for multiple accounts', { level: 'warning' });
+								}
+								body.contact_id = additionalFields.contact_id;
+								if(isIndia && currency !== 'INR') {
+									if(!additionalFields.currency_info) {
+										throw new ApplicationError('Currency Info is required when currency is not INR for India region', { level: 'warning' });
+									}
+									const currencyInfo = additionalFields.currency_info as IDataObject;
+									if(!currencyInfo.currency_rate) {
+										throw new ApplicationError('Currency Rate is required when currency is not INR for India region', { level: 'warning' });
+									}
+									body.currency_info = {
+										currency_rate: currencyInfo.currency_rate ? parseFloat(currencyInfo.currency_rate as string) : 0,
+									}
+								} else if(!isIndia && currency !== 'AED') {
+									if(!additionalFields.currency_info) {
+										throw new ApplicationError('Currency Info is required when currency is not AED for UAE region', { level: 'warning' });
+									}
+									const currencyInfo = additionalFields.currency_info as IDataObject;
+									if(!currencyInfo.currency_rate) {
+										throw new ApplicationError('Currency Rate is required when currency is not AED for UAE region', { level: 'warning' });
+									}
+									body.currency_info = {
+										currency_rate: currencyInfo.currency_rate ? parseFloat(currencyInfo.currency_rate as string) : 0,
+									}
+								}
+								isIndia ? body.multiple_expense = [] : body.items = [];
 								for(let j = 0; j < multipleAccounts.length; j++) {
 									const account = multipleAccounts[j];
 									let expenseHead;
@@ -2218,15 +2258,25 @@ export async function execute(this: IExecuteFunctions) {
 									} else {
 										expenseHead = account.expense_head;
 									}
-									(body.multiple_expense as any[]).push({
-										expense_id: expenseHead,
-										amount: parseFloat(account.amount as string),
-										tax: parseInt(account.tax as string) ?? 5,
-									});
+									if(!isIndia){
+										if (account.tax !== 0 && account.tax !== 5) {
+											throw new ApplicationError(`Tax Rate must be 0, 5 for UAE region`, { level: 'warning' });
+										}
+									}
+									if(isIndia){
+										(body.multiple_expense as any[]).push({
+											expense_id: expenseHead,
+											amount: parseFloat(account.amount as string),
+											tax: parseInt(account.tax as string) ?? 5,
+										});
+									} else {
+										(body.items as any[]).push({
+											expense_id: expenseHead,
+											amount: parseFloat(account.amount as string),
+											vat_rate: account.tax ?? 5,
+										});
+									}
 								}
-							}
-							if(additionalFields.contact_id) {
-								body.contact_id = additionalFields.contact_id;
 							}
 							if(additionalFields.payment_status) {
 								body.payment_status = additionalFields.payment_status;
@@ -2240,8 +2290,42 @@ export async function execute(this: IExecuteFunctions) {
 						} else if(voucherType === '2') {
 							const amount = this.getNodeParameter('amount', i) as string;
 							const contactId = this.getNodeParameter('contact_id', i) as string;
-							body.amount = parseFloat(amount as string);
-							body.contact_id = contactId;
+							const expenseHeadPayment = this.getNodeParameter('expense_head_payment', i) as string;
+							body = {
+								branch_id: branchId,
+								voucher_type: voucherType,
+								payment_date: paymentDateString,
+								currency: currency,
+								payment_mode: payment_mode,
+								amount: parseFloat(amount as string),
+								contact_id: contactId,
+							}
+
+							!isIndia ? body.expense_head = parseInt(expenseHeadPayment) : body.expense_head_payment = expenseHeadPayment;
+							if(isIndia && currency !== 'INR') {
+								if(!additionalFields.currency_info) {
+									throw new ApplicationError('Currency Info is required when currency is not INR for India region', { level: 'warning' });
+								}
+								const currencyInfo = additionalFields.currency_info as IDataObject;
+								if(!currencyInfo.currency_rate) {
+									throw new ApplicationError('Currency Rate is required when currency is not INR for India region', { level: 'warning' });
+								}
+								body.currency_info = {
+									currency_rate: currencyInfo.currency_rate ? parseFloat(currencyInfo.currency_rate as string) : 0,
+								}
+							}
+							if(!isIndia && currency !== 'AED') {
+								if(!additionalFields.currency_info) {
+									throw new ApplicationError('Currency Info is required when currency is not AED for UAE region', { level: 'warning' });
+								}
+								const currencyInfo = additionalFields.currency_info as IDataObject;
+								if(!currencyInfo.currency_rate) {
+									throw new ApplicationError('Currency Rate is required when currency is not AED for UAE region', { level: 'warning' });
+								}
+								body.currency_info = {
+									currency_rate: currencyInfo.currency_rate ? parseFloat(currencyInfo.currency_rate as string) : 0,
+								}
+							}
 							const additionalFields_type2 = this.getNodeParameter('additionalFields', i, {}) as IDataObject;
 							if(additionalFields_type2.reconcile_details) {
 								const reconcileDetails = this.getNodeParameter('additionalFields.reconcile_details.reconcile', i, []) as IDataObject[];
@@ -2255,6 +2339,9 @@ export async function execute(this: IExecuteFunctions) {
 								}
 							}
 						} else if(voucherType === '3') {
+							if(!isIndia) {
+								throw new ApplicationError('Salary Voucher is only available for India region', { level: 'warning' });
+							}
 							const employeeID = this.getNodeParameter('employee_id', i) as string;
 							const accountName = this.getNodeParameter('account_name', i) as string;
 							const salary_month = this.getNodeParameter('salary_month', i) as string;
@@ -2308,7 +2395,7 @@ export async function execute(this: IExecuteFunctions) {
 							}
 						}
 						options.method = 'POST';
-						options.url = `${baseUrl}/vouchers`;
+						!isIndia && voucherType === '1' ? options.url = `${baseUrl}/purchase-invoice` : options.url = `${baseUrl}/vouchers`;
 						options.body = body;
 					} else if(operation === 'listPurchaseInvoices') {
 						const pageSize = this.getNodeParameter('page_size', i) as number;
@@ -2346,8 +2433,15 @@ export async function execute(this: IExecuteFunctions) {
 							const dateTo = new Date(filters.to_date as string);
 							filters.to_date = dateTo.toISOString().split('T')[0];
 						}
+						if(!isIndia && voucherType === '3'){
+							throw new ApplicationError('Salary Voucher is only available for India region', { level: 'warning' });
+						}
 						options.method = 'GET';
-						options.url = `${baseUrl}/vouchers?&voucher_type=${voucherType ?? ''}&size=${pageSize ?? 5}&start_from=0&from_date=${filters.date_from ?? ''}&to_date=${filters.date_to ?? ''}&order_by=${filters.order_by ?? ''}&order_column=${filters.order_column ?? ''}`;
+						if(!isIndia && voucherType === '1'){
+							options.url = `${baseUrl}/purchase-invoice?&type=vouchers&size=${pageSize ?? 5}&start_from=0&from_date=${filters.date_from ?? ''}&to_date=${filters.date_to ?? ''}&order_by=${filters.order_by ?? ''}&order_column=${filters.order_column ?? ''}`;
+						} else {
+							options.url = `${baseUrl}/vouchers?&voucher_type=${voucherType ?? ''}&size=${pageSize ?? 5}&start_from=0&from_date=${filters.date_from ?? ''}&to_date=${filters.date_to ?? ''}&order_by=${filters.order_by ?? ''}&order_column=${filters.order_column ?? ''}`;
+						}
 					} else if(operation === 'viewPurchaseInvoice') {
 						const purchaseInvoiceId = this.getNodeParameter('id', i) as string;
 						options.method = 'GET';
@@ -2867,7 +2961,7 @@ export async function execute(this: IExecuteFunctions) {
 								headers: options.headers,
 								json: true,
 							};
-							const fetchResponse = await this.helpers.request(fetchOptions);
+							const fetchResponse = await this.helpers.httpRequest(fetchOptions);
 							if(isIndia) {
 								if (fetchResponse.status === 200 && fetchResponse.data && Array.isArray(fetchResponse.data) && fetchResponse.data.length > 0) {
 									currentBranchData = fetchResponse.data[0];
@@ -3125,7 +3219,7 @@ export async function execute(this: IExecuteFunctions) {
 								headers: options.headers,
 								json: true,
 							};
-							const fetchResponse = await this.helpers.request(fetchOptions);
+							const fetchResponse = await this.helpers.httpRequest(fetchOptions);
 							if(fetchResponse.status == 200 && fetchResponse.data){
 								currentPaymentMethodData = fetchResponse.data;
 							}
@@ -3205,12 +3299,11 @@ export async function execute(this: IExecuteFunctions) {
 						options.method = 'POST';
 						options.url = `${baseUrl}/settings/paymentsmode`;
 						options.body = payload;
-						console.log(options.body);
 					} else if (operation === 'listPaymentMethods') {
 						options.method = 'GET';
 						options.url = `${baseUrl}/settings/paymentsmode`;
 					}
-					const result = await this.helpers.request(options);
+					const result = await this.helpers.httpRequest(options);
 					returnData.push({ json: result, pairedItem: { item: i } });
 		} catch (error) {
 			if (continueOnFail) {

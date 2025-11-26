@@ -260,17 +260,10 @@ To authenticate with the LEDGERS API, you must provide the following:
 - **Event-driven Workflows**: Automate based on contact, invoice, and catalog changes
 - **Multi-region Support**: Triggers for both India and UAE operations
 
-### **UAE Purchase Operations**
-- **UAE Purchase Operations**: Purchase invoices, vouchers, and procurement management
+### **UAE HRMS Operations**
+- **UAE HRMS Operations**: Add, Update, List and Get Employee
 - **Multi-region Workflows**: Handle both India and UAE operations in single workflows
-- **Currency Support**: Enhanced multi-currency handling for UAE operations
-- **Localization**: UAE-specific business rules and compliance features
-
-### **Enhanced Purchase Operations**
-- **Create Purchase Order**: Generate purchase orders for suppliers
-- **View Purchase Order**: Retrieve specific purchase order details  
-- **List Purchase Orders**: List all purchase orders with filtering
-- **Inventory Integration**: Link purchases with catalog items
+- **Localization**: UAE-specific HRMS rules and features
 
 ---
 
@@ -298,6 +291,7 @@ To authenticate with the LEDGERS API, you must provide the following:
 | UAE Contact Operations| ✅ Implemented |
 | UAE Catalog Operations| ✅ Implemented |
 | UAE Sales Operations| ✅ Implemented |
+| UAE Purchase Operations| ✅ Implemented |
 
 ---
 
@@ -473,6 +467,7 @@ You can enable this in the node's settings under the **"Continue On Fail"** opti
 | 0.0.16  | Removed HSN/SAC code required in Update Catalog |
 | 0.0.17  | HSN/SAC Bug Fix in Front end of Catalog Operations and Back end |
 | 0.0.18  | Sales Operation released for UAE |
+| 0.0.19  | Purchase Operations released for UAE (except salary vouchers). Common Operations released for Both India and UAE. Removed Bank Operations because of inconsistent data fields |
 
 ---
 

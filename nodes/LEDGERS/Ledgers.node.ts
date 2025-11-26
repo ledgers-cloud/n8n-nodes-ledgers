@@ -20,7 +20,7 @@ export class Ledgers implements INodeType {
 		group: ['transform'],
 		version: 1,
 		description: 'Interact with LEDGERS API',
-		subtitle: '={{ $parameter["resource"] + ": " + $parameter["operation"] }}',
+		subtitle: '={{ $parameter["resource"].toUpperCase() }}',
 		defaults: {
 			name: 'LEDGERS',
 		},
@@ -45,7 +45,7 @@ export class Ledgers implements INodeType {
 					{ name: 'Common Operation', value: 'common' },
 					{ name: 'Contact Operation', value: 'contact' },
 					{ name: 'HRMS Operation (India)', value: 'hrms' },
-					{ name: 'Purchase Operation (India)', value: 'purchase' },
+					{ name: 'Purchase Operation', value: 'purchase' },
 					{ name: 'Sales Operation', value: 'sales' },
 					{ name: 'Tax Operation (India)', value: 'tax' },
 				],
@@ -81,7 +81,7 @@ export class Ledgers implements INodeType {
 						json: true,
 					};
 
-					const loginResponse = await this.helpers.request(loginOptions);
+					const loginResponse = await this.helpers.httpRequest(loginOptions);
 
 					if (loginResponse.status !== 200 || !loginResponse.api_token) {
 						throw new ApplicationError('Authentication failed. Check your credentials.', {
@@ -106,7 +106,7 @@ export class Ledgers implements INodeType {
 						json: true,
 					};
 
-					const response = await this.helpers.request(options);
+					const response = await this.helpers.httpRequest(options);
 
 					// The API response structure is: { status: 'success', data: [ { ... , product_variants: [...] } ] }
 					if (!response.data || !Array.isArray(response.data) || !response.data[0].product_variants || !Array.isArray(response.data[0].product_variants)) {
@@ -142,7 +142,7 @@ export class Ledgers implements INodeType {
 						json: true,
 					};
 
-					const loginResponse = await this.helpers.request(loginOptions);
+					const loginResponse = await this.helpers.httpRequest(loginOptions);
 
 					if (loginResponse.status !== 200 || !loginResponse.api_token) {
 						throw new ApplicationError('Authentication failed. Check your credentials.', {
@@ -163,7 +163,7 @@ export class Ledgers implements INodeType {
 						json: true,
 					};
 
-					const response = await this.helpers.request(options);
+					const response = await this.helpers.httpRequest(options);
 
 					if (!response.data || !Array.isArray(response.data)) {
 						return [];
@@ -206,7 +206,7 @@ export class Ledgers implements INodeType {
 						json: true,
 					};
 
-					const loginResponse = await this.helpers.request(loginOptions);
+					const loginResponse = await this.helpers.httpRequest(loginOptions);
 
 					if (loginResponse.status !== 200 || !loginResponse.api_token) {
 						throw new ApplicationError('Authentication failed. Check your credentials.', {
@@ -227,7 +227,7 @@ export class Ledgers implements INodeType {
 						json: true,
 					};
 
-					const response = await this.helpers.request(options);
+					const response = await this.helpers.httpRequest(options);
 
 					if (!response.data || !Array.isArray(response.data)) {
 						return [];
@@ -273,7 +273,7 @@ export class Ledgers implements INodeType {
 						json: true,
 					};
 
-					const loginResponse = await this.helpers.request(loginOptions);
+					const loginResponse = await this.helpers.httpRequest(loginOptions);
 					if (loginResponse.status !== 200 || !loginResponse.api_token) {
 						throw new ApplicationError('Authentication failed. Check your credentials.', { level: 'warning' });
 					}
@@ -286,7 +286,7 @@ export class Ledgers implements INodeType {
 						json: true,
 					};
 
-					const contactData = await this.helpers.request(getContactOptions);
+					const contactData = await this.helpers.httpRequest(getContactOptions);
 					if (!contactData.data) {
 						return []; // Contact not found or has no data
 					}
@@ -345,7 +345,7 @@ export class Ledgers implements INodeType {
 						json: true,
 					};
 
-					const loginResponse = await this.helpers.request(loginOptions);
+					const loginResponse = await this.helpers.httpRequest(loginOptions);
 					if (loginResponse.status !== 200 || !loginResponse.api_token) {
 						throw new ApplicationError('Authentication failed. Check your credentials.', { level: 'warning' });
 					}
@@ -362,7 +362,7 @@ export class Ledgers implements INodeType {
 						json: true,
 					};
 
-									const response = await this.helpers.request(options);
+									const response = await this.helpers.httpRequest(options);
 				if (!response.data) return [];
 
 				// Handle object format: {"1":"Main Branch","2":"Secondary Branch","3":"Third Branch"}
@@ -395,7 +395,7 @@ export class Ledgers implements INodeType {
 						json: true,
 					};
 
-					const loginResponse = await this.helpers.request(loginOptions);
+					const loginResponse = await this.helpers.httpRequest(loginOptions);
 					if (loginResponse.status !== 200 || !loginResponse.api_token) {
 						throw new ApplicationError('Authentication failed. Check your credentials.', { level: 'warning' });
 					}
@@ -412,7 +412,7 @@ export class Ledgers implements INodeType {
 						json: true,
 					};
 
-					const response = await this.helpers.request(options);
+					const response = await this.helpers.httpRequest(options);
 					if (!response.data || !Array.isArray(response.data)) return [];
 
 					// Handle array format with employee objects
@@ -446,7 +446,7 @@ export class Ledgers implements INodeType {
 						json: true,
 					};
 
-					const loginResponse = await this.helpers.request(loginOptions);
+					const loginResponse = await this.helpers.httpRequest(loginOptions);
 
 					if (loginResponse.status !== 200 || !loginResponse.api_token) {
 						const errorMsg = loginResponse.errorMessage || 'Authentication failed. Check your credentials.';
@@ -470,8 +470,7 @@ export class Ledgers implements INodeType {
 						json: true,
 					};
 
-					const bankResponse = await this.helpers.request(bankOptions);
-					console.log('bankResponse', bankResponse);
+					const bankResponse = await this.helpers.httpRequest(bankOptions);
 					if (Array.isArray(bankResponse)) {
 						const activeAccounts = bankResponse.filter((account: any) => account.status === 1);
 
@@ -539,7 +538,7 @@ export class Ledgers implements INodeType {
 						json: true,
 					};
 
-					const loginResponse = await this.helpers.request(loginOptions);
+					const loginResponse = await this.helpers.httpRequest(loginOptions);
 					if (loginResponse.status !== 200 || !loginResponse.api_token) {
 						throw new ApplicationError('Authentication failed. Check your credentials.', { level: 'warning' });
 					}
@@ -556,7 +555,7 @@ export class Ledgers implements INodeType {
 						json: true,
 					};
 
-					const response = await this.helpers.request(options);
+					const response = await this.helpers.httpRequest(options);
 
 					// Handle different response structures for India vs AE
 					let branches: any[] = [];
@@ -682,7 +681,7 @@ export class Ledgers implements INodeType {
 				json: true,
 			};
 
-			const loginResponse = await this.helpers.request(loginOptions);
+			const loginResponse = await this.helpers.httpRequest(loginOptions);
 			if (loginResponse.status !== 200 || !loginResponse.api_token) {
 				return null;
 			}
@@ -699,7 +698,7 @@ export class Ledgers implements INodeType {
 				json: true,
 			};
 
-			const response = await this.helpers.request(options);
+									const response = await this.helpers.httpRequest(options);
 			if (response.status === 200 && response.data && Array.isArray(response.data) && response.data.length > 0) {
 				return response.data[0]; // Return the first branch data
 			}

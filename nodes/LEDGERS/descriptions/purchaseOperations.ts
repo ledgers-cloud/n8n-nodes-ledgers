@@ -1565,12 +1565,30 @@ export const purchaseOperations: INodeProperties[] = [
 			},
 		},
 		options: [
-
+			{
+				displayName: 'Claim Tax Credit',
+				name: 'tax_credit_type',
+				type: 'options',
+				options: [
+					{ name: 'Yes', value: 1 },
+					{ name: 'No', value: 0 },
+				],
+				default: 0,
+			},
 			{
 				displayName: 'Contact ID',
 				name: 'contact_id',
 				type: 'string',
 				default: '',
+			},
+			{
+				displayName: 'Currency Info',
+				name: 'currency_info',
+				type: 'collection',
+				default: {},
+				options: [
+					{displayName: 'Currency Rate', name: 'currency_rate', type: 'number', default: 0},
+				],
 			},
 			{
 				displayName: 'Payment Status',
@@ -1581,20 +1599,11 @@ export const purchaseOperations: INodeProperties[] = [
 					{ name: 'Unpaid', value: 0 },
 				],
 				default: 0,
+				description: 'Payment Status is only for India region',
 			},
 			{
 				displayName: 'Reverse Charge',
 				name: 'reverse_charge',
-				type: 'options',
-				options: [
-					{ name: 'Yes', value: 1 },
-					{ name: 'No', value: 0 },
-				],
-				default: 0,
-			},
-			{
-				displayName: 'Claim ITC',
-				name: 'tax_credit_type',
 				type: 'options',
 				options: [
 					{ name: 'Yes', value: 1 },
@@ -1627,6 +1636,27 @@ export const purchaseOperations: INodeProperties[] = [
 		type: 'string',
 		required: true,
 		default: '',
+		displayOptions: {
+			show: {
+				resource: ['purchase'],
+				operation: ['createVoucher'],
+				voucher_type: ['2'],
+			},
+		},
+	},
+
+	//Payment Account Name or ID
+	{
+		displayName: 'Account Name or ID',
+		name: 'expense_head_payment',
+		type: 'options',
+		typeOptions: {
+			loadOptionsMethod: 'getCoaAccounts',
+		},
+		required: true,
+		default: '',
+		placeholder: 'Select Account Type',
+		description: 'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
 		displayOptions: {
 			show: {
 				resource: ['purchase'],
@@ -1679,6 +1709,15 @@ export const purchaseOperations: INodeProperties[] = [
 							},
 						],
 					},
+				],
+			},
+			{
+				displayName: 'Currency Info',
+				name: 'currency_info',
+				type: 'collection',
+				default: {},
+				options: [
+					{displayName: 'Currency Rate', name: 'currency_rate', type: 'number', default: 0},
 				],
 			},
 		],
