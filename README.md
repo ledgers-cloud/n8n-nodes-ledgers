@@ -467,7 +467,7 @@ You can enable this in the node's settings under the **"Continue On Fail"** opti
 | 0.0.16  | Removed HSN/SAC code required in Update Catalog |
 | 0.0.17  | HSN/SAC Bug Fix in Front end of Catalog Operations and Back end |
 | 0.0.18  | Sales Operation released for UAE |
-| 0.0.19  | Purchase Operations released for UAE (except salary vouchers). Common Operations released for Both India and UAE. Removed Bank Operations because of inconsistent data fields |
+| 0.0.19  | Purchase Operations released for UAE (except salary vouchers). Common Operations released for Both India and UAE. Removed Bank Operations to optimize |
 
 ---
 
