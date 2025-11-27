@@ -20,7 +20,7 @@ export class Ledgers implements INodeType {
 		group: ['transform'],
 		version: 1,
 		description: 'Interact with LEDGERS API',
-		subtitle: '={{ $parameter["resource"] + ": " + $parameter["operation"] }}',
+		subtitle: '={{ $parameter["resource"].toUpperCase() }}',
 		defaults: {
 			name: 'LEDGERS',
 		},
@@ -41,27 +41,22 @@ export class Ledgers implements INodeType {
 				type: 'options',
 				noDataExpression: true,
 				options: [
-					{ name: 'Banking Operation (India)', value: 'banking' },
 					{ name: 'Catalog Operation', value: 'catalog' },
+					{ name: 'Common Operation', value: 'common' },
 					{ name: 'Contact Operation', value: 'contact' },
 					{ name: 'HRMS Operation (India)', value: 'hrms' },
-					{ name: 'Purchase Operation (India)', value: 'purchase' },
+					{ name: 'Purchase Operation', value: 'purchase' },
 					{ name: 'Sales Operation', value: 'sales' },
 					{ name: 'Tax Operation (India)', value: 'tax' },
 				],
 				default: 'contact',
 			},
-			// Sales, Purchase, and Catalog operations
-			...descriptions.salesOperations,
-			...descriptions.purchaseOperations,
 			...descriptions.catalogOperations,
-			// Contact Operations
+			...descriptions.commonOperations,
 			...descriptions.contactOperations,
-			// HRMS Operations
 			...descriptions.hrmsOperations,
-			// Banking Operations
-			...descriptions.bankingOperations,
-			// Tax Operations
+			...descriptions.purchaseOperations,
+			...descriptions.salesOperations,
 			...descriptions.taxOperations,
 		],
 	};
@@ -86,7 +81,7 @@ export class Ledgers implements INodeType {
 						json: true,
 					};
 
-					const loginResponse = await this.helpers.request(loginOptions);
+					const loginResponse = await this.helpers.httpRequest(loginOptions);
 
 					if (loginResponse.status !== 200 || !loginResponse.api_token) {
 						throw new ApplicationError('Authentication failed. Check your credentials.', {
@@ -111,7 +106,7 @@ export class Ledgers implements INodeType {
 						json: true,
 					};
 
-					const response = await this.helpers.request(options);
+					const response = await this.helpers.httpRequest(options);
 
 					// The API response structure is: { status: 'success', data: [ { ... , product_variants: [...] } ] }
 					if (!response.data || !Array.isArray(response.data) || !response.data[0].product_variants || !Array.isArray(response.data[0].product_variants)) {
@@ -147,7 +142,7 @@ export class Ledgers implements INodeType {
 						json: true,
 					};
 
-					const loginResponse = await this.helpers.request(loginOptions);
+					const loginResponse = await this.helpers.httpRequest(loginOptions);
 
 					if (loginResponse.status !== 200 || !loginResponse.api_token) {
 						throw new ApplicationError('Authentication failed. Check your credentials.', {
@@ -168,7 +163,7 @@ export class Ledgers implements INodeType {
 						json: true,
 					};
 
-					const response = await this.helpers.request(options);
+					const response = await this.helpers.httpRequest(options);
 
 					if (!response.data || !Array.isArray(response.data)) {
 						return [];
@@ -182,6 +177,72 @@ export class Ledgers implements INodeType {
 							returnData.push({
 								name: `${category} — ${type}`,
 								value: JSON.stringify({ id: String(item.id), name: `${type}` })
+							});
+						}
+					}
+					return returnData;
+				} catch (error) {
+					if (continueOnFail) {
+						return [];
+					}
+					throw error;
+				}
+			},
+			async getExpenseAccounts(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+				const continueOnFail = this.getNode().continueOnFail;
+				try {
+					const credentials = await this.getCredentials('ledgersApi');
+					const { xApiKey, email, password, apiUrl } = credentials;
+
+					// Authenticate to get api_token
+					const loginOptions: IHttpRequestOptions = {
+						method: 'POST',
+						url: `${apiUrl}/login`,
+						headers: {
+							'Content-Type': 'application/json',
+							'x-api-key': xApiKey,
+						},
+						body: { email, password },
+						json: true,
+					};
+
+					const loginResponse = await this.helpers.httpRequest(loginOptions);
+
+					if (loginResponse.status !== 200 || !loginResponse.api_token) {
+						throw new ApplicationError('Authentication failed. Check your credentials.', {
+							level: 'warning',
+						});
+					}
+
+					const apiToken = loginResponse.api_token;
+
+					const options: IHttpRequestOptions = {
+						method: 'GET',
+						url: `${apiUrl}`+(String(credentials.apiUrl).includes('in-api.ledgers.cloud') ? '/v3/coa' : '/coa'),
+						headers: {
+							'Content-Type': 'application/json',
+							'x-api-key': xApiKey,
+							'api-token': apiToken,
+						},
+						json: true,
+					};
+
+					const response = await this.helpers.httpRequest(options);
+
+					if (!response.data || !Array.isArray(response.data)) {
+						return [];
+					}
+
+					const returnData = [];
+					for (const item of response.data) {
+						// Filter only accounts with head "Expense"
+						if (item && item.id !== undefined && item.head && String(item.head).toLowerCase() === 'expense') {
+							const category = item.category ? String(item.category).toUpperCase() : '';
+							const type = item.type ? String(item.type).toUpperCase() : '';
+							const displayName = category && type ? `${category} — ${type}` : (type || category || `Expense ${item.id}`);
+							returnData.push({
+								name: displayName,
+								value: JSON.stringify({ id: String(item.id), name: `${type || 'Expense'}` })
 							});
 						}
 					}
@@ -212,7 +273,7 @@ export class Ledgers implements INodeType {
 						json: true,
 					};
 
-					const loginResponse = await this.helpers.request(loginOptions);
+					const loginResponse = await this.helpers.httpRequest(loginOptions);
 					if (loginResponse.status !== 200 || !loginResponse.api_token) {
 						throw new ApplicationError('Authentication failed. Check your credentials.', { level: 'warning' });
 					}
@@ -225,7 +286,7 @@ export class Ledgers implements INodeType {
 						json: true,
 					};
 
-					const contactData = await this.helpers.request(getContactOptions);
+					const contactData = await this.helpers.httpRequest(getContactOptions);
 					if (!contactData.data) {
 						return []; // Contact not found or has no data
 					}
@@ -270,82 +331,6 @@ export class Ledgers implements INodeType {
 					throw error;
 				}
 			},
-			async getPaymentMethodsPurchase(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
-				// const continueOnFail = this.getNode().continueOnFail;
-				try {
-					const credentials = await this.getCredentials('ledgersApi');
-					const { xApiKey, email, password, apiUrl } = credentials;
-
-					// Authenticate to get api_token
-					const loginOptions: IHttpRequestOptions = {
-						method: 'POST',
-						url: `${apiUrl}/login`,
-						headers: {
-							'Content-Type': 'application/json',
-							'x-api-key': xApiKey,
-						},
-						body: { email, password },
-						json: true,
-					};
-
-					const loginResponse = await this.helpers.request(loginOptions);
-					if (loginResponse.status !== 200 || !loginResponse.api_token) {
-						// Return empty array to allow custom input when authentication fails
-						return [];
-					}
-
-					const apiToken = loginResponse.api_token;
-
-					const options: IHttpRequestOptions = {
-						method: 'GET',
-						url: `${apiUrl}`+(String(credentials.apiUrl).includes('in-api.ledgers.cloud') ? '/v3/settings/paymentsmode' : '/settings/paymentsmode'),
-						headers: {
-							'Content-Type': 'application/json',
-							'x-api-key': xApiKey,
-							'api-token': apiToken,
-						},
-						json: true,
-					};
-
-					const response = await this.helpers.request(options);
-
-					if (!response.data || !Array.isArray(response.data)) {
-						// Return empty array to allow custom input when no data
-						return [];
-					}
-
-					const returnData: INodePropertyOptions[] = [];
-
-					// Find the payment_methods object in the data array
-					const paymentMethodsData = response.data.find((item: any) => item.type === 'payment_methods');
-
-					if (paymentMethodsData && paymentMethodsData.settings && Array.isArray(paymentMethodsData.settings)) {
-						for (const setting of paymentMethodsData.settings) {
-							if (setting.id && setting.value) {
-								returnData.push({
-									name: setting.value ?? 'Cash', // Display the payment method name
-									value: JSON.stringify({ id: String(setting.id ?? 1), name: `${setting.value ?? 'Cash'}` })   // Use the ID as the value
-								});
-							}
-						}
-					}
-					else{
-						returnData.push({
-							name: 'Cash',
-							value: JSON.stringify({ id: String(1), name: 'Cash' }),
-						});
-					}
-
-					// If no payment methods found, return empty array to allow custom input
-					if (returnData.length === 0) {
-						return [];
-					}
-
-					return returnData;
-				} catch (error) {
-					return [];
-				}
-			},
 			async getBranches(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
 				const continueOnFail = this.getNode().continueOnFail;
 				try {
@@ -360,7 +345,7 @@ export class Ledgers implements INodeType {
 						json: true,
 					};
 
-					const loginResponse = await this.helpers.request(loginOptions);
+					const loginResponse = await this.helpers.httpRequest(loginOptions);
 					if (loginResponse.status !== 200 || !loginResponse.api_token) {
 						throw new ApplicationError('Authentication failed. Check your credentials.', { level: 'warning' });
 					}
@@ -377,7 +362,7 @@ export class Ledgers implements INodeType {
 						json: true,
 					};
 
-									const response = await this.helpers.request(options);
+									const response = await this.helpers.httpRequest(options);
 				if (!response.data) return [];
 
 				// Handle object format: {"1":"Main Branch","2":"Secondary Branch","3":"Third Branch"}
@@ -410,7 +395,7 @@ export class Ledgers implements INodeType {
 						json: true,
 					};
 
-					const loginResponse = await this.helpers.request(loginOptions);
+					const loginResponse = await this.helpers.httpRequest(loginOptions);
 					if (loginResponse.status !== 200 || !loginResponse.api_token) {
 						throw new ApplicationError('Authentication failed. Check your credentials.', { level: 'warning' });
 					}
@@ -427,7 +412,7 @@ export class Ledgers implements INodeType {
 						json: true,
 					};
 
-					const response = await this.helpers.request(options);
+					const response = await this.helpers.httpRequest(options);
 					if (!response.data || !Array.isArray(response.data)) return [];
 
 					// Handle array format with employee objects
@@ -461,7 +446,7 @@ export class Ledgers implements INodeType {
 						json: true,
 					};
 
-					const loginResponse = await this.helpers.request(loginOptions);
+					const loginResponse = await this.helpers.httpRequest(loginOptions);
 
 					if (loginResponse.status !== 200 || !loginResponse.api_token) {
 						const errorMsg = loginResponse.errorMessage || 'Authentication failed. Check your credentials.';
@@ -474,7 +459,7 @@ export class Ledgers implements INodeType {
 
 					// Fetch bank accounts
 					const bankOptions: IHttpRequestOptions = {
-						method: 'POST',
+						method: 'GET',
 						url: `${baseUrl}/banking/${bank}`,
 						headers: {
 							'Content-Type': 'application/json',
@@ -485,8 +470,7 @@ export class Ledgers implements INodeType {
 						json: true,
 					};
 
-					const bankResponse = await this.helpers.request(bankOptions);
-
+					const bankResponse = await this.helpers.httpRequest(bankOptions);
 					if (Array.isArray(bankResponse)) {
 						const activeAccounts = bankResponse.filter((account: any) => account.status === 1);
 
@@ -535,6 +519,149 @@ export class Ledgers implements INodeType {
 					throw error;
 				}
 			},
+			async getBranchDetails(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+				const continueOnFail = this.getNode().continueOnFail;
+				try {
+					const credentials = await this.getCredentials('ledgersApi');
+					const { xApiKey, email, password, apiUrl } = credentials;
+					const isIndia = String(apiUrl).includes('in-api.ledgers.cloud');
+
+					// Authenticate to get api_token
+					const loginOptions: IHttpRequestOptions = {
+						method: 'POST',
+						url: `${apiUrl}/login`,
+						headers: {
+							'Content-Type': 'application/json',
+							'x-api-key': xApiKey,
+						},
+						body: { email, password },
+						json: true,
+					};
+
+					const loginResponse = await this.helpers.httpRequest(loginOptions);
+					if (loginResponse.status !== 200 || !loginResponse.api_token) {
+						throw new ApplicationError('Authentication failed. Check your credentials.', { level: 'warning' });
+					}
+
+					const apiToken = loginResponse.api_token;
+					const options: IHttpRequestOptions = {
+						method: 'GET',
+						url: `${apiUrl}`+(isIndia ? '/v3/business/branch/' : '/business/branch/'),
+						headers: {
+							'Content-Type': 'application/json',
+							'x-api-key': xApiKey,
+							'api-token': apiToken,
+						},
+						json: true,
+					};
+
+					const response = await this.helpers.httpRequest(options);
+
+					// Handle different response structures for India vs AE
+					let branches: any[] = [];
+					if (isIndia) {
+						// India format: response.data is an array
+						if (response.status === 200 && response.data && Array.isArray(response.data) && response.data.length > 0) {
+							branches = response.data;
+						}
+					} else {
+						// AE format: response.data might be an object or array
+						if (response.status === 'success' && response.data) {
+							if (Array.isArray(response.data)) {
+								branches = response.data;
+							} else if (typeof response.data === 'object') {
+								// If data is an object, convert to array
+								branches = [response.data];
+							}
+						}
+					}
+
+					if (branches.length === 0) {
+						return [];
+					}
+
+					return branches.map((branch: any) => {
+						// Build a readable display string with available fields
+						const displayParts = [];
+
+						// Add branch_name or name if available (AE might use 'name' instead of 'branch_name')
+						const branchName = branch.branch_name || branch.name;
+						if (branchName) {
+							displayParts.push(branchName);
+						}
+
+						// Add email if available
+						if (branch.email) {
+							displayParts.push(`Email: ${branch.email}`);
+						}
+
+						// Add phone if available
+						if (branch.phone) {
+							displayParts.push(`Phone: ${branch.phone}`);
+						}
+
+						// Add gstin if available (AE might not have this)
+						if (branch.gstin) {
+							displayParts.push(`GSTIN: ${branch.gstin}`);
+						}
+
+						// Add address if available
+						const addressParts: string[] = [];
+
+						if (isIndia) {
+							// India format: address is nested in address object
+							if (branch.address) {
+								const addr = branch.address;
+								if (addr.line1) addressParts.push(addr.line1);
+								if (addr.line2) addressParts.push(addr.line2);
+								if (addr.city) addressParts.push(addr.city);
+								if (addr.state) addressParts.push(addr.state);
+								if (addr.country) addressParts.push(addr.country);
+								if (addr.pincode) addressParts.push(addr.pincode);
+							}
+						} else {
+							// AE format: address fields might be at root level or nested
+							if (branch.address_details) {
+								const addr = JSON.parse(branch.address_details);
+								// Check nested address object
+								if (addr.building_name) addressParts.push(addr.building_name);
+								if (addr.street_name) addressParts.push(addr.street_name);
+								if (addr.emirate) addressParts.push(addr.emirate);
+								if (addr.po_box) addressParts.push(addr.po_box);
+								if (addr.country) addressParts.push(addr.country);
+							}
+							// Also check if address fields are at root level (AE format)
+							if (branch.building_name) addressParts.push(branch.building_name);
+							if (branch.street_name) addressParts.push(branch.street_name);
+							if (branch.emirate) addressParts.push(branch.emirate);
+							if (branch.po_box) addressParts.push(branch.po_box);
+							if (branch.country && !addressParts.includes(branch.country)) addressParts.push(branch.country);
+						}
+
+						if (addressParts.length > 0) {
+							displayParts.push(`Address: ${addressParts.join(', ')}`);
+						}
+
+						const displayName = displayParts.length > 0
+							? displayParts.join(', ')
+							: 'Branch Details';
+
+						// Get branch_id - handle both 'branch_id' and 'id' field names
+						const branchId = branch.branch_id || branch.id;
+
+						// Return branch data as a single option with JSON value that frontend can parse
+						return {
+							name: displayName,
+							value: JSON.stringify(branchId),
+						};
+					});
+				} catch (error) {
+					if (continueOnFail) {
+						return [];
+					}
+					throw error;
+				}
+			},
 		},
 	};
 
@@ -554,7 +681,7 @@ export class Ledgers implements INodeType {
 				json: true,
 			};
 
-			const loginResponse = await this.helpers.request(loginOptions);
+			const loginResponse = await this.helpers.httpRequest(loginOptions);
 			if (loginResponse.status !== 200 || !loginResponse.api_token) {
 				return null;
 			}
@@ -571,7 +698,7 @@ export class Ledgers implements INodeType {
 				json: true,
 			};
 
-			const response = await this.helpers.request(options);
+									const response = await this.helpers.httpRequest(options);
 			if (response.status === 200 && response.data && Array.isArray(response.data) && response.data.length > 0) {
 				return response.data[0]; // Return the first branch data
 			}

@@ -61,7 +61,7 @@ export async function execute(this: IExecuteFunctions) {
 	const baseUrl = isIndia ? `${apiUrl}/v3` : apiUrl;
 
 	// Validate operation-country match
-	const indiaOnlyOps = ['hrms', 'banking', 'getBankStatement', 'getAllEmployees', 'addEmployee', 'updateEmployee', 'getEmployee', 'createPurchaseInvoice', 'listPurchaseInvoices', 'viewPurchaseInvoice', 'createPurchaseOrder', 'listPurchaseOrders', 'viewPurchaseOrder', 'createVoucher', 'listVouchers', 'viewVoucher', 'getGSTReturnStatus', 'getGSTSearch'];
+	const indiaOnlyOps = ['hrms', 'banking', 'getBankStatement', 'getAllEmployees', 'addEmployee', 'updateEmployee', 'getEmployee', 'createPurchaseOrder', 'listPurchaseOrders', 'viewPurchaseOrder', 'getGSTReturnStatus', 'getGSTSearch','getPaymentMethods','addPaymentMethod'];
 
 	for (let i = 0; i < items.length; i++) {
 		const operation = this.getNodeParameter('operation', i);
@@ -89,7 +89,7 @@ export async function execute(this: IExecuteFunctions) {
 			json: true,
 		};
 
-		const loginResponse = await this.helpers.request(loginOptions);
+		const loginResponse = await this.helpers.httpRequest(loginOptions);
 
 		if (loginResponse.status !== 200 || !loginResponse.api_token) {
 			const errorMsg = loginResponse.errorMessage || 'Authentication failed. Check your credentials.';
@@ -370,7 +370,7 @@ export async function execute(this: IExecuteFunctions) {
 							headers: options.headers,
 							json: true,
 						};
-						const contactResponse = await this.helpers.request(getContactOptions);
+						const contactResponse = await this.helpers.httpRequest(getContactOptions);
 						if (!contactResponse.data) {
 							throw new ApplicationError(`Contact with ID ${contactId} not found.`, { itemIndex: i });
 						}
@@ -432,7 +432,7 @@ export async function execute(this: IExecuteFunctions) {
 							headers: options.headers,
 							json: true,
 						};
-						const contactResponse = await this.helpers.request(getContactOptions);
+						const contactResponse = await this.helpers.httpRequest(getContactOptions);
 
 						if (!contactResponse.data) {
 							throw new ApplicationError(`Contact with ID ${contactId} not found.`, { itemIndex: i });
@@ -560,7 +560,7 @@ export async function execute(this: IExecuteFunctions) {
 
 						// Check if cess is selected for UAE (not allowed)
 						if (!isIndia && additionalFields.cess_type) {
-							throw new ApplicationError('Cess is not available for UAE operations. Cess is only available for India.');
+							throw new ApplicationError('Cess is not available for UAE region. Cess is only available for India.');
 						}
 
 						if (isIndia && additionalFields.cess_type) {
@@ -690,7 +690,7 @@ export async function execute(this: IExecuteFunctions) {
 
 						// Check if cess is selected for UAE (not allowed)
 						if (!isIndia && updateFields.cess_type) {
-							throw new ApplicationError('Cess is not available for UAE operations. Cess is only available for India.');
+							throw new ApplicationError('Cess is not available for UAE region. Cess is only available for India.');
 						}
 
 						if (isIndia && updateFields.cess_type) {
@@ -843,7 +843,7 @@ export async function execute(this: IExecuteFunctions) {
 							},
 							json: true,
 						};
-						const catalogResponse = await this.helpers.request(getOptions);
+						const catalogResponse = await this.helpers.httpRequest(getOptions);
 						const variants = (catalogResponse.data && catalogResponse.data[0] && Array.isArray(catalogResponse.data[0].product_variants)) ? catalogResponse.data[0].product_variants : [];
 
 						// 2. Find max id
@@ -908,10 +908,10 @@ export async function execute(this: IExecuteFunctions) {
 						// UAE specific contact validations
 						if (!isIndia) {
 							if (!contact.business_name || contact.business_name === '') {
-								throw new ApplicationError('Business Name is required for UAE operations', { level: 'warning' });
+								throw new ApplicationError('Business Name is required for UAE region', { level: 'warning' });
 							}
 							if (!contact.place_of_supply || contact.place_of_supply === '') {
-								throw new ApplicationError('Place of Supply is required for UAE operations', { level: 'warning' });
+								throw new ApplicationError('Place of Supply is required for UAE region', { level: 'warning' });
 							}
 						}
 
@@ -1111,19 +1111,19 @@ export async function execute(this: IExecuteFunctions) {
 							if (!isIndia) {
 								// Ensure all UAE required fields are present
 								if (item.quantity === undefined || item.quantity === null || item.quantity === '') {
-									throw new ApplicationError(`Quantity is required for UAE operations - item ${j + 1}`, { level: 'warning' });
+									throw new ApplicationError(`Quantity is required for UAE region - item ${j + 1}`, { level: 'warning' });
 								}
 								if (item.rate === undefined || item.rate === null || item.rate === '') {
-									throw new ApplicationError(`Rate is required for UAE operations - item ${j + 1}`, { level: 'warning' });
+									throw new ApplicationError(`Rate is required for UAE region - item ${j + 1}`, { level: 'warning' });
 								}
 								if (item.taxable_per_item === undefined || item.taxable_per_item === null || item.taxable_per_item === '') {
-									throw new ApplicationError(`Taxable Per Item is required for UAE operations - item ${j + 1}`, { level: 'warning' });
+									throw new ApplicationError(`Taxable Per Item is required for UAE region - item ${j + 1}`, { level: 'warning' });
 								}
 								if (item.non_taxable_per_item === undefined || item.non_taxable_per_item === null || item.non_taxable_per_item === '') {
-									throw new ApplicationError(`Non Taxable Per Item is required for UAE operations - item ${j + 1}`, { level: 'warning' });
+									throw new ApplicationError(`Non Taxable Per Item is required for UAE region - item ${j + 1}`, { level: 'warning' });
 								}
 								if (item.vat_rate === undefined || item.vat_rate === null || item.vat_rate === '') {
-									throw new ApplicationError(`VAT Rate is required for UAE operations - item ${j + 1}`, { level: 'warning' });
+									throw new ApplicationError(`VAT Rate is required for UAE region - item ${j + 1}`, { level: 'warning' });
 								}
 							}
 
@@ -1432,7 +1432,6 @@ export async function execute(this: IExecuteFunctions) {
 						options.method = 'POST';
 						options.url = `${baseUrl}/estimate`;
 						options.body = body;
-						console.log('body', body);
 					} else if (operation === 'viewQuote') {
 						const quoteId = this.getNodeParameter('quoteId', i) as string;
 						options.method = 'GET';
@@ -1624,7 +1623,7 @@ export async function execute(this: IExecuteFunctions) {
 									json: true,
 								};
 
-								const branchResponse = await this.helpers.request(branchOptions);
+								const branchResponse = await this.helpers.httpRequest(branchOptions);
 								if (branchResponse.status === 200 && branchResponse.data && Array.isArray(branchResponse.data) && branchResponse.data.length > 0) {
 									const branchData = branchResponse.data[0];
 									// Add seller_info with branch data
@@ -1696,7 +1695,6 @@ export async function execute(this: IExecuteFunctions) {
 						options.method = 'POST';
 						options.url = `${baseUrl}/receipt`;
 						options.body = body;
-						console.log('body', body);
 					} else if (operation === 'listReceipts') {
 						const filters = this.getNodeParameter('filters', i) as IDataObject;
 						const pageSize = this.getNodeParameter('page_size', i) as number;
@@ -1734,7 +1732,6 @@ export async function execute(this: IExecuteFunctions) {
 						const contactIdFilter = isIndia ? `&filter.contact_id=${filters.contact_id ?? ''}` : '';
 						const reconStatusFilter = isIndia ? `&filter.recon_status=${filters.recon_status ?? ''}` : '';
 						options.url = `${baseUrl}/receipt?page_size=${pageSize ?? 5}&${dateFromKey}=${filters.date_from ?? ''}&${dateToKey}=${filters.date_to ?? ''}${reconStatusFilter}${contactIdFilter}&filter.search=${filters.search ?? ''}`;
-						console.log('options.url', options.url);
 					} else if (operation === 'viewReceipt') {
 						const receiptId = this.getNodeParameter('receiptId', i) as string;
 						options.method = 'GET';
@@ -1752,35 +1749,88 @@ export async function execute(this: IExecuteFunctions) {
 						const contactId = this.getNodeParameter('contact_id', i) as string;
 						const businessBranchId = this.getNodeParameter('business_branch_id', i) as string;
 						const sellerTaxId = this.getNodeParameter('seller_tax_id', i) as string;
+						const sellerEmail = this.getNodeParameter('seller_email', i) as string;
+						const sellerPhone = this.getNodeParameter('seller_phone', i) as string;
 						const notes = this.getNodeParameter('notes', i) as string;
 						const billingAddress = this.getNodeParameter('billing_address', i) as IDataObject;
 						const items = this.getNodeParameter('items.item', i, []) as IDataObject[];
 						const sameAddress = this.getNodeParameter('same_address', i) as boolean;
 						const currency = this.getNodeParameter('currency', i) as string;
-						const additionalFields = this.getNodeParameter('additionalFields', i, {}) as IDataObject;
+						const adjustAmount = this.getNodeParameter('adjust_amount', i) as string;
+						const reverseCharge = this.getNodeParameter('reverse_charge', i) as number;
+						const taxCreditType = this.getNodeParameter('tax_credit_type', i) as number;
+						const sellerInfo = this.getNodeParameter('seller_info', i, {}) as IDataObject;
+						const additionalFields = this.getNodeParameter('additional_fields', i, {}) as IDataObject;
 						const specialized_supply = this.getNodeParameter('specialized_supply', i) as string;
+
+						// Validate tax type based on region
+						if (isIndia && taxType === 'a') {
+							throw new ApplicationError('Tax Type "UAE VAT" is only available for UAE region', { level: 'warning' });
+						}
+						if (!isIndia && taxType !== 'a') {
+							throw new ApplicationError('Tax Type must be "UAE VAT" (a) for UAE region', { level: 'warning' });
+						}
 
 						// Validate required contact fields
 						if (!contactId || contactId === '') {
 							throw new ApplicationError('Contact ID is required for creating purchase invoice', { level: 'warning' });
 						}
 
+						// India specific validations
+						if (isIndia) {
+							if (!purchaseOrderId || purchaseOrderId === '') {
+								throw new ApplicationError('Purchase Order ID is required for India region', { level: 'warning' });
+							}
+							if (!sellerTaxId || sellerTaxId === '') {
+								throw new ApplicationError('Seller Tax ID is required for India region', { level: 'warning' });
+							}
+						}
+
+						// UAE specific validations
+						if (!isIndia) {
+							if (!sellerEmail || sellerEmail === '') {
+								throw new ApplicationError('Seller Email is required for UAE region', { level: 'warning' });
+							}
+							if (!sellerPhone || sellerPhone === '') {
+								throw new ApplicationError('Seller Phone is required for UAE region', { level: 'warning' });
+							}
+						}
+
+						// Build base body
 						const body: IDataObject = {
 							purchase_number: purchaseNumber,
-							purchase_order_id: purchaseOrderId,
 							due_date: dueDateString,
 							pur_inv_date: purchaseDateString,
 							tax_id1_type: taxType,
 							contact_id: contactId,
 							business_branch_id: businessBranchId,
 							notes: notes,
-							seller_tax_id: sellerTaxId,
-							status: 1,
 							type: 1,
-							data_source: 2,
 							currency: currency,
 						}
-						if(taxType === '1' || taxType === '2') {
+
+						// Region-specific base fields
+						if (isIndia) {
+							body.purchase_order_id = purchaseOrderId;
+							body.seller_tax_id = sellerTaxId;
+							body.status = 1;
+							body.data_source = 2;
+						} else {
+							body.seller_email = sellerEmail;
+							body.seller_phone = sellerPhone;
+							if (adjustAmount && adjustAmount !== '') {
+								body.adjust_amount = adjustAmount;
+							}
+							if (reverseCharge !== undefined) {
+								body.reverse_charge = reverseCharge;
+							}
+							if (taxCreditType !== undefined) {
+								body.tax_credit_type = taxCreditType;
+							}
+						}
+
+						// India-specific tax type handling
+						if (isIndia && (taxType === '1' || taxType === '2')) {
 							const pos = this.getNodeParameter('pos', i) as string;
 							const supplierState = this.getNodeParameter('supplier_state', i) as string;
 							body.business_info = {
@@ -1790,36 +1840,83 @@ export async function execute(this: IExecuteFunctions) {
 								supplier_state: supplierState,
 							}
 						}
-						body.billing_details = {
-							"bill_addr1": billingAddress.bill_addr1,
-							"bill_addr2": billingAddress.bill_addr2,
-							"bill_city": billingAddress.bill_city,
-							"bill_company": billingAddress.bill_company_name,
-							"bill_country": billingAddress.bill_country,
-							"bill_pincode": billingAddress.bill_pincode,
-							"bill_state": billingAddress.bill_state,
+
+						// UAE-specific seller_info
+						if (!isIndia && sellerInfo && Object.keys(sellerInfo).length > 0) {
+							body.seller_info = sellerInfo;
 						}
-						if(sameAddress) {
-							(body.billing_details as any).bill_ship_address_same = 1;
-							body.shipping_details = {
-								"ship_addr1": billingAddress.bill_addr1,
-								"ship_addr2": billingAddress.bill_addr2,
-								"ship_city": billingAddress.bill_city,
-								"ship_company": billingAddress.bill_company_name,
-								"ship_country": billingAddress.bill_country,
-								"ship_pincode": billingAddress.bill_pincode,
-								"ship_state": billingAddress.bill_state,
+
+						// Build billing_details based on region
+						if (isIndia) {
+							body.billing_details = {
+								"bill_addr1": billingAddress.bill_addr1 || '',
+								"bill_addr2": billingAddress.bill_addr2 || '',
+								"bill_city": billingAddress.bill_city || '',
+								"bill_company": billingAddress.bill_company_name || '',
+								"bill_country": billingAddress.bill_country || '',
+								"bill_pincode": billingAddress.bill_pincode || '',
+								"bill_state": billingAddress.bill_state || '',
+							}
+						} else {
+							body.billing_details = {
+								"bill_company": billingAddress.bill_company_name || '',
+								"bill_addr1": billingAddress.bill_addr1 || '',
+								"bill_addr2": billingAddress.bill_addr2 || '',
+								"bill_city": billingAddress.bill_city || '',
+								"bill_pincode": billingAddress.bill_pincode || '',
+								"bill_state": billingAddress.bill_state || '',
+								"bill_country": billingAddress.bill_country || '',
+							}
+							if (sameAddress) {
+								(body.billing_details as any).bill_ship_address_same = '1';
+							}
+						}
+
+						// Build shipping_details based on region
+						if (sameAddress) {
+							if (isIndia) {
+								body.shipping_details = {
+									"ship_addr1": billingAddress.bill_addr1 || '',
+									"ship_addr2": billingAddress.bill_addr2 || '',
+									"ship_city": billingAddress.bill_city || '',
+									"ship_company": billingAddress.bill_company_name || '',
+									"ship_country": billingAddress.bill_country || '',
+									"ship_pincode": billingAddress.bill_pincode || '',
+									"ship_state": billingAddress.bill_state || '',
+								}
+							} else {
+								body.shipping_details = {
+									"ship_company": billingAddress.bill_company_name || '',
+									"ship_addr1": billingAddress.bill_addr1 || '',
+									"ship_addr2": billingAddress.bill_addr2 || '',
+									"ship_city": billingAddress.bill_city || '',
+									"ship_pincode": billingAddress.bill_pincode || '',
+									"ship_state": billingAddress.bill_state || '',
+									"ship_country": billingAddress.bill_country || '',
+								}
 							}
 						} else {
 							const shippingAddress = this.getNodeParameter('shipping_address', i) as IDataObject;
-							body.shipping_details = {
-								"ship_addr1": shippingAddress.ship_addr1,
-								"ship_addr2": shippingAddress.ship_addr2,
-								"ship_city": shippingAddress.ship_city,
-								"ship_company": shippingAddress.ship_company_name,
-								"ship_country": shippingAddress.ship_country,
-								"ship_pincode": shippingAddress.ship_pincode,
-								"ship_state": shippingAddress.ship_state,
+							if (isIndia) {
+								body.shipping_details = {
+									"ship_addr1": shippingAddress.ship_addr1 || '',
+									"ship_addr2": shippingAddress.ship_addr2 || '',
+									"ship_city": shippingAddress.ship_city || '',
+									"ship_company": shippingAddress.ship_company_name || '',
+									"ship_country": shippingAddress.ship_country || '',
+									"ship_pincode": shippingAddress.ship_pincode || '',
+									"ship_state": shippingAddress.ship_state || '',
+								}
+							} else {
+								body.shipping_details = {
+									"ship_company": shippingAddress.ship_company_name || '',
+									"ship_addr1": shippingAddress.ship_addr1 || '',
+									"ship_addr2": shippingAddress.ship_addr2 || '',
+									"ship_city": shippingAddress.ship_city || '',
+									"ship_pincode": shippingAddress.ship_pincode || '',
+									"ship_state": shippingAddress.ship_state || '',
+									"ship_country": shippingAddress.ship_country || '',
+								}
 							}
 						}
 						// Validate required item fields
@@ -1827,24 +1924,28 @@ export async function execute(this: IExecuteFunctions) {
 							throw new ApplicationError('At least one item is required for creating purchase invoice', { level: 'warning' });
 						}
 
+						// Validate and transform items
 						for (let j = 0; j < items.length; j++) {
 							const item = items[j];
 							if (!item.item_name || item.item_name === '') {
 								throw new ApplicationError(`Item Name is required for item ${j + 1}`, { level: 'warning' });
 							}
-							if (!item.item_code || item.item_code === '') {
-								throw new ApplicationError(`SAC/HSN Code is required for item ${j + 1}`, { level: 'warning' });
-							}
 
-							// Validate numeric fields - must be integers and not empty
-							if (item.pid === '' || item.pid === null || item.pid === undefined) {
-								throw new ApplicationError(`Item ID (PID) is required for item ${j + 1}`, { level: 'warning' });
-							}
+						// Validate item code based on region
+						if (isIndia && (!item.item_code || item.item_code === '')) {
+							throw new ApplicationError(`HSN/SAC Code is required for item ${j + 1}`, { level: 'warning' });
+						}
+
+						// Validate item ID based on region
+						if (item.pid === '' || item.pid === null || item.pid === undefined) {
+							throw new ApplicationError(`Item ID (PID) is required for item ${j + 1}`, { level: 'warning' });
+						}
 							const pidValue = Number(item.pid);
 							if (!Number.isInteger(pidValue) || pidValue <= 0) {
 								throw new ApplicationError(`Item ID (PID) must be an integer > 0 for item ${j + 1}`, { level: 'warning' });
 							}
 
+							// Validate variant ID
 							if (item.vid === '' || item.vid === null || item.vid === undefined) {
 								throw new ApplicationError(`Variant ID is required for item ${j + 1}`, { level: 'warning' });
 							}
@@ -1853,104 +1954,183 @@ export async function execute(this: IExecuteFunctions) {
 								throw new ApplicationError(`Variant ID must be an integer > 0 for item ${j + 1}`, { level: 'warning' });
 							}
 
-							if (item.rate === '' || item.rate === null || item.rate === undefined) {
-								throw new ApplicationError(`Rate is required for item ${j + 1}`, { level: 'warning' });
-							}
-							const rateValue = Number(item.rate);
-							if (!Number.isInteger(rateValue) || rateValue < 0) {
-								throw new ApplicationError(`Rate must be an integer >= 0 for item ${j + 1}`, { level: 'warning' });
-							}
-
-							if (item.non_taxable_amount === '' || item.non_taxable_amount === null || item.non_taxable_amount === undefined) {
-								throw new ApplicationError(`Non Taxable Amount is required for item ${j + 1}`, { level: 'warning' });
-							}
-							const nonTaxableValue = Number(item.non_taxable_amount);
-							if (!Number.isInteger(nonTaxableValue) || nonTaxableValue < 0) {
-								throw new ApplicationError(`Non Taxable Amount must be an integer >= 0 for item ${j + 1}`, { level: 'warning' });
-							}
-
-							if (item.taxable_amount === '' || item.taxable_amount === null || item.taxable_amount === undefined) {
-								throw new ApplicationError(`Taxable Amount is required for item ${j + 1}`, { level: 'warning' });
-							}
-							const taxableValue = Number(item.taxable_amount);
-							if (!Number.isInteger(taxableValue) || taxableValue < 0) {
-								throw new ApplicationError(`Taxable Amount must be an integer >= 0 for item ${j + 1}`, { level: 'warning' });
-							}
-
-							// Validate that taxable_amount is equal to or less than rate
-							if (taxableValue > rateValue) {
-								throw new ApplicationError(`Taxable Amount cannot be greater than Rate for item ${j + 1}`, { level: 'warning' });
-							}
-
-							if(item.quantity === undefined || item.quantity === null || item.quantity === '') {
+							// Validate quantity (required for both)
+							if (item.quantity === undefined || item.quantity === null || item.quantity === '') {
 								throw new ApplicationError(`Quantity is required for item ${j + 1}`, { level: 'warning' });
 							}
-							if(!item.item_type || item.item_type === '') {
-								throw new ApplicationError(`Item Type is required for item ${j + 1}`, { level: 'warning' });
+
+							// Validate rate (optional for UAE, can override)
+							if (item.rate !== undefined && item.rate !== null && item.rate !== '') {
+								const rateValue = Number(item.rate);
+								if (!Number.isInteger(rateValue) && !Number.isFinite(rateValue) || rateValue < 0) {
+									throw new ApplicationError(`Rate must be a number >= 0 for item ${j + 1}`, { level: 'warning' });
+								}
 							}
 
-							if(item.price_type === undefined || item.price_type === null || item.price_type === '') {
-								throw new ApplicationError(`Price Type is required for item ${j + 1}`, { level: 'warning' });
+							// Validate discount (optional)
+							if (item.item_discount !== undefined && item.item_discount !== null && item.item_discount !== '') {
+								const discountValue = Number(item.item_discount);
+								if (!Number.isFinite(discountValue) || discountValue < 0) {
+									throw new ApplicationError(`Discount must be a number >= 0 for item ${j + 1}`, { level: 'warning' });
+								}
 							}
-							if(!item.gst_rate || item.gst_rate === '') {
+
+							// Validate non_taxable_amount (optional for UAE)
+							if (item.non_taxable_amount !== undefined && item.non_taxable_amount !== null && item.non_taxable_amount !== '') {
+								const nonTaxableValue = Number(item.non_taxable_amount);
+								if (!Number.isFinite(nonTaxableValue) || nonTaxableValue < 0) {
+									throw new ApplicationError(`Non Taxable Amount must be a number >= 0 for item ${j + 1}`, { level: 'warning' });
+								}
+								if (item.rate && Number(item.rate) < nonTaxableValue) {
+									throw new ApplicationError(`Non-Taxable Amount cannot be greater than Rate for item ${j + 1}`, { level: 'warning' });
+								}
+							}
+
+							// Validate taxable_amount (optional for UAE)
+							if (item.taxable_amount !== undefined && item.taxable_amount !== null && item.taxable_amount !== '') {
+								const taxableValue = Number(item.taxable_amount);
+								if (!Number.isFinite(taxableValue) || taxableValue < 0) {
+									throw new ApplicationError(`Taxable Amount must be a number >= 0 for item ${j + 1}`, { level: 'warning' });
+								}
+								if (item.rate && Number(item.rate) < taxableValue) {
+									throw new ApplicationError(`Taxable Amount cannot be greater than Rate for item ${j + 1}`, { level: 'warning' });
+								}
+							}
+
+							// Validate expense_id from coa_id (required for both)
+							let expenseId = null;
+							if (item.coa_id && item.coa_id !== '') {
+								try {
+									const parsed = typeof item.coa_id === 'string' ? JSON.parse(item.coa_id) : item.coa_id;
+									expenseId = parsed.id || parsed;
+								} catch {
+									expenseId = item.coa_id;
+								}
+							}
+							if (!expenseId || expenseId === '') {
+								throw new ApplicationError(`Expense ID (COA ID) is required for item ${j + 1}`, { level: 'warning' });
+							}
+
+							// Validate tax rate based on region
+							if (!item.gst_rate || item.gst_rate === '') {
 								throw new ApplicationError(`${isIndia ? 'GST' : 'VAT'} Rate is required for item ${j + 1}`, { level: 'warning' });
 							}
-							if(rateValue && nonTaxableValue) {
-								if(rateValue < nonTaxableValue) {
-									throw new ApplicationError(`Non-Taxable Amount cannot be greater than Rate for item ${j + 1}`, { level: 'warning' });
+
+							// UAE specific VAT rate validation
+							if (!isIndia && item.gst_rate) {
+								const vatRate = item.gst_rate;
+								if (vatRate !== 0 && vatRate !== 5 && vatRate !== '0' && vatRate !== '5' && vatRate !== 'Exempted Supply') {
+									throw new ApplicationError(`VAT Rate must be 0, 5, or Exempted Supply for item ${j + 1}`, { level: 'warning' });
 								}
 							}
 						}
 
+						// Build items array with region-specific transformations
 						body.items = [];
 						for(let j = 0; j < items.length; j++) {
 							const item = items[j];
-							const parsed = JSON.parse(item.coa_id as string);
-							var expense_id = parsed.id;
-							var expense_type = parsed.name;
-							(body.items as any[]).push({
-								"item_description": item.item_description ?? '',
-								"item_code": item.item_code ?? '',
-								"item_type": item.item_type ?? '',
+
+							// Get expense_id from coa_id
+							let expense_id = null;
+							if (item.coa_id && item.coa_id !== '') {
+								try {
+									const parsed = typeof item.coa_id === 'string' ? JSON.parse(item.coa_id) : item.coa_id;
+									expense_id = parsed.id || parsed;
+								} catch {
+									expense_id = item.coa_id;
+								}
+							}
+
+							if (isIndia) {
+								// India structure
+								const itemObj: any = {
+									"pid": item.pid,
+									"vid": item.vid,
+									"quantity": item.quantity ?? '',
+									"rate": item.rate ? parseFloat(item.rate as string) : '',
+									"discount": item.item_discount ?? '',
+									"expense_id": expense_id,
+								};
+
+								if (item.item_description) itemObj.item_description = item.item_description;
+								if (item.item_code) itemObj.item_code = item.item_code;
+								if (item.item_type) itemObj.item_type = item.item_type;
+								if (item.item_name) itemObj.item_name = item.item_name;
+								if (item.price_type !== undefined) itemObj.price_type = item.price_type;
+								if (item.cess_type) itemObj.cess_type = item.cess_type;
+								if (item.cess_per) itemObj.cess_per = item.cess_per;
+							if (item.taxable_amount !== undefined) itemObj.taxable_amt = item.taxable_amount;
+							if (item.gst_rate !== undefined) itemObj.gst_rate = parseInt(item.gst_rate as string);
+							if (item.non_taxable_amount !== undefined) itemObj.non_taxable_amt = parseInt(item.non_taxable_amount as string);
+
+							(body.items as any[]).push(itemObj);
+						} else {
+							// UAE structure
+							const itemObj: any = {
 								"pid": item.pid,
-								"item_name": item.item_name ?? '',
+								"vid": item.vid,
 								"quantity": item.quantity ?? '',
-								"price_type": item.price_type ?? '',
-								"rate": parseFloat(item.rate as string) ?? '',
-								"cess_type": item.cess_type ?? '',
-								"cess_per": item.cess_per ?? '',
-								"taxable_amt": item.taxable_amount ?? '',
-								"gst_rate": parseInt(item.gst_rate as string) ?? 5,
-								"non_taxable_amt": parseInt(item.non_taxable_amount as string) ?? 0,
 								"discount": item.item_discount ?? '',
-								"vid":item.vid,
 								"expense_id": expense_id,
-								"expense_type": expense_type,
-							})
+							};
+
+								// Rate is optional for UAE (can override)
+								if (item.rate !== undefined && item.rate !== null && item.rate !== '') {
+									itemObj.rate = parseFloat(item.rate as string);
+								}
+
+								// VAT rate (transform gst_rate to vat_rate for UAE)
+								if (item.gst_rate !== undefined) {
+									itemObj.vat_rate = typeof item.gst_rate === 'number' ? item.gst_rate : (item.gst_rate === 'Exempted Supply' ? 'Exempted Supply' : parseInt(item.gst_rate as string));
+								}
+
+								// Non-taxable amount (optional for UAE)
+								if (item.non_taxable_amount !== undefined && item.non_taxable_amount !== null && item.non_taxable_amount !== '') {
+									itemObj.non_taxable_amount = parseFloat(item.non_taxable_amount as string);
+								}
+
+								// Taxable amount (optional for UAE)
+								if (item.taxable_amount !== undefined && item.taxable_amount !== null && item.taxable_amount !== '') {
+									itemObj.taxable_amount = parseFloat(item.taxable_amount as string);
+								}
+
+								(body.items as any[]).push(itemObj);
+							}
 						}
+						// Handle additional fields
 						if(additionalFields.bill_number) {
 							body.bill_number = additionalFields.bill_number;
 						}
+
+						// Currency info - required for UAE when currency is not AED
 						if(additionalFields.currency_info) {
 							const currencyInfo = additionalFields.currency_info as IDataObject;
 							body.currency_info = {
-								currency_rate: parseFloat(currencyInfo.currency_rate as string) ?? 0,
-								currency_default_rate: parseFloat(currencyInfo.currency_default_rate as string) ?? 0,
-								converted_amount: parseFloat(currencyInfo.converted_amount as string) ?? 0,
+								currency_rate: currencyInfo.currency_rate ? parseFloat(currencyInfo.currency_rate as string) : 0,
+								currency_default_rate: currencyInfo.currency_default_rate ? parseFloat(currencyInfo.currency_default_rate as string) : 0,
+								converted_amount: currencyInfo.converted_amount ? parseFloat(currencyInfo.converted_amount as string) : 0,
 								from: currencyInfo.from as string,
 								to: currencyInfo.to as string,
 							}
+						} else if (!isIndia && currency !== 'AED') {
+							// For UAE, currency_info should be provided when currency is not AED
+							throw new ApplicationError('Currency Info is required when currency is not AED for UAE region', { level: 'warning' });
 						}
-						if(additionalFields.reverse_charge) {
+
+						// Reverse charge and tax credit type - already handled above for UAE, but also check additionalFields for backward compatibility
+						if (isIndia && additionalFields.reverse_charge !== undefined) {
 							body.reverse_charge = additionalFields.reverse_charge;
 						}
-						if(additionalFields.tax_credit_type) {
+						if (isIndia && additionalFields.tax_credit_type !== undefined) {
 							body.tax_credit_type = additionalFields.tax_credit_type;
 						}
+
 						if(additionalFields.terms_conditions) {
 							body.terms_conditions = additionalFields.terms_conditions;
 						}
-						if(specialized_supply) {
+
+						// Specialized supply - only for India
+						if (isIndia && specialized_supply) {
 							if(specialized_supply === '1') {
 								const export_bill_no = this.getNodeParameter('export_bill_no', i) as string;
 								const export_bill_date = this.getNodeParameter('export_bill_date', i) as string;
@@ -1986,20 +2166,33 @@ export async function execute(this: IExecuteFunctions) {
 						const voucherType = this.getNodeParameter('voucher_type', i) as string;
 						const paymentDateRaw = this.getNodeParameter('payment_date', i) as string;
 						const currency = this.getNodeParameter('currency', i) as string;
-						const paymentMode = this.getNodeParameter('payment_mode', i) as string;
+						const payment_mode = this.getNodeParameter('payment_mode', i) as IDataObject;
 						const additionalFields = this.getNodeParameter('additionalFields', i, {}) as IDataObject;
 						const paymentDate = new Date(paymentDateRaw as string);
 						const paymentDateString = paymentDate.toISOString().split('T')[0];
-						var payment_mode = JSON.parse(paymentMode as string);
-						const body: IDataObject = {
-							branch_id: branchId,
-							voucher_type: voucherType,
-							payment_date: paymentDateString,
-							currency: currency,
-							payment_mode: payment_mode.name,
-						};
+						var body: IDataObject = {};
 						if(voucherType === '1') {
 							const expenseType = this.getNodeParameter('expense_type', i) as string;
+							if(!isIndia && expenseType === 'single') {
+								throw new ApplicationError('Expense Voucher single account is only available for India region', { level: 'warning' });
+							}
+							if(isIndia){
+								body = {
+									branch_id: branchId,
+									voucher_type: voucherType,
+									payment_date: paymentDateString,
+									currency: currency,
+									payment_mode: payment_mode,
+								}
+							} else {
+								body = {
+									business_branch_id: branchId,
+									type: 2,
+									pur_inv_date: paymentDateString,
+									currency: currency,
+									payment_mode: payment_mode,
+								}
+							}
 							if(expenseType === 'single') {
 								const expenseHeadRaw = this.getNodeParameter('expense_head', i) as string;
 								const amount = this.getNodeParameter('amount', i) as string;
@@ -2022,7 +2215,34 @@ export async function execute(this: IExecuteFunctions) {
 								body.tax_rate = parseInt(taxRate as string) ?? 5;
 							} else if(expenseType === 'multiple') {
 								const multipleAccounts = this.getNodeParameter('multiple_accounts.expense_head', i, []) as IDataObject[];
-								body.multiple_expense = [];
+								if(!additionalFields.contact_id) {
+									throw new ApplicationError('Contact ID is required for multiple accounts', { level: 'warning' });
+								}
+								body.contact_id = additionalFields.contact_id;
+								if(isIndia && currency !== 'INR') {
+									if(!additionalFields.currency_info) {
+										throw new ApplicationError('Currency Info is required when currency is not INR for India region', { level: 'warning' });
+									}
+									const currencyInfo = additionalFields.currency_info as IDataObject;
+									if(!currencyInfo.currency_rate) {
+										throw new ApplicationError('Currency Rate is required when currency is not INR for India region', { level: 'warning' });
+									}
+									body.currency_info = {
+										currency_rate: currencyInfo.currency_rate ? parseFloat(currencyInfo.currency_rate as string) : 0,
+									}
+								} else if(!isIndia && currency !== 'AED') {
+									if(!additionalFields.currency_info) {
+										throw new ApplicationError('Currency Info is required when currency is not AED for UAE region', { level: 'warning' });
+									}
+									const currencyInfo = additionalFields.currency_info as IDataObject;
+									if(!currencyInfo.currency_rate) {
+										throw new ApplicationError('Currency Rate is required when currency is not AED for UAE region', { level: 'warning' });
+									}
+									body.currency_info = {
+										currency_rate: currencyInfo.currency_rate ? parseFloat(currencyInfo.currency_rate as string) : 0,
+									}
+								}
+								isIndia ? body.multiple_expense = [] : body.items = [];
 								for(let j = 0; j < multipleAccounts.length; j++) {
 									const account = multipleAccounts[j];
 									let expenseHead;
@@ -2038,15 +2258,25 @@ export async function execute(this: IExecuteFunctions) {
 									} else {
 										expenseHead = account.expense_head;
 									}
-									(body.multiple_expense as any[]).push({
-										expense_id: expenseHead,
-										amount: parseFloat(account.amount as string),
-										tax: parseInt(account.tax as string) ?? 5,
-									});
+									if(!isIndia){
+										if (account.tax !== 0 && account.tax !== 5) {
+											throw new ApplicationError(`Tax Rate must be 0, 5 for UAE region`, { level: 'warning' });
+										}
+									}
+									if(isIndia){
+										(body.multiple_expense as any[]).push({
+											expense_id: expenseHead,
+											amount: parseFloat(account.amount as string),
+											tax: parseInt(account.tax as string) ?? 5,
+										});
+									} else {
+										(body.items as any[]).push({
+											expense_id: expenseHead,
+											amount: parseFloat(account.amount as string),
+											vat_rate: account.tax ?? 5,
+										});
+									}
 								}
-							}
-							if(additionalFields.contact_id) {
-								body.contact_id = additionalFields.contact_id;
 							}
 							if(additionalFields.payment_status) {
 								body.payment_status = additionalFields.payment_status;
@@ -2060,8 +2290,42 @@ export async function execute(this: IExecuteFunctions) {
 						} else if(voucherType === '2') {
 							const amount = this.getNodeParameter('amount', i) as string;
 							const contactId = this.getNodeParameter('contact_id', i) as string;
-							body.amount = parseFloat(amount as string);
-							body.contact_id = contactId;
+							const expenseHeadPayment = this.getNodeParameter('expense_head_payment', i) as string;
+							body = {
+								branch_id: branchId,
+								voucher_type: voucherType,
+								payment_date: paymentDateString,
+								currency: currency,
+								payment_mode: payment_mode,
+								amount: parseFloat(amount as string),
+								contact_id: contactId,
+							}
+
+							!isIndia ? body.expense_head = parseInt(expenseHeadPayment) : body.expense_head_payment = expenseHeadPayment;
+							if(isIndia && currency !== 'INR') {
+								if(!additionalFields.currency_info) {
+									throw new ApplicationError('Currency Info is required when currency is not INR for India region', { level: 'warning' });
+								}
+								const currencyInfo = additionalFields.currency_info as IDataObject;
+								if(!currencyInfo.currency_rate) {
+									throw new ApplicationError('Currency Rate is required when currency is not INR for India region', { level: 'warning' });
+								}
+								body.currency_info = {
+									currency_rate: currencyInfo.currency_rate ? parseFloat(currencyInfo.currency_rate as string) : 0,
+								}
+							}
+							if(!isIndia && currency !== 'AED') {
+								if(!additionalFields.currency_info) {
+									throw new ApplicationError('Currency Info is required when currency is not AED for UAE region', { level: 'warning' });
+								}
+								const currencyInfo = additionalFields.currency_info as IDataObject;
+								if(!currencyInfo.currency_rate) {
+									throw new ApplicationError('Currency Rate is required when currency is not AED for UAE region', { level: 'warning' });
+								}
+								body.currency_info = {
+									currency_rate: currencyInfo.currency_rate ? parseFloat(currencyInfo.currency_rate as string) : 0,
+								}
+							}
 							const additionalFields_type2 = this.getNodeParameter('additionalFields', i, {}) as IDataObject;
 							if(additionalFields_type2.reconcile_details) {
 								const reconcileDetails = this.getNodeParameter('additionalFields.reconcile_details.reconcile', i, []) as IDataObject[];
@@ -2075,6 +2339,9 @@ export async function execute(this: IExecuteFunctions) {
 								}
 							}
 						} else if(voucherType === '3') {
+							if(!isIndia) {
+								throw new ApplicationError('Salary Voucher is only available for India region', { level: 'warning' });
+							}
 							const employeeID = this.getNodeParameter('employee_id', i) as string;
 							const accountName = this.getNodeParameter('account_name', i) as string;
 							const salary_month = this.getNodeParameter('salary_month', i) as string;
@@ -2128,7 +2395,7 @@ export async function execute(this: IExecuteFunctions) {
 							}
 						}
 						options.method = 'POST';
-						options.url = `${baseUrl}/vouchers`;
+						!isIndia && voucherType === '1' ? options.url = `${baseUrl}/purchase-invoice` : options.url = `${baseUrl}/vouchers`;
 						options.body = body;
 					} else if(operation === 'listPurchaseInvoices') {
 						const pageSize = this.getNodeParameter('page_size', i) as number;
@@ -2166,8 +2433,15 @@ export async function execute(this: IExecuteFunctions) {
 							const dateTo = new Date(filters.to_date as string);
 							filters.to_date = dateTo.toISOString().split('T')[0];
 						}
+						if(!isIndia && voucherType === '3'){
+							throw new ApplicationError('Salary Voucher is only available for India region', { level: 'warning' });
+						}
 						options.method = 'GET';
-						options.url = `${baseUrl}/vouchers?&voucher_type=${voucherType ?? ''}&size=${pageSize ?? 5}&start_from=0&from_date=${filters.date_from ?? ''}&to_date=${filters.date_to ?? ''}&order_by=${filters.order_by ?? ''}&order_column=${filters.order_column ?? ''}`;
+						if(!isIndia && voucherType === '1'){
+							options.url = `${baseUrl}/purchase-invoice?&type=vouchers&size=${pageSize ?? 5}&start_from=0&from_date=${filters.date_from ?? ''}&to_date=${filters.date_to ?? ''}&order_by=${filters.order_by ?? ''}&order_column=${filters.order_column ?? ''}`;
+						} else {
+							options.url = `${baseUrl}/vouchers?&voucher_type=${voucherType ?? ''}&size=${pageSize ?? 5}&start_from=0&from_date=${filters.date_from ?? ''}&to_date=${filters.date_to ?? ''}&order_by=${filters.order_by ?? ''}&order_column=${filters.order_column ?? ''}`;
+						}
 					} else if(operation === 'viewPurchaseInvoice') {
 						const purchaseInvoiceId = this.getNodeParameter('id', i) as string;
 						options.method = 'GET';
@@ -2553,8 +2827,483 @@ export async function execute(this: IExecuteFunctions) {
 						options.body = {
 							gstin,
 						}
+					} else if (operation === 'createBranch') {
+						const branchName = this.getNodeParameter('branchName', i) as string;
+						const addressFields = this.getNodeParameter('addressFields', i) as IDataObject;
+						const address1 = addressFields.address1;
+						const address2 = addressFields.address2;
+						const city = addressFields.city;
+						const state = addressFields.state;
+						const country = addressFields.country;
+						const postalCode = addressFields.postalCode;
+						const taxNumber = this.getNodeParameter('taxNumber', i) as string;
+						const phone = this.getNodeParameter('phone', i) as string;
+						const email = this.getNodeParameter('email', i) as string;
+						const status = this.getNodeParameter('status', i) as string;
+						const primaryBranch = addressFields.primaryBranch ? addressFields.primaryBranch as string : 'no';
+
+						if(!branchName || branchName.trim() === '') {
+							throw new ApplicationError('Branch Name is required', { level: 'warning' });
+						}
+						if(!address1 || address1 === '') {
+							throw new ApplicationError('Address Line 1 is required', { level: 'warning' });
+						}
+						if(isIndia) {
+							if(!city || city === '') {
+								throw new ApplicationError('City is required', { level: 'warning' });
+							}
+						}
+
+						if(!state || state === '') {
+							throw new ApplicationError('State is required', { level: 'warning' });
+						}
+						if(!country || country === '') {
+							throw new ApplicationError('Country is required', { level: 'warning' });
+						}
+						if(!postalCode || postalCode === '') {
+							throw new ApplicationError('Postal Code is required', { level: 'warning' });
+						}
+						if(isIndia) {
+							if(!taxNumber || taxNumber.trim() === '') {
+								throw new ApplicationError('Tax Number is required for India operations', { level: 'warning' });
+							}
+						}
+						if(!phone || phone.trim() === '') {
+							throw new ApplicationError('Phone is required', { level: 'warning' });
+						}
+						if(!email || email.trim() === '') {
+							throw new ApplicationError('Email is required', { level: 'warning' });
+						}
+						if(!status || status.trim() === '') {
+							throw new ApplicationError('Status is required', { level: 'warning' });
+						}
+
+						let primary_value: string | number = '';
+						let status_value: string | number = '';
+						if(isIndia) {
+							primary_value = primaryBranch;
+							status_value = status;
+						}
+						else{
+							primary_value = primaryBranch === 'yes' ? 1 : 0;
+							status_value = status === 'Active' ? 1 : 0;
+						}
+
+						let body: IDataObject = {};
+						if(isIndia) {
+							body = {
+								name: branchName,
+								gstin: taxNumber,
+								email: email,
+								phone: phone,
+								line1: address1,
+								line2: address2,
+								city: city,
+								state: state,
+								country: country,
+								pincode: postalCode,
+								status: status_value,
+								is_primary: primary_value,
+							}
+						}
+						else {
+							body = {
+								branch_name: branchName,
+								email: email,
+								phone: phone,
+								address: {
+									building_name: address1,
+									street_name: address2 +', '+ city,
+									emirate: state,
+									po_box: postalCode,
+									country: country,
+								},
+								status: status_value,
+								primary_branch: primary_value,
+							}
+						}
+
+						options.method = 'POST';
+						options.url = `${baseUrl}/business/branch`;
+						options.body = body;
+					} else if (operation === 'updateBranch') {
+						// Get selected branch ID from branchDetailsLoader
+						// In getBranchDetails, the value is stored as JSON.stringify(branch.branch_id)
+						let selectedBranchId = '';
+						try {
+							const branchDetailsLoader = this.getNodeParameter('branchDetailsLoader', i) as string;
+							if (branchDetailsLoader && branchDetailsLoader.trim() !== '') {
+								// Parse the JSON string to get the branch_id
+								const parsedValue = JSON.parse(branchDetailsLoader);
+								// The parsed value is the branch_id directly (string or number)
+								selectedBranchId = parsedValue;
+							}
+						} catch (error) {
+							// If parsing fails, try to get from branchId field
+							selectedBranchId = this.getNodeParameter('branchId', i) as string;
+						}
+
+						// Fallback to branchId field if branchDetailsLoader is not available
+						if (!selectedBranchId) {
+							selectedBranchId = this.getNodeParameter('branchId', i) as string;
+						}
+
+						if(!selectedBranchId) {
+							throw new ApplicationError('Branch ID is required', { level: 'warning' });
+						}
+
+						// Fetch current branch data from API
+						let currentBranchData: any = null;
+						try {
+							const fetchOptions: IHttpRequestOptions = {
+								method: 'GET',
+								url: `${baseUrl}`+(isIndia ? '/business/branch/' : '/business/branch/') + selectedBranchId,
+								headers: options.headers,
+								json: true,
+							};
+							const fetchResponse = await this.helpers.httpRequest(fetchOptions);
+							if(isIndia) {
+								if (fetchResponse.status === 200 && fetchResponse.data && Array.isArray(fetchResponse.data) && fetchResponse.data.length > 0) {
+									currentBranchData = fetchResponse.data[0];
+								} else {
+									throw new ApplicationError('Failed to fetch current branch data '+ fetchResponse, { level: 'warning' });
+								}
+							} else {
+								if (fetchResponse.status === 'success' && fetchResponse.data) {
+									currentBranchData = fetchResponse.data;
+								} else {
+									throw new ApplicationError('Failed to fetch current branch data '+ fetchResponse, { level: 'warning' });
+								}
+							}
+						} catch (error) {
+							throw new ApplicationError('Failed to fetch current branch data. Please check the branch ID. '+ error, { level: 'warning' });
+						}
+
+						// Get user-provided values
+						const updateFields = this.getNodeParameter('updateBranchFields', i) as IDataObject;
+						const userBranchName = updateFields?.branchName as string;
+						const addressFields = updateFields?.addressFields as any;
+						const userAddress1 = addressFields?.address1 as string;
+						const userAddress2 = addressFields?.address2 as string;
+						const userCity = addressFields?.city as string;
+						const userState = addressFields?.state as string;
+						const userCountry = addressFields?.country as string;
+						const userPostalCode = addressFields?.postalCode as string;
+						const userTaxNumber = updateFields?.taxNumber as string;
+						const userPhone = updateFields?.phone as string;
+						const userEmail = updateFields?.email as string;
+						const userStatus = updateFields?.status as string;
+						const userPrimaryBranch = updateFields?.primaryBranch ? updateFields.primaryBranch as string : '';
+
+						// Merge: Use new values if provided and different, otherwise keep old values
+						// Branch Name
+						const finalBranchName = (userBranchName && userBranchName.trim() !== '')
+							? userBranchName
+							: (currentBranchData.branch_name || '');
+
+						// Email
+						const finalEmail = (userEmail && userEmail.trim() !== '')
+							? userEmail
+							: (currentBranchData.email || '');
+
+						// Phone
+						const finalPhone = (userPhone && userPhone.trim() !== '')
+							? userPhone
+							: (String(currentBranchData.phone) || '');
+
+						// Tax Number (GSTIN)
+						const finalTaxNumber = (userTaxNumber && userTaxNumber.trim() !== '')
+							? userTaxNumber
+							: (currentBranchData.gstin || currentBranchData.tax_number || '');
+
+						// Status - India uses string, AE uses integer
+						let finalStatus: string | number = '';
+						if (userStatus && userStatus.trim() !== '') {
+							if (isIndia) {
+								finalStatus = userStatus;
+							} else {
+								// AE: Convert user input to integer (1 for active, 0 for inactive)
+								const userStatusLower = userStatus.toLowerCase();
+								finalStatus = (userStatusLower === 'active' || userStatus === '1' || Number(userStatus) === 1) ? 1 : 0;
+							}
+						} else if (currentBranchData.status) {
+							if(isIndia) {
+								finalStatus = (currentBranchData.status === 1 || currentBranchData.status === '1' || currentBranchData.status === 'Active' || currentBranchData.status === 'active') ? 'Active' : 'Inactive';
+							} else {
+								finalStatus = (currentBranchData.status === 1 || currentBranchData.status === '1' || currentBranchData.status === 'Active' || currentBranchData.status === 'active') ? 1 : 0;
+							}
+						} else {
+							finalStatus = isIndia ? 'Active' : 1;
+						}
+
+						// Primary Branch - India uses string, AE uses integer
+						let finalPrimaryBranch: string | number = '';
+						if(userPrimaryBranch && userPrimaryBranch !== '' && userPrimaryBranch !== null && userPrimaryBranch !== undefined) {
+							if (isIndia) {
+								finalPrimaryBranch = String(userPrimaryBranch).toLowerCase();
+							} else {
+								// AE: Convert user input to integer (1 for yes, 0 for no)
+								const userPrimaryBranchStr = String(userPrimaryBranch).toLowerCase();
+								finalPrimaryBranch = (userPrimaryBranchStr === 'yes' || userPrimaryBranch === '1' || Number(userPrimaryBranch) === 1) ? 1 : 0;
+							}
+						} else {
+							if(isIndia) {
+								finalPrimaryBranch = (currentBranchData.primary === 1 || currentBranchData.primary === '1' || currentBranchData.primary === 'yes' || currentBranchData.primary === 'Yes') ? 'yes' : 'no';
+							} else {
+								// AE: Use integer (1 or 0)
+								if (currentBranchData.primary !== undefined && currentBranchData.primary !== null) {
+									finalPrimaryBranch = (currentBranchData.primary === 1 || currentBranchData.primary === '1' || String(currentBranchData.primary).toLowerCase() === 'yes') ? 1 : 0;
+								} else if (currentBranchData.primary_branch !== undefined && currentBranchData.primary_branch !== null) {
+									finalPrimaryBranch = (currentBranchData.primary_branch === 1 || currentBranchData.primary_branch === '1' || String(currentBranchData.primary_branch).toLowerCase() === 'yes') ? 1 : 0;
+								} else {
+									finalPrimaryBranch = 0;
+								}
+							}
+						}
+						// Address fields - handle both India and UAE formats
+						let finalAddress1 = '';
+						let finalAddress2 = '';
+						let finalCity = '';
+						let finalState = '';
+						let finalCountry = '';
+						let finalPostalCode = '';
+
+						if (isIndia) {
+							// India format: address is nested in address object
+							finalAddress1 = (userAddress1 && userAddress1.trim() !== '')
+								? userAddress1
+								: (currentBranchData.address?.line1 || '');
+
+							finalAddress2 = (userAddress2 && userAddress2.trim() !== '')
+								? userAddress2
+								: (currentBranchData.address?.line2 || '');
+
+							finalCity = (userCity && userCity.trim() !== '')
+								? userCity
+								: (currentBranchData.address?.city || '');
+
+							finalState = (userState && userState.trim() !== '')
+								? userState
+								: (currentBranchData.address?.state || '');
+
+							finalCountry = (userCountry && userCountry.trim() !== '')
+								? userCountry
+								: (currentBranchData.address?.country || '');
+
+							finalPostalCode = (userPostalCode && userPostalCode.trim() !== '')
+								? userPostalCode
+								: (currentBranchData.address?.pincode || '');
+						} else {
+							// UAE format: address_details is a JSON string that needs to be parsed
+							// Also check root level fields and nested address object
+							let aeAddress: any = null;
+
+							// Try to parse address_details (JSON string)
+							if (currentBranchData.address_details) {
+								try {
+									aeAddress = typeof currentBranchData.address_details === 'string'
+										? JSON.parse(currentBranchData.address_details)
+										: currentBranchData.address_details;
+								} catch (error) {
+									// If parsing fails, use as is
+									aeAddress = currentBranchData.address_details;
+								}
+							}
+
+							// Get building_name from address_details, address object, or root level
+							const currentBuildingName = aeAddress?.building_name
+								|| currentBranchData.address?.building_name
+								|| currentBranchData.building_name
+								|| '';
+							const buildingParts = currentBuildingName.split(',');
+
+							finalAddress1 = (userAddress1 && userAddress1.trim() !== '')
+								? userAddress1
+								: (buildingParts[0] || '');
+
+							finalAddress2 = (userAddress2 && userAddress2.trim() !== '')
+								? userAddress2
+								: (buildingParts.slice(1).join(',') || '');
+
+							// Get street_name from address_details, address object, or root level
+							finalCity = (userCity && userCity.trim() !== '')
+								? userCity
+								: (aeAddress?.street_name
+									|| currentBranchData.address?.street_name
+									|| currentBranchData.street_name
+									|| '');
+
+							// Get emirate from address_details, address object, or root level
+							finalState = (userState && userState.trim() !== '')
+								? userState
+								: (aeAddress?.emirate
+									|| currentBranchData.address?.emirate
+									|| currentBranchData.emirate
+									|| '');
+
+							// Get country from address_details, address object, or root level
+							finalCountry = (userCountry && userCountry.trim() !== '')
+								? userCountry
+								: (aeAddress?.country
+									|| currentBranchData.address?.country
+									|| currentBranchData.country
+									|| '');
+
+							// Get po_box from address_details, address object, or root level
+							finalPostalCode = (userPostalCode && userPostalCode.trim() !== '')
+								? userPostalCode
+								: (aeAddress?.po_box
+									|| currentBranchData.address?.po_box
+									|| currentBranchData.po_box
+									|| '');
+						}
+
+						// Build update body with merged data
+						let body: IDataObject = {};
+						if(isIndia) {
+							body = {
+								id: selectedBranchId,
+								name: finalBranchName,
+								gstin: finalTaxNumber,
+								email: finalEmail,
+								phone: finalPhone,
+								line1: finalAddress1,
+								line2: finalAddress2,
+								city: finalCity,
+								state: finalState,
+								country: finalCountry,
+								pincode: finalPostalCode,
+								status: finalStatus,
+								is_primary: finalPrimaryBranch,
+							};
+						} else {
+							body = {
+								id: selectedBranchId,
+								branch_name: finalBranchName,
+								email: finalEmail,
+								phone: finalPhone,
+								address: {
+									building_name: finalAddress1 + (finalAddress2 ? ', ' + finalAddress2 : ''),
+									street_name: finalCity,
+									emirate: finalState,
+									po_box: finalPostalCode,
+									country: finalCountry,
+								},
+								status: finalStatus,
+								primary_branch: finalPrimaryBranch,
+							};
+						}
+
+						options.method = 'PUT';
+						options.url = `${baseUrl}/business/branch`;
+						options.body = body;
+					} else if (operation === 'getBranchDetails') {
+						const branchId = this.getNodeParameter('branchId', i) as string;
+						options.method = 'GET';
+						options.url = `${baseUrl}/business/branch/${branchId}`;
+					} else if (operation === 'listBranches') {
+						options.method = 'GET';
+						options.url = `${baseUrl}/business/branch`;
+					} else if (operation === 'addPaymentMethod') {
+						const paymentMethodName = this.getNodeParameter('paymentMethodName', i) as string;
+
+						if (!paymentMethodName || paymentMethodName.trim() === '') {
+							throw new ApplicationError('Payment Method Name is required', { level: 'warning' });
+						}
+
+						let currentPaymentMethodData: any = null;
+						try {
+							const fetchOptions: IHttpRequestOptions = {
+								method: 'GET',
+								url: `${baseUrl}/settings/paymentsmode`,
+								headers: options.headers,
+								json: true,
+							};
+							const fetchResponse = await this.helpers.httpRequest(fetchOptions);
+							if(fetchResponse.status == 200 && fetchResponse.data){
+								currentPaymentMethodData = fetchResponse.data;
+							}
+						} catch (error) {
+							// If fetch fails, continue with empty data (will create new)
+							currentPaymentMethodData = null;
+						}
+
+						// Get current date in ISO format
+						const currentDate = new Date().toISOString();
+
+						let payload: IDataObject = {};
+
+						if (currentPaymentMethodData && Array.isArray(currentPaymentMethodData) && currentPaymentMethodData.length > 0) {
+							// Find the payment_methods object in the data array
+							const paymentMethodsData = currentPaymentMethodData.find((item: any) => item.type === 'payment_methods');
+
+							if (paymentMethodsData && paymentMethodsData.settings && Array.isArray(paymentMethodsData.settings)) {
+								// Get existing settings
+								const existingSettings = paymentMethodsData.settings;
+
+								// Find the maximum ID in the settings array
+								let maxId = 0;
+								for (const setting of existingSettings) {
+									if (setting.id && Number(setting.id) > maxId) {
+										maxId = Number(setting.id);
+									}
+								}
+
+								// Next ID is maxId + 1
+								const nextId = maxId + 1;
+
+								// Create new settings array with existing + new payment method
+								const newSettings = [...existingSettings, {
+									id: nextId,
+									value: paymentMethodName,
+									status: 1,
+									added_by: 'N8N',
+									added_on: currentDate,
+									extra_field: ''
+								}];
+
+								payload = {
+									id: paymentMethodsData.id,
+									key: 'payment_methods',
+									value: newSettings
+								};
+							} else {
+								// If structure is different, create new with id: 1
+								payload = {
+									key: 'payment_methods',
+									value: [{
+										id: 1,
+										value: paymentMethodName,
+										status: 1,
+										added_by: 'N8N',
+										added_on: currentDate,
+										extra_field: ''
+									}]
+								};
+							}
+						} else {
+							// No existing data, create new with id: 1
+							payload = {
+								key: 'payment_methods',
+								value: [{
+									id: 1,
+									value: paymentMethodName,
+									status: 1,
+									added_by: 'N8N',
+									added_on: currentDate,
+									extra_field: ''
+								}]
+							};
+						}
+
+						options.method = 'POST';
+						options.url = `${baseUrl}/settings/paymentsmode`;
+						options.body = payload;
+					} else if (operation === 'listPaymentMethods') {
+						options.method = 'GET';
+						options.url = `${baseUrl}/settings/paymentsmode`;
 					}
-					const result = await this.helpers.request(options);
+					const result = await this.helpers.httpRequest(options);
 					returnData.push({ json: result, pairedItem: { item: i } });
 		} catch (error) {
 			if (continueOnFail) {

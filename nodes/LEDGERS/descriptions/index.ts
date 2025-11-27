@@ -7,6 +7,7 @@ import { purchaseOperations as purchaseOps } from './purchaseOperations';
 import { hrmsOperations as hrmsOps } from './hrmsOperations';
 import { bankingOperations as bankingOps } from './bankingOperations';
 import { taxOperations as taxOps } from './taxOperations';
+import { commonOperations as commonOps } from './commonOperations';
 
 export const contactOperations: INodeProperties[] = contactOps;
 export const catalogOperations: INodeProperties[] = catalogOps;
@@ -15,3 +16,4 @@ export const purchaseOperations: INodeProperties[] = purchaseOps;
 export const hrmsOperations: INodeProperties[] = hrmsOps;
 export const bankingOperations: INodeProperties[] = bankingOps;
 export const taxOperations: INodeProperties[] = taxOps;
+export const commonOperations: INodeProperties[] = commonOps;
